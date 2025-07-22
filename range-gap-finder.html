@@ -783,8 +783,16 @@ yoolstation
                 openKeywordModal(isNumericId ? parseInt(id, 10) : id, mapSource);
                 return;
             }
+            
+            if (target.id === 'back-to-home-btn') {
+                renderInitialControlsView();
+                return;
+            }
+            if (target.matches('.back-to-lenses-btn')) { 
+                renderLensSelectionView(); 
+                return; 
+            }
 
-            if (target.matches('.back-to-lenses-btn')) { renderLensSelectionView(); return; }
             const headerCell = target.closest('th[data-sort-key]');
             if (headerCell) {
                 const newSortKey = headerCell.dataset.sortKey;
@@ -830,10 +838,17 @@ yoolstation
             const excludedKeywordsRaw = document.getElementById('branded-exclusions').value;
             const excludedKeywords = excludedKeywordsRaw.split('\n').map(kw => kw.trim()).filter(kw => kw);
             
+            const lensesToRun = {
+                content_gaps: document.getElementById('run_content_gaps').checked,
+                competitive_opportunities: document.getElementById('run_competitive_opportunities').checked,
+                market_share: document.getElementById('run_market_share').checked,
+                taxonomy_analysis: document.getElementById('run_taxonomy_analysis').checked,
+            };
+            
             const options = { 
                 columnMap, 
                 excludedKeywords,
-                runCategoryOverhaul: document.getElementById('run-category-overhaul-checkbox').checked
+                lensesToRun
             };
             if (onsiteDateRange) options.onsiteDateRange = onsiteDateRange;
 
@@ -941,11 +956,23 @@ yoolstation
                         </div>
                         <div class="pt-6 border-t">
                             <h2 class="text-2xl font-bold">4. Analysis Options</h2>
-                            <p class="text-sm text-gray-600 mt-2 mb-2">Select which advanced analyses to run. Disabling these can speed up processing for very large datasets.</p>
-                            <div class="mt-4">
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="run-category-overhaul-checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked>
-                                    <span class="ml-2 text-sm text-gray-900">Enable Category Overhaul Matrix</span>
+                            <p class="text-sm text-gray-600 mt-2 mb-4">Select which analyses to run. Deselecting lenses can significantly speed up processing time.</p>
+                            <div class="space-y-4">
+                                <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                                    <input type="checkbox" id="run_content_gaps" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked>
+                                    <span class="ml-3 text-sm font-medium text-gray-900">Content Gaps</span>
+                                </label>
+                                <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                                    <input type="checkbox" id="run_competitive_opportunities" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked>
+                                    <span class="ml-3 text-sm font-medium text-gray-900">Competitive Opportunities</span>
+                                </label>
+                                <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                                    <input type="checkbox" id="run_market_share" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked>
+                                    <span class="ml-3 text-sm font-medium text-gray-900">Market Share <span class="text-xs text-gray-500">(Requires Traffic column)</span></span>
+                                </label>
+                                <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                                    <input type="checkbox" id="run_taxonomy_analysis" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked>
+                                    <span class="ml-3 text-sm font-medium text-gray-900">Taxonomy & Architecture <span class="text-xs text-gray-500">(Slowest)</span></span>
                                 </label>
                             </div>
                         </div>
@@ -974,7 +1001,13 @@ yoolstation
             const hasMarketShare = (keywordMarketShareReport || []).length > 0 || (groupMarketShareReport || []).length > 0;
             const hasOverhaulData = (categoryOverhaulMatrixReport || []).length > 0 || (facetPotentialReport || []).length > 0;
 
-            let html = `<div class="text-center mb-8"><h2 class="text-3xl font-bold">Analysis Complete</h2><p class="text-lg text-gray-600">Select a lens to explore your data.</p></div><div class="space-y-8">`;
+            let html = `<div class="text-center mb-8">
+                <div class="relative">
+                     <h2 class="text-3xl font-bold">Analysis Complete</h2>
+                     <button id="back-to-home-btn" class="absolute top-0 right-0 text-sm font-semibold text-blue-600 hover:underline">&larr; Start New Analysis</button>
+                </div>
+                <p class="text-lg text-gray-600 mt-2">Select a lens to explore your data.</p>
+            </div><div class="space-y-8">`;
             
             if (hasGaps) {
                 html += `
