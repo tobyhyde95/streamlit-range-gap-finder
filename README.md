@@ -93,15 +93,16 @@ Follow these three steps every time you modify your code and want to save a new 
 This command prepares all your modified files for saving.
 ```bash
 git add .
+```
 
 ### Step 2: Save a Snapshot (Commit)
 This saves your staged files. Write a short, descriptive message in the quotes to describe your changes.
+```bash
 git commit -m "Your descriptive message here"
-
+```
 
 ### Step 3: Upload to GitHub (Push)
 This command uploads your saved snapshot to your GitHub backup.
-
+```bash
 git push
-
-
+```
