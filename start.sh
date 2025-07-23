@@ -2,6 +2,9 @@
 #!/bin/bash
 echo "--- Starting SEO Analyzer Application (Web & Worker) ---"
 
+# Set environment variable to suppress tokenizer parallelism warning
+export TOKENIZERS_PARALLELISM=false
+
 # Activate the Python virtual environment
 source venv/bin/activate
 

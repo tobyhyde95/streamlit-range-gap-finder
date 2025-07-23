@@ -12,14 +12,21 @@ import os
 from nltk.stem import PorterStemmer
 import spacy
 import swifter
+import subprocess
+import sys
 
-# Load the SpaCy model once to be used in the functions
-# Using the recommended medium model for better similarity scores
+# Load the SpaCy model, and download it if it's missing
 try:
     nlp = spacy.load("en_core_web_md")
 except OSError:
-    print("Spacy model 'en_core_web_md' not found. Please run 'python -m spacy download en_core_web_md'")
-    nlp = None
+    print("Spacy model 'en_core_web_md' not found. Downloading now...")
+    try:
+        subprocess.run([sys.executable, "-m", "spacy", "download", "en_core_web_md"], check=True)
+        nlp = spacy.load("en_core_web_md")
+    except (subprocess.CalledProcessError, OSError):
+        print("Failed to download or load SpaCy model. Please run 'python -m spacy download en_core_web_md' manually.")
+        nlp = None
+
 
 def _classify_intent(keyword):
     """A lean, rules-based function to classify keyword intent."""
@@ -282,16 +289,24 @@ def _generate_category_overhaul_matrix(df, internal_keyword_col, internal_positi
     knowledge_base = {col: set(explicit_facets_df[col].dropna().unique()) for col in explicit_facets_df.columns}
     facet_col_map = {key: key.title() for key in explicit_facets_df.columns}
     explicit_facets_df.rename(columns=facet_col_map, inplace=True)
+
+    if explicit_facets_df.columns.has_duplicates:
+        explicit_facets_df = explicit_facets_df.groupby(level=0, axis=1).apply(lambda group: group.ffill(axis=1).bfill(axis=1).iloc[:, 0])
+
     highest_ranking_df = pd.concat([highest_ranking_df, explicit_facets_df], axis=1)
 
+    # --- FINAL FIX: Catch any duplicates created by the concat operation ---
+    if highest_ranking_df.columns.has_duplicates:
+        highest_ranking_df = highest_ranking_df.groupby(level=0, axis=1).apply(lambda group: group.ffill(axis=1).bfill(axis=1).iloc[:, 0])
+    
     potential_facet_cols = [
-        col for col in highest_ranking_df.columns 
+        col for col in highest_ranking_df.columns
         if highest_ranking_df[col].dtype == 'object' and col not in [
-            'Category Mapping', 'Original Category Mapping', 'Derived Facets', 
+            'Category Mapping', 'Original Category Mapping', 'Derived Facets',
             'Decompounded Type', internal_keyword_col, internal_url_col_name, 'Source',
             'Keyword Group'
+        ]
     ]
-]
 
     all_values = highest_ranking_df[potential_facet_cols].unstack().dropna().astype(str).str.title().value_counts()
     key_values = all_values[(all_values > 1) & (all_values.index.str.len() > 3) & (all_values.index.str.isalpha())].index
@@ -705,6 +720,9 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
     rename_map_our = {col: col.replace(' ', '').replace('_', '') for col in original_our_df_cols}
     our_df.rename(columns=rename_map_our, inplace=True)
     
+    if our_df.columns.has_duplicates:
+        our_df = our_df.groupby(level=0, axis=1).apply(lambda group: group.ffill(axis=1).bfill(axis=1).iloc[:, 0])
+    
     cols_to_drop_our = [col for col in our_df.columns if col.lower() in COLS_TO_EXCLUDE_AT_SOURCE]
     if cols_to_drop_our:
         our_df.drop(columns=cols_to_drop_our, inplace=True)
@@ -729,6 +747,9 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
                 original_comp_df_cols = df.columns.tolist()
                 rename_map_comp = {col: col.replace(' ', '').replace('_', '') for col in original_comp_df_cols}
                 df.rename(columns=rename_map_comp, inplace=True)
+
+                if df.columns.has_duplicates:
+                    df = df.groupby(level=0, axis=1).apply(lambda group: group.ffill(axis=1).bfill(axis=1).iloc[:, 0])
 
                 cols_to_drop_comp = [col for col in df.columns if col.lower() in COLS_TO_EXCLUDE_AT_SOURCE]
                 if cols_to_drop_comp:
