@@ -866,8 +866,14 @@ yoolstation
             const options = { 
                 columnMap, 
                 excludedKeywords,
-                lensesToRun
+                lensesToRun,
             };
+
+            const rankFrom = document.getElementById('rank-from').value;
+            const rankTo = document.getElementById('rank-to').value;
+            if (rankFrom) options.rankFrom = rankFrom;
+            if (rankTo) options.rankTo = rankTo;
+
             if (onsiteDateRange) options.onsiteDateRange = onsiteDateRange;
 
             formData.append('options', JSON.stringify(options));
@@ -952,28 +958,45 @@ yoolstation
                                     <input type="file" id="competitor-files" class="hidden" accept=".csv" multiple>
                                 </div>
                             </div>
-                            <div class="mt-4">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">On-Site Search Data (Optional)</label>
+                        </div>
+                        <div class="pt-6 border-t">
+                            <h2 class="text-2xl font-bold">2. On-Site Search Data (Optional)</h2>
+                             <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">On-Site Search Data File</label>
                                 <label class="file-input-label flex justify-center items-center w-full h-24 px-4 text-center rounded-lg" for="onsite-file"><span class="text-gray-500">Upload a 2-column CSV (Term, Searches)</span></label>
                                 <input type="file" id="onsite-file" class="hidden" accept=".csv">
-                                <label class="block text-sm font-medium text-gray-700 mb-1 mt-4">On-Site Search Date Range (e.g., "Q1 2024", "Last 90 Days")</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1 mt-4">On-Site Search Date Range</label>
                                 <input type="text" id="onsite-date-range" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Q1 2024">
                             </div>
                         </div>
                         <div id="column-mapping-container" class="hidden pt-6 border-t">
-                            <h2 class="text-2xl font-bold">2. Map Your Columns</h2>
+                            <h2 class="text-2xl font-bold">3. Map Your Columns</h2>
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4" id="column-mappers"></div>
                         </div>
                         <div class="pt-6 border-t">
-                            <div class="flex justify-between items-center mb-4">
-                                <h2 class="text-2xl font-bold">3. Branded Keyword Exclusions</h2>
-                                <button id="load-exclusions-btn" onclick="loadDefaultExclusions()" class="text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Load Default Exclusions</button>
+                             <h2 class="text-2xl font-bold">4. Filters & Exclusions</h2>
+                             <div class="mt-4 space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Rank Filter</label>
+                                    <p class="text-xs text-gray-500 mt-1 mb-2">Only include keywords within a specific ranking range.</p>
+                                    <div class="flex items-center gap-2">
+                                        <input type="number" id="rank-from" class="block w-full p-2 border border-gray-300 rounded-md" placeholder="From (e.g., 1)">
+                                        <span class="text-gray-500">-</span>
+                                        <input type="number" id="rank-to" class="block w-full p-2 border border-gray-300 rounded-md" placeholder="To (e.g., 50)">
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center">
+                                        <label class="block text-sm font-medium text-gray-700">Branded Keyword Exclusions</label>
+                                        <button id="load-exclusions-btn" onclick="loadDefaultExclusions()" class="text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Load Defaults</button>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1 mb-2">Add any branded terms (one per line) to exclude. Any keyword containing these terms will be removed.</p>
+                                    <textarea id="branded-exclusions" class="mt-1 block w-full h-48 p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+                                </div>
                             </div>
-                            <p class="text-sm text-gray-600 mt-2 mb-2">Add any branded terms (one per line) to exclude from the analysis. Any keyword containing these terms will be removed.</p>
-                            <textarea id="branded-exclusions" class="mt-1 block w-full h-48 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
                         </div>
                         <div class="pt-6 border-t">
-                            <h2 class="text-2xl font-bold">4. Analysis Options</h2>
+                            <h2 class="text-2xl font-bold">5. Analysis Options</h2>
                             <p class="text-sm text-gray-600 mt-2 mb-4">Select which analyses to run. Deselecting lenses can significantly speed up processing time.</p>
                             <div class="space-y-4">
                                 <label class="flex items-center p-3 border rounded-lg hover:bg-gray-50">

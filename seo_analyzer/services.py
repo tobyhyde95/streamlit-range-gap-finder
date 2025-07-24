@@ -707,6 +707,8 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
         onsite_date_range = options.get('onsiteDateRange', '')
         excluded_keywords = options.get('excludedKeywords', [])
         lenses_to_run = options.get('lensesToRun', {})
+        rank_from = options.get('rankFrom')
+        rank_to = options.get('rankTo')
     except (json.JSONDecodeError, KeyError) as e:
         raise ValueError(f"Invalid or missing options provided in request: {e}")
     
@@ -773,17 +775,37 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
     all_dfs = [our_df] + competitor_dfs
     master_df = pd.concat(all_dfs, ignore_index=True)
 
+    # --- FILTERING LOGIC ---
+    for col in [internal_position_col, internal_volume_col, internal_traffic_col]:
+        if col and col in master_df.columns: 
+            master_df[col] = pd.to_numeric(master_df[col], errors='coerce')
+
     if excluded_keywords:
         print(f"Excluding {len(excluded_keywords)} branded terms...")
         exclude_pattern = '|'.join([re.escape(kw) for kw in excluded_keywords])
         initial_rows = len(master_df)
         master_df = master_df[~master_df[internal_keyword_col].str.contains(exclude_pattern, case=False, na=False)]
         print(f"Removed {initial_rows - len(master_df)} rows containing branded keywords.")
-    
-    for col in [internal_position_col, internal_volume_col, internal_traffic_col]:
-        if col and col in master_df.columns: 
-            master_df[col] = pd.to_numeric(master_df[col], errors='coerce')
 
+    if rank_from or rank_to:
+        initial_rows = len(master_df)
+        master_df.dropna(subset=[internal_position_col], inplace=True)
+        
+        if rank_from:
+            try:
+                master_df = master_df[master_df[internal_position_col] >= int(rank_from)]
+            except (ValueError, TypeError):
+                print(f"Warning: Invalid 'Ranking From' value '{rank_from}'.")
+        
+        if rank_to:
+            try:
+                master_df = master_df[master_df[internal_position_col] <= int(rank_to)]
+            except (ValueError, TypeError):
+                print(f"Warning: Invalid 'Ranking To' value '{rank_to}'.")
+        
+        master_df = master_df.copy()
+        print(f"Filtered by rank. Removed {initial_rows - len(master_df)} rows.")
+    
     has_onsite_data = False
     onsite_df = None
     if onsite_file_path:
