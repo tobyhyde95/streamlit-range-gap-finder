@@ -657,18 +657,26 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
         df_with_groups = pd.merge(df_for_threats_input, master_keyword_group_map, left_on='Keyword', right_on=internal_keyword_col, how='left')
         
         keyword_map = df_with_groups.groupby('TopicID')['Keyword'].unique().apply(list).to_dict()
-        agg_dict = {'AvgOurRank': ('Our Rank', 'mean'), 'AvgBestCompetitorRank': ('Best Competitor Rank', 'mean'), 'TotalOurTraffic': ('Our Monthly Organic Traffic', 'sum'), 'TotalBestCompetitorTraffic': ('Best Competitor Monthly Organic Traffic', 'sum'), 'TotalTrafficGrowthOpportunity': ('Traffic Growth Opportunity', 'sum'), 'KeywordCount': ('Keyword', 'nunique')}
-        if 'Monthly Google Searches' in df_for_threats_input.columns: agg_dict['TotalMonthlyGoogleSearches'] = ('Monthly Google Searches', 'sum')
+        agg_dict = {
+            'AvgOurRank': ('Our Rank', 'mean'), 
+            'AvgBestCompetitorRank': ('Best Competitor Rank', 'mean'), 
+            'TotalOurMonthlyTraffic': ('Our Monthly Organic Traffic', 'sum'), 
+            'TotalBestCompetitorMonthlyTraffic': ('Best Competitor Monthly Organic Traffic', 'sum'), 
+            'TotalMonthlyTrafficGrowthOpportunity': ('Monthly Traffic Growth Opportunity', 'sum'), 
+            'KeywordCount': ('Keyword', 'nunique')
+        }
+        if 'Monthly Google Searches' in df_for_threats_input.columns: 
+            agg_dict['TotalMonthlyGoogleSearches'] = ('Monthly Google Searches', 'sum')
         
         topic_threats_agg = df_with_groups.groupby('TopicID').agg(**agg_dict).reset_index()
         topic_threats_agg['Keyword Group'] = topic_threats_agg['TopicID'].map(topic_names).fillna('Uncategorized')
         
         rename_dict = {
             "AvgOurRank": "Avg Our Rank",
-            "TotalOurTraffic": "Total Our Traffic",
             "AvgBestCompetitorRank": "Avg Best Competitor Rank",
-            "TotalBestCompetitorTraffic": "Total Best Competitor Traffic",
-            "TotalTrafficGrowthOpportunity": "Total Traffic Growth Opportunity",
+            "TotalOurMonthlyTraffic": "Total Our Monthly Traffic",
+            "TotalBestCompetitorMonthlyTraffic": "Total Best Competitor Monthly Traffic",
+            "TotalMonthlyTrafficGrowthOpportunity": "Total Monthly Traffic Growth Opportunity",
             "TotalMonthlyGoogleSearches": "Total Monthly Google Searches",
             "KeywordCount": "Keyword Count"
         }
@@ -698,12 +706,10 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
         internal_traffic_col = options['columnMap'].get('trafficCol', '').replace(' ', '').replace('_', '')
         onsite_date_range = options.get('onsiteDateRange', '')
         excluded_keywords = options.get('excludedKeywords', [])
-        # *** NEW: Get the lens selections from the options payload ***
         lenses_to_run = options.get('lensesToRun', {})
     except (json.JSONDecodeError, KeyError) as e:
         raise ValueError(f"Invalid or missing options provided in request: {e}")
     
-    # *** NEW: Initialize all report variables to be empty by default ***
     keyword_gap_report_raw, topic_gap_report_raw, core_topic_gap_report_raw = [], [], []
     topic_keyword_map_by_topicid, core_topic_keyword_map_by_topicid = {}, {}
     keyword_threats_report_raw, topic_threats_report_raw, core_topic_threats_report_raw = [], [], []
@@ -790,7 +796,6 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
                 onsite_df = onsite_df_raw.groupby('keyword')['searches'].sum().reset_index()
                 has_onsite_data = True
 
-    # *** NEW: Determine if expensive clustering is needed based on lens selection ***
     needs_clustering = any([
         lenses_to_run.get('content_gaps'), 
         lenses_to_run.get('competitive_opportunities'), 
@@ -842,7 +847,6 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
 
         master_df['Keyword Group'] = master_df['TopicID'].map(topic_names).fillna('Uncategorized')
     else:
-        # If clustering is skipped, provide default columns to prevent errors
         report("Skipping semantic clustering as per user selection...", 2, total_steps)
         master_df['TopicID'] = -1
         master_df['Keyword Group'] = 'N/A'
@@ -851,7 +855,6 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
     report("Generating analysis reports...", 3, total_steps)
     our_ranking_keywords = master_df[master_df['Source'] == our_domain][internal_keyword_col].unique()
 
-    # *** NEW: Conditional 'Content Gaps' Analysis ***
     if lenses_to_run.get('content_gaps'):
         competitor_only_df = master_df[~master_df[internal_keyword_col].isin(our_ranking_keywords)].copy()
 
@@ -874,10 +877,8 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
                 keyword_gap_agg['lower_keyword'] = keyword_gap_agg[internal_keyword_col].str.lower()
                 keyword_gap_agg = pd.merge(keyword_gap_agg, onsite_df, left_on='lower_keyword', right_on='keyword', how='left')
                 keyword_gap_agg.rename(columns={'searches': 'On-Site Searches'}, inplace=True)
-                # --- FIX: Ensure NaN values from the left join become 0 ---
                 keyword_gap_agg['On-Site Searches'] = keyword_gap_agg['On-Site Searches'].fillna(0).astype(int)
                 
-                # Re-use prelim_keywords_df if it was created during clustering
                 if 'Opportunity Score' in locals().get('prelim_keywords_df', pd.DataFrame()).columns:
                     scores_to_merge = prelim_keywords_df[['lower_keyword', 'Opportunity Score']]
                     keyword_gap_agg = pd.merge(keyword_gap_agg, scores_to_merge, on='lower_keyword', how='left')
@@ -934,7 +935,6 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
                     core_topic_gap_report_raw = topic_agg_df.to_dict(orient='records')
                     core_topic_keyword_map_by_topicid = topic_map
 
-    # *** NEW: Conditional 'Competitive Opportunities' Analysis ***
     if lenses_to_run.get('competitive_opportunities'):
         shared_keywords_df = master_df[master_df[internal_keyword_col].isin(our_ranking_keywords)].copy()
         if not shared_keywords_df.empty:
@@ -965,13 +965,13 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
                     leakage_df[f'{internal_traffic_col}_Our'] = leakage_df[f'{internal_traffic_col}_Our'].fillna(0)
                     leakage_df[f'{internal_traffic_col}_Comp'] = leakage_df[f'{internal_traffic_col}_Comp'].fillna(0)
 
-                    leakage_df['TrafficGrowthOpportunity'] = leakage_df[f'{internal_traffic_col}_Comp'] - leakage_df[f'{internal_traffic_col}_Our']
+                    leakage_df['MonthlyTrafficGrowthOpportunity'] = leakage_df[f'{internal_traffic_col}_Comp'] - leakage_df[f'{internal_traffic_col}_Our']
                     
                     final_cols_map = {
                         internal_keyword_col: 'Keyword', f'{internal_volume_col}_Our': 'Monthly Google Searches', f'{internal_position_col}_Our': 'Our Rank',
                         f'{internal_url_col_name}_Our': 'Our URL', f'{internal_traffic_col}_Our': 'Our Monthly Organic Traffic', 'Source_Comp': 'Best Competitor',
                         f'{internal_position_col}_Comp': 'Best Competitor Rank', f'{internal_url_col_name}_Comp': 'Best Competitor URL',
-                        f'{internal_traffic_col}_Comp': 'Best Competitor Monthly Organic Traffic', 'TrafficGrowthOpportunity': 'Traffic Growth Opportunity'
+                        f'{internal_traffic_col}_Comp': 'Best Competitor Monthly Organic Traffic', 'MonthlyTrafficGrowthOpportunity': 'Monthly Traffic Growth Opportunity'
                     }
 
                     filtered_final_cols_map = {k: v for k, v in final_cols_map.items() if k in leakage_df.columns}
@@ -986,7 +986,6 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
                     core_leakage_df = core_leakage_df[core_leakage_df['Best Competitor Rank'] <= 10].copy()
                     core_topic_threats_report_raw, core_topic_threats_keyword_map_by_topicid = create_threat_topic_report(core_leakage_df)
 
-    # *** NEW: Conditional 'Market Share' Analysis ***
     if lenses_to_run.get('market_share') and internal_traffic_col:
         keyword_market_share_report_raw = _calculate_keyword_market_share(master_df, internal_keyword_col, 'Source', internal_traffic_col)
         
@@ -1006,7 +1005,6 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
             core_group_market_share_report_raw = core_group_market_share_df.to_dict(orient='records')
 
     report("Generating Category Overhaul Matrix...", 4, total_steps)
-    # *** NEW: Conditional 'Taxonomy & Architecture' Analysis ***
     if lenses_to_run.get('taxonomy_analysis'):
         overhaul_results = _generate_category_overhaul_matrix(
             master_df.copy(),

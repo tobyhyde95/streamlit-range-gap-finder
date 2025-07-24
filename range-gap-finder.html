@@ -272,8 +272,8 @@ yoolstation
                     'Opportunity Score', 'On-Site Searches', 'Total Monthly Google Searches', 'Total On-Site Searches',
                     'Total Competitor Monthly Organic Traffic', 'Gap Keyword Count', 'Competitor Avg. Rank', 'Our Rank',
                     'Our Monthly Organic Traffic', 'Best Competitor Monthly Organic Traffic',
-                    'Traffic Growth Opportunity', 'Keyword Count', 'Avg Our Rank', 'Total Our Traffic',
-                    'Avg Best Competitor Rank', 'Total Best Competitor Traffic', 'Total Traffic Growth Opportunity',
+                    'Monthly Traffic Growth Opportunity', 'Keyword Count', 'Avg Our Rank', 'Total Our Monthly Traffic',
+                    'Avg Best Competitor Rank', 'Total Best Competitor Monthly Traffic', 'Total Monthly Traffic Growth Opportunity',
                     'Total Monthly Google Traffic', 'Monthly Organic Traffic', 'Facet Value Score'
                 ];
                 const isNumeric = numericHeadersBase.includes(currentSortKeyBase);
@@ -308,7 +308,7 @@ yoolstation
         
         function calculateTotalRow(headers, data) {
             const totals = {};
-            const summationBases = ['Google Searches', 'Organic Traffic', 'On-Site Searches', 'Gap Keyword Count', 'Growth Opportunity', 'Keyword Count', 'Total Our Traffic', 'Total Best Competitor Traffic', 'Total Traffic Growth Opportunity', 'Total Google Traffic'];
+            const summationBases = ['Google Searches', 'Organic Traffic', 'On-Site Searches', 'Gap Keyword Count', 'Growth Opportunity', 'Keyword Count', 'Total Our', 'Total Best Competitor', 'Total Google Traffic'];
             const averageBases = ['Rank', 'Score', '# Ranking Competitors'];
             
             const totalTrafficHeader = headers.find(h => h.includes('Total') && h.includes('Google Traffic'));
@@ -441,7 +441,8 @@ yoolstation
                     let val = row[h];
                     let cellClass = 'p-3 border-t text-sm';
                     const isFacetColumn = isNestableReport && facetHeaders.includes(h);
-                    const isNumericDataCol = !h.toLowerCase().includes('rank') && !h.toLowerCase().includes('score') && (typeof val === 'number' || val === null);
+                    const lowerHeader = h.toLowerCase();
+                    const isNumericDataCol = (lowerHeader.includes('traffic') || lowerHeader.includes('searches')) && !lowerHeader.includes('on-site');
 
                     if (isFacetColumn) {
                         cellClass += ' facet-cell';
@@ -452,6 +453,8 @@ yoolstation
                     } else if (Array.isArray(val)) { 
                         val = `${val[0].toFixed(1)}% (${(val[1] || 0).toLocaleString()})`;
                     } else if (isNumericDataCol) {
+                        val = Math.round(val || 0).toLocaleString();
+                    } else if (typeof val === 'number' && !lowerHeader.includes('rank') && !lowerHeader.includes('score')) {
                         val = Math.round(val || 0).toLocaleString();
                     }
                     
@@ -1086,8 +1089,8 @@ yoolstation
             'Monthly Google Searches', 'Total Monthly Google Searches', 'Monthly Organic Traffic',
             'Top Competitor Monthly Organic Traffic', 'Total Competitor Monthly Organic Traffic',
             'Our Monthly Organic Traffic', 'Best Competitor Monthly Organic Traffic',
-            'Traffic Growth Opportunity', 'Total Our Traffic', 'Total Best Competitor Traffic',
-            'Total Traffic Growth Opportunity', 'Total Monthly Google Traffic'
+            'Monthly Traffic Growth Opportunity', 'Total Our Monthly Traffic', 'Total Best Competitor Monthly Traffic',
+            'Total Monthly Traffic Growth Opportunity', 'Total Monthly Google Traffic'
         ];
         
         function updateHeadersForTimeframe(headers, timeframe) {
@@ -1251,7 +1254,7 @@ yoolstation
             const { keywordThreatsReport } = analysisResults;
             const transformedData = transformDataForTimeframe(keywordThreatsReport, tableState.timeframe);
             
-            const headers = ['Keyword', 'Monthly Google Searches', 'Our Rank', 'Our URL', 'Our Monthly Organic Traffic', 'Best Competitor', 'Best Competitor Rank', 'Best Competitor URL', 'Best Competitor Monthly Organic Traffic', 'Traffic Growth Opportunity'];
+            const headers = ['Keyword', 'Monthly Google Searches', 'Our Rank', 'Our URL', 'Our Monthly Organic Traffic', 'Best Competitor', 'Best Competitor Rank', 'Best Competitor URL', 'Best Competitor Monthly Organic Traffic', 'Monthly Traffic Growth Opportunity'];
             const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
             
             const displayData = transformedData.map(row => ({
@@ -1276,7 +1279,7 @@ yoolstation
             const transformedData = transformDataForTimeframe(reportData, tableState.timeframe);
             const mapSource = (scope === 'core') ? 'core-threats' : 'topic-threats';
             
-            const headers = ['Keyword Group', 'TopicID', 'Keyword Count', 'Total Monthly Google Searches', 'Avg Our Rank', 'Total Our Traffic', 'Avg Best Competitor Rank', 'Total Best Competitor Traffic', 'Total Traffic Growth Opportunity'];
+            const headers = ['Keyword Group', 'TopicID', 'Keyword Count', 'Total Monthly Google Searches', 'Avg Our Rank', 'Total Our Monthly Traffic', 'Avg Best Competitor Rank', 'Total Best Competitor Monthly Traffic', 'Total Monthly Traffic Growth Opportunity'];
             const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
 
             const displayData = transformedData.map(row => ({
