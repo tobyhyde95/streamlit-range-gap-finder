@@ -214,7 +214,8 @@ yoolstation
         let pollingInterval = null;
         let tableState = {
             fullData: [], headers: [], sortKey: null, sortDir: 'desc',
-            searchTerm: '', searchKey: null, currentPage: 1, rowsPerPage: 25
+            searchTerm: '', searchKey: null, currentPage: 1, rowsPerPage: 25,
+            timeframe: 'monthly'
         };
         const API_KEY = "my-secret-dev-key"; 
         const ui = {
@@ -239,10 +240,12 @@ yoolstation
 
         function getFilteredData() {
             let filteredData = [...tableState.fullData];
+            const annualTrafficHeader = updateHeadersForTimeframe(['Monthly Organic Traffic'], 'annual')[0];
+            const monthlyTrafficHeader = updateHeadersForTimeframe(['Monthly Organic Traffic'], 'monthly')[0];
 
             if (tableState.hideZeroTraffic) {
                 filteredData = filteredData.filter(row => {
-                    const traffic = row['Monthly Organic Traffic'];
+                    const traffic = row[annualTrafficHeader] || row[monthlyTrafficHeader];
                     return typeof traffic === 'number' && traffic > 0;
                 });
             }
@@ -262,19 +265,19 @@ yoolstation
                 });
             }
             if (tableState.sortKey) {
-                const currentSortKeyBase = tableState.sortKey.split(' (')[0]; 
+                const currentSortKeyBase = tableState.sortKey.replace('Annual', 'Monthly').split(' (')[0]; 
 
                 const numericHeadersBase = [
                     'Monthly Google Searches', 'Highest Competitor Rank', 'Top Competitor Monthly Organic Traffic', '# Ranking Competitors',
                     'Opportunity Score', 'On-Site Searches', 'Total Monthly Google Searches', 'Total On-Site Searches',
                     'Total Competitor Monthly Organic Traffic', 'Gap Keyword Count', 'Competitor Avg. Rank', 'Our Rank',
-                    'Our Monthly Organic Traffic', 'Best Competitor Rank', 'Best Competitor Monthly Organic Traffic',
+                    'Our Monthly Organic Traffic', 'Best Competitor Monthly Organic Traffic',
                     'Traffic Growth Opportunity', 'Keyword Count', 'Avg Our Rank', 'Total Our Traffic',
                     'Avg Best Competitor Rank', 'Total Best Competitor Traffic', 'Total Traffic Growth Opportunity',
                     'Total Monthly Google Traffic', 'Monthly Organic Traffic', 'Facet Value Score'
                 ];
                 const isNumeric = numericHeadersBase.includes(currentSortKeyBase);
-                const isMarketShareCol = tableState.competitorDomainHeaders && tableState.competitorDomainHeaders.includes(currentSortKeyBase);
+                const isMarketShareCol = tableState.competitorDomainHeaders && tableState.competitorDomainHeaders.includes(tableState.sortKey);
 
                 filteredData.sort((a, b) => {
                     const valA = a[tableState.sortKey];
@@ -305,35 +308,37 @@ yoolstation
         
         function calculateTotalRow(headers, data) {
             const totals = {};
-            const summationCols = ['Monthly Google Searches', 'Top Competitor Monthly Organic Traffic', 'On-Site Searches', 'Total Monthly Google Searches', 'Total On-Site Searches', 'Total Competitor Monthly Organic Traffic', 'Gap Keyword Count', 'Our Monthly Organic Traffic', 'Best Competitor Monthly Organic Traffic', 'Traffic Growth Opportunity', 'Keyword Count', 'Total Our Traffic', 'Total Best Competitor Traffic', 'Total Traffic Growth Opportunity', 'Total Monthly Google Traffic', 'Monthly Organic Traffic'];
-            const averageCols = ['Highest Competitor Rank', 'Opportunity Score', 'Competitor Avg. Rank', 'Our Rank', 'Best Competitor Rank', 'Avg Our Rank', 'Avg Best Competitor Rank', '# Ranking Competitors', 'Facet Value Score'];
-
-            const grandTotalTraffic = data.reduce((sum, row) => sum + (row['Total Monthly Google Traffic'] || 0), 0);
-
+            const summationBases = ['Google Searches', 'Organic Traffic', 'On-Site Searches', 'Gap Keyword Count', 'Growth Opportunity', 'Keyword Count', 'Total Our Traffic', 'Total Best Competitor Traffic', 'Total Traffic Growth Opportunity', 'Total Google Traffic'];
+            const averageBases = ['Rank', 'Score', '# Ranking Competitors'];
+            
+            const totalTrafficHeader = headers.find(h => h.includes('Total') && h.includes('Google Traffic'));
+            const grandTotalTraffic = data.reduce((sum, row) => sum + (row[totalTrafficHeader] || 0), 0);
+            
             headers.forEach(header => {
-                const cleanHeader = header.split(' (')[0];
                 const isMarketShareCol = tableState.competitorDomainHeaders && tableState.competitorDomainHeaders.includes(header);
                 
                 if (isMarketShareCol) {
                     const competitorTotalTraffic = data.reduce((sum, row) => sum + (row[header] ? row[header][1] : 0), 0);
                     const overallShare = grandTotalTraffic > 0 ? (competitorTotalTraffic / grandTotalTraffic) * 100 : 0;
-                    totals[header] = `${overallShare.toFixed(1)}% (${competitorTotalTraffic.toLocaleString()})`;
+                    totals[header] = `${overallShare.toFixed(1)}% (${(competitorTotalTraffic || 0).toLocaleString()})`;
                     return;
                 }
 
-                let total = 0;
+                const isSummationCol = summationBases.some(base => header.includes(base));
+                const isAverageCol = averageBases.some(base => header.includes(base));
+
                 const values = data.map(row => {
                     const rawValue = row[header];
                     const cleanValue = parseFloat(String(rawValue).replace(/<[^>]*>?/gm, '').replace(/,/g, ''));
                     return isNaN(cleanValue) ? 0 : cleanValue;
                 });
-
-                if (summationCols.includes(cleanHeader)) {
-                    total = values.reduce((sum, val) => sum + val, 0);
+                
+                if (isSummationCol) {
+                    const total = values.reduce((sum, val) => sum + val, 0);
                     totals[header] = Math.round(total).toLocaleString();
-                } else if (averageCols.includes(cleanHeader)) {
+                } else if (isAverageCol) {
                     const sum = values.reduce((sum, val) => sum + val, 0);
-                    total = data.length > 0 ? sum / data.length : 0;
+                    const total = data.length > 0 ? sum / data.length : 0;
                     totals[header] = total.toFixed(1);
                 } else {
                     totals[header] = '';
@@ -343,31 +348,24 @@ yoolstation
             return totals;
         }
 
-        function createNestedKeywordTable(keywordDetails, shouldHideZeroTraffic) {
-            if (!keywordDetails || keywordDetails.length === 0) {
+        function createNestedKeywordTable(keywordDetails) {
+             if (!keywordDetails || keywordDetails.length === 0) {
                 return '<div class="p-4 text-center text-gray-500">No keyword details available.</div>';
             }
+            
+            let currentHeaders = ['Keyword', 'Monthly Google Searches', 'On-Site Searches', 'Monthly Organic Traffic', 'Top Ranking Competitor', 'Rank', 'URL'];
+            let headers = updateHeadersForTimeframe(currentHeaders, tableState.timeframe);
 
-            let filteredKeywords = keywordDetails;
-            if (shouldHideZeroTraffic) {
-                filteredKeywords = keywordDetails.filter(kw => kw['Monthly Organic Traffic'] > 0);
-            }
-
-            if (filteredKeywords.length === 0) {
-                return '<div class="p-4 text-center text-gray-500">No matching keyword details to display based on current filters.</div>';
-            }
-
-            const headers = ['Keyword', 'Monthly Google Searches', 'On-Site Searches', 'Monthly Organic Traffic', 'Top Ranking Competitor', 'Rank', 'URL'];
             let tableHtml = '<table class="nested-table"><thead><tr>';
             headers.forEach(h => tableHtml += `<th>${h}</th>`);
             tableHtml += '</tr></thead><tbody>';
 
-            filteredKeywords.forEach(kw => {
+            keywordDetails.forEach(kw => {
                 tableHtml += `<tr>
                     <td>${kw.Keyword || ''}</td>
-                    <td>${(kw['Monthly Google Searches'] || 0).toLocaleString()}</td>
-                    <td>${(kw['On-Site Searches'] || 0).toLocaleString()}</td>
-                    <td>${(kw['Monthly Organic Traffic'] || 0).toLocaleString()}</td>
+                    <td>${(Math.round(kw[headers[1]] || 0)).toLocaleString()}</td>
+                    <td>${(kw[headers[2]] || 0).toLocaleString()}</td>
+                    <td>${(Math.round(kw[headers[3]] || 0)).toLocaleString()}</td>
                     <td>${kw['Top Ranking Competitor'] || ''}</td>
                     <td>${kw.Rank || ''}</td>
                     <td><a href="${kw.URL}" target="_blank" class="text-blue-600 hover:underline break-all">${kw.URL}</a></td>
@@ -385,21 +383,20 @@ yoolstation
 
             const hasOnsiteData = facetValueDetails[0].hasOwnProperty('Total On-Site Searches');
             let headers = ['Facet Value', 'Keyword Count', 'Monthly Organic Traffic', 'Total Monthly Google Searches'];
-            if (hasOnsiteData) {
-                headers.push('Total On-Site Searches');
-            }
+            if (hasOnsiteData) headers.push('Total On-Site Searches');
+            let displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
 
             let tableHtml = '<table class="nested-table"><thead><tr>';
-            headers.forEach(h => tableHtml += `<th>${h}</th>`);
+            displayHeaders.forEach(h => tableHtml += `<th>${h}</th>`);
             tableHtml += '</tr></thead><tbody>';
 
             facetValueDetails.forEach(detail => {
                 tableHtml += `<tr>
                     <td class="font-semibold">${detail['Facet Value'] || ''}</td>
                     <td>${(detail['Keyword Count'] || 0).toLocaleString()}</td>
-                    <td>${(detail['Monthly Organic Traffic'] || 0).toLocaleString()}</td>
-                    <td>${(detail['Total Monthly Google Searches'] || 0).toLocaleString()}</td>
-                    ${hasOnsiteData ? `<td>${(detail['Total On-Site Searches'] || 0).toLocaleString()}</td>` : ''}
+                    <td>${(Math.round(detail[displayHeaders[2]] || 0)).toLocaleString()}</td>
+                    <td>${(Math.round(detail[displayHeaders[3]] || 0)).toLocaleString()}</td>
+                    ${hasOnsiteData ? `<td>${(detail[displayHeaders[4]] || 0).toLocaleString()}</td>` : ''}
                 </tr>`;
             });
 
@@ -412,8 +409,9 @@ yoolstation
             
             const isNestableReport = data[0] && (data[0].hasOwnProperty('KeywordDetails') || data[0].hasOwnProperty('FacetValueDetails'));
             
+            const baseFacetHeaders = ['Category Mapping', 'Facet Type', 'Monthly Organic Traffic', 'Total Monthly Google Searches', 'Total On-Site Searches', 'Facet Value Score'];
             const facetHeaders = isNestableReport 
-                ? headers.filter(h => h !== 'Category Mapping' && h !== 'Facet Type' && h !== 'Monthly Organic Traffic' && h !== 'Total Monthly Google Searches' && h !== 'Total On-Site Searches' && h !== 'Facet Value Score')
+                ? headers.filter(h => !baseFacetHeaders.some(base => h.includes(base)))
                 : [];
             
             let headerHtml = '';
@@ -443,6 +441,7 @@ yoolstation
                     let val = row[h];
                     let cellClass = 'p-3 border-t text-sm';
                     const isFacetColumn = isNestableReport && facetHeaders.includes(h);
+                    const isNumericDataCol = !h.toLowerCase().includes('rank') && !h.toLowerCase().includes('score') && (typeof val === 'number' || val === null);
 
                     if (isFacetColumn) {
                         cellClass += ' facet-cell';
@@ -451,9 +450,9 @@ yoolstation
                             val = '—';
                         }
                     } else if (Array.isArray(val)) { 
-                        val = `${val[0].toFixed(1)}% (${val[1].toLocaleString()})`;
-                    } else if (typeof val === 'number' && val > 999 && !h.toLowerCase().includes('rank') && !h.toLowerCase().includes('score')) {
-                        val = val.toLocaleString();
+                        val = `${val[0].toFixed(1)}% (${(val[1] || 0).toLocaleString()})`;
+                    } else if (isNumericDataCol) {
+                        val = Math.round(val || 0).toLocaleString();
                     }
                     
                     return `<td class="${cellClass}">${val !== null && val !== undefined ? val : ''}</td>`;
@@ -464,7 +463,7 @@ yoolstation
                 if (isNestableReport) {
                     let nestedHtml = '';
                     if (row.KeywordDetails) {
-                        nestedHtml = createNestedKeywordTable(row.KeywordDetails, tableState.hideZeroTraffic);
+                        nestedHtml = createNestedKeywordTable(row.KeywordDetails);
                     } else if (row.FacetValueDetails) {
                         nestedHtml = createNestedFacetValueTable(row.FacetValueDetails);
                     }
@@ -494,7 +493,8 @@ yoolstation
 
         function createReportContainer(title, subtitle, customContent = '', extraDescription = '') {
             const regexTipHtml = `<div class="tooltip-container"><svg class="tooltip-icon h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg><span class="tooltip-text"><b>Regex Search Tips:</b><br><code>^word</code> &ndash; Starts with 'word'<br><code>word$</code> &ndash; Ends with 'word'<br><code>word1|word2</code> &ndash; Has 'word1' or 'word2'<br><code>\\bword\\b</code> &ndash; Matches whole word</span></div>`;
-            return `<div class="bg-white p-6 rounded-xl shadow-lg" data-report-title="${title}"><div class="flex flex-wrap justify-between items-center mb-6 border-b pb-4 gap-4"><div><h2 class="text-2xl font-bold">${title}</h2><p class="text-sm text-gray-600 mt-1">${subtitle}</p></div><div class="flex items-center space-x-2"><button data-export-type="excel" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export Excel</button><button data-export-type="pdf" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export PDF</button><button class="back-to-lenses-btn text-sm font-semibold text-blue-600 hover:underline">&larr; Back to Lenses</button></div></div>${extraDescription ? `<div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 p-3 rounded-md mb-4">${extraDescription}</div>` : ''}<div class="flex justify-between items-center mb-4"><div class="flex items-center gap-2"><input type="text" id="table-search-input" placeholder="Filter with text or regex..." class="w-full md:w-auto p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500">${regexTipHtml}</div>${customContent}</div><div id="interactive-table-wrapper"></div><div id="pagination-controls-wrapper" class="flex flex-wrap justify-between items-center mt-4 gap-4"></div></div>`;
+            const timeframeToggle = `<div class="flex items-center"><span class="text-sm font-semibold mr-2">Timeframe:</span><button data-timeframe="monthly" class="scope-toggle-btn text-xs font-semibold py-1 px-3 rounded-l-md ${tableState.timeframe === 'monthly' ? 'active' : ''}">Monthly</button><button data-timeframe="annual" class="scope-toggle-btn text-xs font-semibold py-1 px-3 rounded-r-md ${tableState.timeframe === 'annual' ? 'active' : ''}">Annual</button></div>`;
+            return `<div class="bg-white p-6 rounded-xl shadow-lg" data-report-title="${title}"><div class="flex flex-wrap justify-between items-center mb-6 border-b pb-4 gap-4"><div><h2 class="text-2xl font-bold">${title}</h2><p class="text-sm text-gray-600 mt-1">${subtitle}</p></div><div class="flex items-center space-x-2"><button data-export-type="excel" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export Excel</button><button data-export-type="pdf" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export PDF</button><button class="back-to-lenses-btn text-sm font-semibold text-blue-600 hover:underline">&larr; Back to Lenses</button></div></div>${extraDescription ? `<div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 p-3 rounded-md mb-4">${extraDescription}</div>` : ''}<div class="flex flex-wrap justify-between items-center mb-4 gap-4"><div class="flex items-center gap-2"><input type="text" id="table-search-input" placeholder="Filter with text or regex..." class="w-full md:w-auto p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500">${regexTipHtml}</div><div class="flex items-center gap-4">${customContent}${timeframeToggle}</div></div><div id="interactive-table-wrapper"></div><div id="pagination-controls-wrapper" class="flex flex-wrap justify-between items-center mt-4 gap-4"></div></div>`;
         }
 
         function exportCategoryOverhaulToExcel(data, headers, fileName) {
@@ -512,7 +512,7 @@ yoolstation
             };
 
             const topLevelHeaders = headers.filter(h => h !== ''); 
-            const keyGenHeaders = topLevelHeaders.filter(h => h !== 'Monthly Organic Traffic' && h !== 'Total Monthly Google Searches' && h !== 'Total On-Site Searches' && h !== 'Facet Value Score');
+            const keyGenHeaders = topLevelHeaders.filter(h => !h.includes('Traffic') && !h.includes('Searches') && !h.includes('Score'));
             const topLevelData = data.map(row => {
                 const newRow = {};
                 topLevelHeaders.forEach(header => {
@@ -526,6 +526,7 @@ yoolstation
             XLSX.utils.book_append_sheet(wb, ws1, "Category Matrix");
 
             const keywordBreakdownData = [];
+            const annualSuffix = tableState.timeframe === 'annual' ? 'Annual' : 'Monthly';
             
             data.forEach(parentRow => {
                 const rowKey = createRowKey(parentRow, keyGenHeaders);
@@ -535,10 +536,9 @@ yoolstation
                         keyGenHeaders.forEach(pHeader => {
                             newBreakdownRow[pHeader] = parentRow[pHeader];
                         });
-                        newBreakdownRow['Keyword'] = keywordRow.Keyword;
-                        newBreakdownRow['Monthly Google Searches'] = keywordRow['Monthly Google Searches'];
+                        newBreakdownRow[`${annualSuffix} Google Searches`] = keywordRow[`${annualSuffix} Google Searches`];
                         newBreakdownRow['On-Site Searches'] = keywordRow['On-Site Searches'];
-                        newBreakdownRow['Monthly Organic Traffic'] = keywordRow['Monthly Organic Traffic'];
+                        newBreakdownRow[`${annualSuffix} Organic Traffic`] = keywordRow[`${annualSuffix} Organic Traffic`];
                         newBreakdownRow['Top Ranking Competitor'] = keywordRow['Top Ranking Competitor'];
                         newBreakdownRow['Rank'] = keywordRow.Rank;
                         newBreakdownRow['Ranking URL'] = keywordRow.URL;
@@ -558,8 +558,6 @@ yoolstation
 
         function exportFacetPotentialToExcel(data, headers, fileName) {
             const wb = XLSX.utils.book_new();
-
-            // Sheet 1: The top-level summary view
             const topLevelHeaders = headers.filter(h => h !== ''); 
             const topLevelData = data.map(row => {
                 const newRow = {};
@@ -572,8 +570,9 @@ yoolstation
             const ws1 = XLSX.utils.json_to_sheet(topLevelData, { header: topLevelHeaders });
             XLSX.utils.book_append_sheet(wb, ws1, "Facet Potential Summary");
 
-            // Sheet 2: The detailed breakdown of facet values
             const valueBreakdownData = [];
+            const annualSuffix = tableState.timeframe === 'annual' ? 'Annual' : 'Monthly';
+
             data.forEach(parentRow => {
                 if (parentRow.FacetValueDetails && parentRow.FacetValueDetails.length > 0) {
                     parentRow.FacetValueDetails.forEach(detailRow => {
@@ -582,8 +581,8 @@ yoolstation
                             'Facet Type': parentRow['Facet Type'],
                             'Facet Value': detailRow['Facet Value'],
                             'Keyword Count': detailRow['Keyword Count'],
-                            'Monthly Organic Traffic': detailRow['Monthly Organic Traffic'],
-                            'Total Monthly Google Searches': detailRow['Total Monthly Google Searches'],
+                            [`${annualSuffix} Organic Traffic`]: detailRow[`${annualSuffix} Organic Traffic`],
+                            [`Total ${annualSuffix} Google Searches`]: detailRow[`Total ${annualSuffix} Google Searches`],
                         };
                         if (detailRow.hasOwnProperty('Total On-Site Searches')) {
                             newBreakdownRow['Total On-Site Searches'] = detailRow['Total On-Site Searches'];
@@ -608,7 +607,7 @@ yoolstation
                 exportHeaders.forEach(header => {
                     let rawValue = row[header];
                     if (Array.isArray(rawValue)) {
-                        rawValue = `${rawValue[0].toFixed(1)}% (${rawValue[1].toLocaleString()})`;
+                        rawValue = `${rawValue[0].toFixed(1)}% (${(rawValue[1] || 0).toLocaleString()})`;
                     }
                     const cleanValue = typeof rawValue === 'string' ? String(rawValue).replace(/<[^>]*>?/gm, '') : rawValue;
                     newRow[header] = cleanValue;
@@ -628,7 +627,7 @@ yoolstation
             const body = data.map(row => exportHeaders.map(header => {
                 let rawValue = row[header];
                 if (Array.isArray(rawValue)) {
-                    rawValue = `${rawValue[0].toFixed(1)}% (${rawValue[1].toLocaleString()})`;
+                    rawValue = `${rawValue[0].toFixed(1)}% (${(rawValue[1] || 0).toLocaleString()})`;
                 }
                 return typeof rawValue === 'string' ? String(rawValue).replace(/<[^>]*>?/gm, '') : rawValue;
             }));
@@ -731,25 +730,26 @@ yoolstation
 
         function handleResultsNavigation(e) {
             const target = e.target;
+            const reportContainer = target.closest('[data-report-title]');
 
             const exportBtn = target.closest('.export-btn');
             if (exportBtn) {
                 const exportType = exportBtn.dataset.exportType;
-                const reportContainer = target.closest('[data-report-title]');
                 const title = reportContainer ? reportContainer.dataset.reportTitle : 'Report';
                 const fileName = title.replace(/[^\w\s]/gi, '').replace(/\s+/g, '_');
                 const dataToExport = getFilteredData();
+                const headersToExport = updateHeadersForTimeframe(tableState.headers, tableState.timeframe);
 
                 if (title.includes('Category Overhaul Matrix') && exportType === 'excel') {
-                    exportCategoryOverhaulToExcel(dataToExport, tableState.headers, fileName);
+                    exportCategoryOverhaulToExcel(dataToExport, headersToExport, fileName);
                 }
                 else if (title.includes('Facet Potential Analysis') && exportType === 'excel') {
-                    exportFacetPotentialToExcel(dataToExport, tableState.headers, fileName);
+                    exportFacetPotentialToExcel(dataToExport, headersToExport, fileName);
                 } 
                 else if (exportType === 'excel') {
-                    exportToExcel(dataToExport, tableState.headers, fileName);
+                    exportToExcel(dataToExport, headersToExport, fileName);
                 } else if (exportType === 'pdf') {
-                    exportToPdf(dataToExport, tableState.headers, fileName, title);
+                    exportToPdf(dataToExport, headersToExport, fileName, title);
                 }
                 return;
             }
@@ -768,13 +768,28 @@ yoolstation
                 return;
             } 
             const scopeBtn = target.closest('.scope-toggle-btn');
-            if (scopeBtn) {
-                const lensType = scopeBtn.closest('[data-report-title]').dataset.reportTitle;
+            if (scopeBtn && scopeBtn.dataset.scope) {
+                const lensType = reportContainer.dataset.reportTitle;
                 if (lensType.includes('Content Gaps')) renderTopicGapAnalysisView(scopeBtn.dataset.scope);
                 else if (lensType.includes('Competitive Opportunities')) renderTopicThreatsAnalysisView(scopeBtn.dataset.scope);
                 else if (lensType.includes('Market Share')) renderGroupMarketShareView(scopeBtn.dataset.scope);
                 return;
             }
+            if (scopeBtn && scopeBtn.dataset.timeframe) {
+                tableState.timeframe = scopeBtn.dataset.timeframe;
+                const lensType = reportContainer.dataset.reportTitle;
+                
+                if (lensType.includes('Content Gaps | Individual')) renderKeywordGapAnalysisView();
+                else if (lensType.includes('Content Gaps | Keyword Groups')) renderTopicGapAnalysisView(document.querySelector('.scope-toggle-btn.active[data-scope]').dataset.scope);
+                else if (lensType.includes('Competitive Opportunities | Individual')) renderKeywordThreatsAnalysisView();
+                else if (lensType.includes('Competitive Opportunities | Keyword Groups')) renderTopicThreatsAnalysisView(document.querySelector('.scope-toggle-btn.active[data-scope]').dataset.scope);
+                else if (lensType.includes('Market Share | Individual')) renderKeywordMarketShareView();
+                else if (lensType.includes('Market Share | Keyword Groups')) renderGroupMarketShareView(document.querySelector('.scope-toggle-btn.active[data-scope]').dataset.scope);
+                else if (lensType.includes('Category Overhaul Matrix')) renderCategoryOverhaulMatrixView();
+                else if (lensType.includes('Facet Potential Analysis')) renderFacetPotentialAnalysisView();
+                return;
+            }
+
             const viewKeywordsBtn = target.closest('.view-keywords-btn');
             if (viewKeywordsBtn) {
                 const mapSource = viewKeywordsBtn.dataset.mapSource;
@@ -1066,9 +1081,89 @@ yoolstation
             html += `</div>`;
             ui.resultsContainer.innerHTML = html;
         }
+        
+        const monthlyToAnnualCols = [
+            'Monthly Google Searches', 'Total Monthly Google Searches', 'Monthly Organic Traffic',
+            'Top Competitor Monthly Organic Traffic', 'Total Competitor Monthly Organic Traffic',
+            'Our Monthly Organic Traffic', 'Best Competitor Monthly Organic Traffic',
+            'Traffic Growth Opportunity', 'Total Our Traffic', 'Total Best Competitor Traffic',
+            'Total Traffic Growth Opportunity', 'Total Monthly Google Traffic'
+        ];
+        
+        function updateHeadersForTimeframe(headers, timeframe) {
+            if (timeframe === 'annual') {
+                return headers.map(h => h.replace(/Monthly/g, 'Annual'));
+            }
+            return headers.map(h => h.replace(/Annual/g, 'Monthly'));
+        }
+
+        function transformDataForTimeframe(data, timeframe) {
+            if (timeframe === 'monthly') return JSON.parse(JSON.stringify(data));
+            
+            const annualizedData = JSON.parse(JSON.stringify(data)); 
+
+            annualizedData.forEach(row => {
+                // Transform top-level rows
+                monthlyToAnnualCols.forEach(col => {
+                    const annualCol = col.replace('Monthly', 'Annual');
+                    if (row.hasOwnProperty(col)) {
+                        if (row[col] !== null && row[col] !== undefined) {
+                            row[annualCol] = row[col] * 12;
+                        } else {
+                            row[annualCol] = null;
+                        }
+                        delete row[col];
+                    }
+                });
+
+                // Transform market share columns [percentage, traffic]
+                Object.keys(row).forEach(key => {
+                    if (Array.isArray(row[key]) && row[key].length === 2 && typeof row[key][1] === 'number') {
+                        row[key][1] *= 12;
+                    }
+                });
+
+                // Transform nested KeywordDetails
+                if (row.KeywordDetails) {
+                    row.KeywordDetails.forEach(detail => {
+                        monthlyToAnnualCols.forEach(col => {
+                           const annualCol = col.replace('Monthly', 'Annual');
+                            if (detail.hasOwnProperty(col)) {
+                                if (detail[col] !== null && detail[col] !== undefined) {
+                                    detail[annualCol] = detail[col] * 12;
+                                } else {
+                                    detail[annualCol] = null;
+                                }
+                                delete detail[col];
+                            }
+                        });
+                    });
+                }
+                
+                // Transform nested FacetValueDetails
+                if (row.FacetValueDetails) {
+                    row.FacetValueDetails.forEach(detail => {
+                        monthlyToAnnualCols.forEach(col => {
+                            const annualCol = col.replace('Monthly', 'Annual');
+                            if (detail.hasOwnProperty(col)) {
+                                if (detail[col] !== null && detail[col] !== undefined) {
+                                    detail[annualCol] = detail[col] * 12;
+                                } else {
+                                    detail[annualCol] = null;
+                                }
+                                delete detail[col];
+                            }
+                        });
+                    });
+                }
+            });
+            return annualizedData;
+        }
 
         function renderKeywordGapAnalysisView() {
             const { keywordGapReport, hasOnsiteData, onsiteDateRange } = analysisResults;
+            const transformedData = transformDataForTimeframe(keywordGapReport, tableState.timeframe);
+
             const dateSuffix = onsiteDateRange ? ` (${onsiteDateRange})` : '';
             const onsiteSearchesHeader = `On-Site Searches${dateSuffix}`;
             const opportunityScoreHeader = 'Opportunity Score';
@@ -1078,12 +1173,17 @@ yoolstation
             if (hasOnsiteData) {
                 headers.push(onsiteSearchesHeader, opportunityScoreHeader);
             }
+            const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
 
-            const displayData = keywordGapReport.map(row => {
+            const displayData = transformedData.map(row => {
                 const newRow = {
-                    'Keyword': row['Keyword'], 'Monthly Google Searches': row['Monthly Google Searches'], '# Ranking Competitors': row['# Ranking Competitors'],
-                    'Top Ranking Competitor': row['Top Ranking Competitor'], 'Top Competitor URL': `<a href="${row['Top Competitor URL']}" target="_blank" class="text-blue-600 hover:underline break-all">${row['Top Competitor URL']}</a>`,
-                    'Highest Competitor Rank': row['Highest Competitor Rank'], 'Top Competitor Monthly Organic Traffic': row['Top Competitor Monthly Organic Traffic'],
+                    'Keyword': row['Keyword'],
+                    [displayHeaders[1]]: row[displayHeaders[1]],
+                    '# Ranking Competitors': row['# Ranking Competitors'],
+                    'Top Ranking Competitor': row['Top Ranking Competitor'],
+                    'Top Competitor URL': `<a href="${row['Top Competitor URL']}" target="_blank" class="text-blue-600 hover:underline break-all">${row['Top Competitor URL']}</a>`,
+                    'Highest Competitor Rank': row['Highest Competitor Rank'],
+                    [displayHeaders[6]]: row[displayHeaders[6]],
                 };
                 if(hasOnsiteData) {
                     newRow[onsiteSearchesHeader] = row['On-Site Searches'];
@@ -1096,11 +1196,13 @@ yoolstation
             const scoreDescription = `The <strong>Opportunity Score</strong> is a 0-100 metric calculated by weighting on-site search volume (25%), Google search volume (40%), and the top competitor's traffic (35%) to prioritise your most valuable content gaps.`;
             const description = GAP_ANALYSIS_CAVEAT + (hasOnsiteData ? `<br><br>${scoreDescription}`: '');
             ui.resultsContainer.innerHTML = createReportContainer('Content Gaps | Individual Keywords', subtitle, '', description);
-            initializeTable(displayData, headers, hasOnsiteData ? 'Opportunity Score' : 'Monthly Google Searches', 'Keyword');
+            initializeTable(displayData, displayHeaders, hasOnsiteData ? 'Opportunity Score' : displayHeaders[1], 'Keyword');
         }
 
         function renderTopicGapAnalysisView(scope = 'core') {
             const reportData = (scope === 'core') ? analysisResults.coreTopicGapReport : analysisResults.topicGapReport;
+            const transformedData = transformDataForTimeframe(reportData, tableState.timeframe);
+
             const { hasOnsiteData, onsiteDateRange } = analysisResults;
             const dateSuffix = onsiteDateRange ? ` (${onsiteDateRange})` : '';
             
@@ -1111,17 +1213,20 @@ yoolstation
             if(hasOnsiteData) {
                 headers = ['Keyword Group', 'TopicID', opportunityScoreHeader, 'Total Monthly Google Searches', totalOnsiteSearchesHeader, 'Total Competitor Monthly Organic Traffic', 'Gap Keyword Count', 'Competitor Avg. Rank'];
             }
+            const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
 
-            const displayData = reportData.map(row => {
+            const displayData = transformedData.map(row => {
                 const rowData = {
-                    'Keyword Group': row['Keyword Group'], 'TopicID': row['TopicID'], 'Total Monthly Google Searches': row['Total Monthly Google Searches'], 
-                    'Total Competitor Monthly Organic Traffic': row['Total Competitor Monthly Organic Traffic'],
+                    'Keyword Group': row['Keyword Group'], 'TopicID': row['TopicID'], 
+                    [displayHeaders[2]]: row[displayHeaders[2]],
+                    [displayHeaders[3]]: row[displayHeaders[3]],
                     'Gap Keyword Count': `<button class="text-blue-600 hover:underline view-keywords-btn" data-map-source="${scope}" data-topic-id="${row['TopicID']}">${row['Gap Keyword Count']}</button>`,
                     'Competitor Avg. Rank': row['Competitor Avg. Rank']
                 };
                 if(hasOnsiteData) {
                     rowData[totalOnsiteSearchesHeader] = row['Total On-Site Searches'];
                     rowData[opportunityScoreHeader] = row['Opportunity Score'];
+                    rowData[displayHeaders[5]] = row[displayHeaders[5]];
                 }
                 return rowData;
             });
@@ -1132,44 +1237,57 @@ yoolstation
             const scopeToggle = `<div class="mb-4"><span class="text-sm font-semibold mr-2">Topic Scope:</span><button data-scope="core" class="scope-toggle-btn text-xs font-semibold py-1 px-3 rounded-l-md ${scope === 'core' ? 'active' : ''}">Core</button><button data-scope="full" class="scope-toggle-btn text-xs font-semibold py-1 px-3 rounded-r-md ${scope === 'full' ? 'active' : ''}">Full</button></div>`;
             ui.resultsContainer.innerHTML = createReportContainer('Content Gaps | Keyword Groups', subtitle, scopeToggle, fullDescription);
             
-            const displayHeaders = headers.filter(h => h !== 'TopicID'); 
+            const finalTableHeaders = displayHeaders.filter(h => h !== 'TopicID'); 
             const dataForTable = displayData.map(row => { 
                 const newRow = {...row}; 
                 delete newRow.TopicID;
                 return newRow; 
             });
 
-            initializeTable(dataForTable, displayHeaders, hasOnsiteData ? 'Opportunity Score' : 'Total Monthly Google Searches', 'Keyword Group');
+            initializeTable(dataForTable, finalTableHeaders, hasOnsiteData ? 'Opportunity Score' : finalTableHeaders[1], 'Keyword Group');
         }
 
         function renderKeywordThreatsAnalysisView() {
             const { keywordThreatsReport } = analysisResults;
+            const transformedData = transformDataForTimeframe(keywordThreatsReport, tableState.timeframe);
+            
             const headers = ['Keyword', 'Monthly Google Searches', 'Our Rank', 'Our URL', 'Our Monthly Organic Traffic', 'Best Competitor', 'Best Competitor Rank', 'Best Competitor URL', 'Best Competitor Monthly Organic Traffic', 'Traffic Growth Opportunity'];
-            const displayData = keywordThreatsReport.map(row => ({
-                'Keyword': row['Keyword'], 'Monthly Google Searches': row['Monthly Google Searches'], 'Our Rank': row['Our Rank'],
+            const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
+            
+            const displayData = transformedData.map(row => ({
+                'Keyword': row['Keyword'], 
+                [displayHeaders[1]]: row[displayHeaders[1]], 
+                'Our Rank': row['Our Rank'],
                 'Our URL': `<a href="${row['Our URL']}" target="_blank" class="text-blue-600 hover:underline break-all">${row['Our URL']}</a>`,
-                'Our Monthly Organic Traffic': Math.round(row['Our Monthly Organic Traffic']), 'Best Competitor': row['Best Competitor'],
+                [displayHeaders[4]]: row[displayHeaders[4]], 
+                'Best Competitor': row['Best Competitor'],
                 'Best Competitor Rank': row['Best Competitor Rank'],
                 'Best Competitor URL': `<a href="${row['Best Competitor URL']}" target="_blank" class="text-blue-600 hover:underline break-all">${row['Best Competitor URL']}</a>`,
-                'Best Competitor Monthly Organic Traffic': Math.round(row['Best Competitor Monthly Organic Traffic']),
-                'Traffic Growth Opportunity': Math.round(row['Traffic Growth Opportunity'])
+                [displayHeaders[8]]: row[displayHeaders[8]],
+                [displayHeaders[9]]: row[displayHeaders[9]]
             }));
             const subtitle = "Keywords where competitors outrank you, prioritised by the potential traffic gain.";
             ui.resultsContainer.innerHTML = createReportContainer('Competitive Opportunities | Individual Keywords', subtitle);
-            initializeTable(displayData, headers, 'Traffic Growth Opportunity', 'Keyword');
+            initializeTable(displayData, displayHeaders, displayHeaders[9], 'Keyword');
         }
 
         function renderTopicThreatsAnalysisView(scope = 'core') {
             const reportData = (scope === 'core') ? analysisResults.coreTopicThreatsReport : analysisResults.topicThreatsReport;
+            const transformedData = transformDataForTimeframe(reportData, tableState.timeframe);
             const mapSource = (scope === 'core') ? 'core-threats' : 'topic-threats';
             
             const headers = ['Keyword Group', 'TopicID', 'Keyword Count', 'Total Monthly Google Searches', 'Avg Our Rank', 'Total Our Traffic', 'Avg Best Competitor Rank', 'Total Best Competitor Traffic', 'Total Traffic Growth Opportunity'];
-            const displayData = reportData.map(row => ({
+            const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
+
+            const displayData = transformedData.map(row => ({
                 'Keyword Group': row['Keyword Group'], 'TopicID': row['TopicID'],
                 'Keyword Count': `<button class="text-blue-600 hover:underline view-keywords-btn" data-map-source="${mapSource}" data-topic-id="${row['TopicID']}">${row['Keyword Count']}</button>`,
-                'Total Monthly Google Searches': row['Total Monthly Google Searches'], 'Avg Our Rank': row['Avg Our Rank'],
-                'Total Our Traffic': Math.round(row['Total Our Traffic']), 'Avg Best Competitor Rank': row['Avg Best Competitor Rank'],
-                'Total Best Competitor Traffic': Math.round(row['Total Best Competitor Traffic']), 'Total Traffic Growth Opportunity': Math.round(row['Total Traffic Growth Opportunity'])
+                [displayHeaders[3]]: row[displayHeaders[3]], 
+                'Avg Our Rank': row['Avg Our Rank'],
+                [displayHeaders[5]]: row[displayHeaders[5]], 
+                'Avg Best Competitor Rank': row['Avg Best Competitor Rank'],
+                [displayHeaders[7]]: row[displayHeaders[7]], 
+                [displayHeaders[8]]: row[displayHeaders[8]]
             }));
 
             const subtitle = "Topic groups where competitors outrank you, prioritised by the total potential traffic gain. 'Core' shows topics where the competitor is in the Top 10.";
@@ -1178,46 +1296,51 @@ yoolstation
             
             ui.resultsContainer.innerHTML = createReportContainer('Competitive Opportunities | Keyword Groups', subtitle, scopeToggle, threatsDescription);
             
-            const displayHeaders = headers.filter(h => h !== 'TopicID'); 
+            const finalTableHeaders = displayHeaders.filter(h => h !== 'TopicID'); 
             const dataForTable = displayData.map(row => { 
                 const newRow = {...row}; 
                 delete newRow.TopicID;
                 return newRow; 
             });
 
-            initializeTable(dataForTable, displayHeaders, 'Total Traffic Growth Opportunity', 'Keyword Group');
+            initializeTable(dataForTable, finalTableHeaders, finalTableHeaders[7], 'Keyword Group');
         }
         
         function renderKeywordMarketShareView() {
             const { keywordMarketShareReport, ourDomain, competitorDomains, columnMap } = analysisResults;
+            const transformedData = transformDataForTimeframe(keywordMarketShareReport, tableState.timeframe);
+            
             const allDomains = [ourDomain, ...competitorDomains];
             const keywordColName = columnMap.keywordCol || 'Keyword';
             const headers = [keywordColName, 'Total Monthly Google Traffic', ...allDomains];
+            const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
             
-            const displayData = keywordMarketShareReport.map(row => {
-                const newRow = { 'Keyword': row['Keyword'], 'Total Monthly Google Traffic': row['Total Monthly Google Traffic'] };
+            const displayData = transformedData.map(row => {
+                const newRow = { 'Keyword': row['Keyword'], [displayHeaders[1]]: row[displayHeaders[1]] };
                 allDomains.forEach(domain => { newRow[domain] = row[domain]; });
                 return newRow;
             });
 
             const subtitle = "Estimated traffic share for each domain on a per-keyword basis.";
             ui.resultsContainer.innerHTML = createReportContainer('Market Share | Individual Keywords', subtitle);
-            initializeTable(displayData, headers, 'Total Monthly Google Traffic', 'Keyword', allDomains);
+            initializeTable(displayData, displayHeaders, displayHeaders[1], 'Keyword', allDomains);
         }
 
         function renderGroupMarketShareView(scope = 'core') {
             const { ourDomain, competitorDomains } = analysisResults;
             const reportData = scope === 'core' ? analysisResults.coreGroupMarketShareReport : analysisResults.groupMarketShareReport;
+            const transformedData = transformDataForTimeframe(reportData, tableState.timeframe);
             const mapSource = scope === 'core' ? 'market-share-core-group' : 'market-share-group';
 
             const allDomains = [ourDomain, ...competitorDomains];
             const headers = ['Keyword Group', 'Keyword Count', 'Total Monthly Google Traffic', ...allDomains];
+            const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
 
-            const displayData = reportData.map(row => {
+            const displayData = transformedData.map(row => {
                 const newRow = {
                     'Keyword Group': row['Keyword Group'],
                     'Keyword Count': `<button class="text-blue-600 hover:underline view-keywords-btn" data-map-source="${mapSource}" data-keyword-group="${row['Keyword Group']}">${row['Keyword Count']}</button>`,
-                    'Total Monthly Google Traffic': row['Total Monthly Google Traffic']
+                    [displayHeaders[2]]: row[displayHeaders[2]]
                 };
                 allDomains.forEach(domain => { newRow[domain] = row[domain]; });
                 return newRow;
@@ -1227,26 +1350,29 @@ yoolstation
             const scopeToggle = `<div class="mb-4"><span class="text-sm font-semibold mr-2">Scope:</span><button data-scope="core" class="scope-toggle-btn text-xs font-semibold py-1 px-3 rounded-l-md ${scope === 'core' ? 'active' : ''}">Core (Rank <= 20)</button><button data-scope="full" class="scope-toggle-btn text-xs font-semibold py-1 px-3 rounded-r-md ${scope === 'full' ? 'active' : ''}">Full</button></div>`;
 
             ui.resultsContainer.innerHTML = createReportContainer('Market Share | Keyword Groups', subtitle, scopeToggle);
-            initializeTable(displayData, headers, 'Total Monthly Google Traffic', 'Keyword Group', allDomains);
+            initializeTable(displayData, displayHeaders, displayHeaders[2], 'Keyword Group', allDomains);
         }
 
         function renderCategoryOverhaulMatrixView() {
             const { categoryOverhaulMatrixReport } = analysisResults;
+            const transformedData = transformDataForTimeframe(categoryOverhaulMatrixReport, tableState.timeframe);
 
-            if (!categoryOverhaulMatrixReport || categoryOverhaulMatrixReport.length === 0) {
+            if (!transformedData || transformedData.length === 0) {
                 ui.resultsContainer.innerHTML = createReportContainer('Category Overhaul Matrix', 'No data available for this report.', '', '<p>This report could not be generated. This may happen if no traffic data was available or no facets could be extracted from competitor URLs.</p>');
                 return;
             }
             
             const allKeys = new Set();
-            categoryOverhaulMatrixReport.forEach(row => { Object.keys(row).forEach(key => allKeys.add(key)); });
+            transformedData.forEach(row => { Object.keys(row).forEach(key => allKeys.add(key)); });
             
             const preferredOrder = ['Category Mapping', 'Derived Facets', 'Sub Type'];
-            const endColumns = ['Monthly Organic Traffic', 'Total Monthly Google Searches', 'Total On-Site Searches', 'KeywordDetails'];
+            const endColumnsBases = ['Monthly Organic Traffic', 'Total Monthly Google Searches', 'Total On-Site Searches', 'KeywordDetails'];
+            const endColumns = updateHeadersForTimeframe(endColumnsBases, tableState.timeframe);
+
             let headers = [...preferredOrder.filter(h => allKeys.has(h)), ...Array.from(allKeys).filter(h => !preferredOrder.includes(h) && !endColumns.includes(h)).sort(), ...endColumns.filter(h => allKeys.has(h))];
             
             if (!analysisResults.hasOnsiteData) {
-                headers = headers.filter(h => h !== 'Total On-Site Searches');
+                headers = headers.filter(h => !h.includes('On-Site Searches'));
             }
 
             const subtitle = "Analyse competitor taxonomy to find high-value category and facet opportunities.";
@@ -1270,14 +1396,16 @@ yoolstation
             `;
             
             ui.resultsContainer.innerHTML = createReportContainer('Category Overhaul Matrix', subtitle, customContent, explainer);
-            initializeTable(categoryOverhaulMatrixReport, headers, 'Monthly Organic Traffic', 'Category Mapping');
+            const defaultSortKey = headers.find(h => h.includes('Organic Traffic'));
+            initializeTable(transformedData, headers, defaultSortKey, 'Category Mapping');
             tableState.hideZeroTraffic = false; 
         }
 
         function renderFacetPotentialAnalysisView() {
             const { facetPotentialReport, hasOnsiteData } = analysisResults;
+            const transformedData = transformDataForTimeframe(facetPotentialReport, tableState.timeframe);
             
-            if (!facetPotentialReport || facetPotentialReport.length === 0) {
+            if (!transformedData || transformedData.length === 0) {
                 ui.resultsContainer.innerHTML = createReportContainer('Facet Potential Analysis', 'No data available for this report.');
                 return;
             }
@@ -1286,12 +1414,11 @@ yoolstation
             if (hasOnsiteData) {
                 headers.push('Total On-Site Searches');
             }
-            if (!facetPotentialReport[0].hasOwnProperty('Facet Value Score')) {
+            if (!transformedData[0].hasOwnProperty('Facet Value Score')) {
                 headers = headers.filter(h => h !== 'Facet Value Score');
             }
+            const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
             
-            const displayData = facetPotentialReport;
-
             const subtitle = "A high-level view of which facet types are most associated with traffic and volume for each category.";
             const explainer = `<div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 p-3 rounded-md mb-4">
                 <b>How to use this report:</b> This analysis rolls up the detailed Category Overhaul Matrix to show you the total value of using a certain <em>type</em> of facet within a category. For example, you can see the total traffic driven by all 'Brand' facets combined for 'Power Drills', helping you prioritize adding brand filters to that category page.
@@ -1301,15 +1428,22 @@ yoolstation
 
             ui.resultsContainer.innerHTML = createReportContainer('Facet Potential Analysis', subtitle, '', explainer);
             
-            const defaultSortKey = headers.includes('Facet Value Score') ? 'Facet Value Score' : 'Monthly Organic Traffic';
-            initializeTable(displayData, headers, defaultSortKey, 'Category Mapping');
+            const defaultSortKey = displayHeaders.includes('Facet Value Score') ? 'Facet Value Score' : displayHeaders.find(h => h.includes('Organic Traffic'));
+            initializeTable(transformedData, displayHeaders, defaultSortKey, 'Category Mapping');
         }
 
         function initializeTable(data, headers, defaultSortKey, defaultSearchKey, competitorDomains = []) {
-            tableState = {
-                fullData: data, headers: headers, sortKey: defaultSortKey, sortDir: 'desc', searchTerm: '', searchKey: defaultSearchKey,
-                currentPage: 1, rowsPerPage: 25, competitorDomainHeaders: competitorDomains, hideZeroTraffic: false 
-            };
+            tableState.fullData = data;
+            tableState.headers = headers;
+            tableState.sortKey = defaultSortKey;
+            tableState.sortDir = 'desc';
+            tableState.searchTerm = '';
+            tableState.searchKey = defaultSearchKey;
+            tableState.currentPage = 1;
+            tableState.rowsPerPage = 25;
+            tableState.competitorDomainHeaders = competitorDomains;
+            tableState.hideZeroTraffic = false;
+
             renderTableAndControls();
         }
 
