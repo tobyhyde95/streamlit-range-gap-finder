@@ -874,6 +874,8 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
                 keyword_gap_agg['lower_keyword'] = keyword_gap_agg[internal_keyword_col].str.lower()
                 keyword_gap_agg = pd.merge(keyword_gap_agg, onsite_df, left_on='lower_keyword', right_on='keyword', how='left')
                 keyword_gap_agg.rename(columns={'searches': 'On-Site Searches'}, inplace=True)
+                # --- FIX: Ensure NaN values from the left join become 0 ---
+                keyword_gap_agg['On-Site Searches'] = keyword_gap_agg['On-Site Searches'].fillna(0).astype(int)
                 
                 # Re-use prelim_keywords_df if it was created during clustering
                 if 'Opportunity Score' in locals().get('prelim_keywords_df', pd.DataFrame()).columns:
