@@ -833,7 +833,7 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
                 normalized_data = scaler.fit_transform(prelim_keywords_df[valid_score_cols])
                 normalized_df = pd.DataFrame(normalized_data, columns=valid_score_cols, index=prelim_keywords_df.index)
                 
-                weights = {internal_volume_col: 0.40, 'Top Competitor Traffic': 0.35, 'On-Site Searches': 0.25}
+                weights = {internal_volume_col: 0.20, 'Top Competitor Traffic': 0.40, 'On-Site Searches': 0.40}
                 prelim_keywords_df['Opportunity Score'] = sum(normalized_df.get(col, 0) * weights[col] for col in valid_score_cols if col in weights) * 100
                 prelim_keywords_df['Opportunity Score'] = prelim_keywords_df['Opportunity Score'].round(0)
             else:
@@ -909,7 +909,7 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
                         normalized_data_agg = scaler_agg.fit_transform(topic_agg_df[valid_score_cols_agg])
                         normalized_df_agg = pd.DataFrame(normalized_data_agg, columns=valid_score_cols_agg, index=topic_agg_df.index)
                         
-                        weights_agg = {'TotalMonthlyGoogleSearches': 0.40, 'TotalCompetitorMonthlyOrganicTraffic': 0.35, 'OnSiteSearches': 0.25}
+                        weights_agg = {'TotalMonthlyGoogleSearches': 0.20, 'TotalCompetitorMonthlyOrganicTraffic': 0.40, 'OnSiteSearches': 0.40}
                         topic_agg_df['Opportunity Score'] = sum(normalized_df_agg.get(col, 0) * weights_agg.get(col, 0) for col in valid_score_cols_agg) * 100
 
                 rename_dict = {

@@ -1196,7 +1196,7 @@ yoolstation
             });
 
             const subtitle = 'Specific keywords where competitors rank, but you do not. Prioritised by Opportunity Score.';
-            const scoreDescription = `The <strong>Opportunity Score</strong> is a 0-100 metric calculated by weighting on-site search volume (25%), Google search volume (40%), and the top competitor's traffic (35%) to prioritise your most valuable content gaps.`;
+            const scoreDescription = `The <strong>Opportunity Score</strong> is a 0-100 metric calculated by weighting on-site search volume (40%), Google search volume (20%), and the top competitor's traffic (40%) to prioritise your most valuable content gaps.`;
             const description = GAP_ANALYSIS_CAVEAT + (hasOnsiteData ? `<br><br>${scoreDescription}`: '');
             ui.resultsContainer.innerHTML = createReportContainer('Content Gaps | Individual Keywords', subtitle, '', description);
             initializeTable(displayData, displayHeaders, hasOnsiteData ? 'Opportunity Score' : displayHeaders[1], 'Keyword');
