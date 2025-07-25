@@ -817,38 +817,33 @@ yoolstation
                     <details>
                         <summary class="font-bold text-lg cursor-pointer">Manual Overrides</summary>
                         <div class="mt-4">
-                            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end p-4 border rounded-md bg-white">
-                                <div class="md:col-span-1">
-                                    <label for="rule-source-column" class="block text-sm font-medium">Column</label>
-                                    <select id="rule-source-column" class="mt-1 block w-full p-2 border-gray-300 rounded-md">${optionsHtml}</select>
-                                </div>
-                                <div class="md:col-span-1">
-                                    <label for="rule-value" class="block text-sm font-medium">Value to Find</label>
-                                    <input type="text" id="rule-value" class="mt-1 block w-full p-2 border-gray-300 rounded-md">
-                                </div>
-                                <div class="md:col-span-1">
-                                    <label for="rule-action" class="block text-sm font-medium">Action</label>
-                                    <select id="rule-action" class="mt-1 block w-full p-2 border-gray-300 rounded-md">
-                                        <option value="delete">Delete & Merge</option>
-                                        <option value="move">Move Value</option>
-                                    </select>
-                                </div>
-                                <div id="rule-target-container" class="md:col-span-1" style="display: none;">
-                                    <label for="rule-target-column" class="block text-sm font-medium">Move to Column</label>
-                                    <select id="rule-target-column" class="mt-1 block w-full p-2 border-gray-300 rounded-md">${optionsHtml}</select>
-                                </div>
-                                <div class="md:col-span-1">
-                                    <button id="add-rule-btn" class="w-full ts-button-primary px-4 py-2 rounded-lg control-btn" disabled>+ Add Rule</button>
-                                </div>
+                            <div class="border-b border-gray-200">
+                                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                                    <button class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600" data-tab="value-rules">Value-Based Rules</button>
+                                    <button class="tab-btn whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="column-ops">Column Operations</button>
+                                </nav>
                             </div>
                             <div class="mt-4">
-                                <div class="flex justify-between items-center mb-2">
-                                    <h4 class="font-semibold">Active Rules</h4>
-                                    ${overrideRules.length > 0 ? '<button id="clear-all-rules-btn" class="text-xs text-red-600 hover:underline">Clear All Rules</button>' : ''}
+                                <div id="value-rules-panel" class="tab-panel">
+                                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end p-4 border rounded-md bg-white">
+                                        <div class="md:col-span-1"><label for="rule-source-column" class="block text-sm font-medium">Column</label><select id="rule-source-column" class="mt-1 block w-full p-2 border-gray-300 rounded-md">${optionsHtml}</select></div>
+                                        <div class="md:col-span-1"><label for="rule-value" class="block text-sm font-medium">Value to Find</label><input type="text" id="rule-value" class="mt-1 block w-full p-2 border-gray-300 rounded-md"></div>
+                                        <div class="md:col-span-1"><label for="rule-action" class="block text-sm font-medium">Action</label><select id="rule-action" class="mt-1 block w-full p-2 border-gray-300 rounded-md"><option value="delete">Delete & Merge</option><option value="move">Move Value</option></select></div>
+                                        <div id="rule-target-container" class="md:col-span-1" style="display: none;"><label for="rule-target-column" class="block text-sm font-medium">Move to Column</label><select id="rule-target-column" class="mt-1 block w-full p-2 border-gray-300 rounded-md">${optionsHtml}</select></div>
+                                        <div class="md:col-span-1"><button id="add-rule-btn" class="w-full ts-button-primary px-4 py-2 rounded-lg control-btn" disabled>+ Add Rule</button></div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <div class="flex justify-between items-center mb-2"><h4 class="font-semibold">Active Rules</h4>${overrideRules.length > 0 ? '<button id="clear-all-rules-btn" class="text-xs text-red-600 hover:underline">Clear All Rules</button>' : ''}</div>
+                                        <ul id="active-rules-list" class="bg-white rounded-md border">${overrideRules.length > 0 ? activeRulesHtml : '<li class="p-3 text-gray-500 text-center">No active rules.</li>'}</ul>
+                                    </div>
                                 </div>
-                                <ul id="active-rules-list" class="bg-white rounded-md border">
-                                    ${overrideRules.length > 0 ? activeRulesHtml : '<li class="p-3 text-gray-500 text-center">No active rules.</li>'}
-                                </ul>
+                                <div id="column-ops-panel" class="tab-panel hidden">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end p-4 border rounded-md bg-white">
+                                        <div><label for="merge-source-column" class="block text-sm font-medium">Merge & Delete this Column</label><select id="merge-source-column" class="mt-1 block w-full p-2 border-gray-300 rounded-md">${optionsHtml}</select></div>
+                                        <div><label for="merge-target-column" class="block text-sm font-medium">Into this Column</label><select id="merge-target-column" class="mt-1 block w-full p-2 border-gray-300 rounded-md">${optionsHtml}</select></div>
+                                        <div><button id="merge-column-btn" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 control-btn">Merge & Delete</button></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </details>
@@ -858,37 +853,46 @@ yoolstation
         }
 
         function setupOverridesEventListeners() {
-            const actionSelect = document.getElementById('rule-action');
-            const targetContainer = document.getElementById('rule-target-container');
-            const addRuleBtn = document.getElementById('add-rule-btn');
-            const ruleValueInput = document.getElementById('rule-value');
-
-            actionSelect?.addEventListener('change', () => {
-                targetContainer.style.display = actionSelect.value === 'move' ? 'block' : 'none';
-            });
-            
-            ruleValueInput?.addEventListener('input', () => {
-                addRuleBtn.disabled = ruleValueInput.value.trim() === '';
-            });
-
             const handleRuleChange = () => {
                 const currentView = document.querySelector('[data-report-title]').dataset.reportTitle;
                 if (currentView.includes('Category Overhaul Matrix')) renderCategoryOverhaulMatrixView();
                 else if (currentView.includes('Facet Potential Analysis')) renderFacetPotentialAnalysisView();
             };
+            
+            // Tab switching logic
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabPanels = document.querySelectorAll('.tab-panel');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    tabButtons.forEach(btn => {
+                        btn.classList.remove('border-blue-500', 'text-blue-600');
+                        btn.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                    });
+                    button.classList.add('border-blue-500', 'text-blue-600');
+                    button.classList.remove('border-transparent', 'text-gray-500');
 
+                    tabPanels.forEach(panel => panel.classList.add('hidden'));
+                    document.getElementById(button.dataset.tab + '-panel')?.classList.remove('hidden');
+                });
+            });
+
+            // Value-based rules logic
+            const actionSelect = document.getElementById('rule-action');
+            const targetContainer = document.getElementById('rule-target-container');
+            const addRuleBtn = document.getElementById('add-rule-btn');
+            const ruleValueInput = document.getElementById('rule-value');
+
+            actionSelect?.addEventListener('change', () => { targetContainer.style.display = actionSelect.value === 'move' ? 'block' : 'none'; });
+            ruleValueInput?.addEventListener('input', () => { addRuleBtn.disabled = ruleValueInput.value.trim() === ''; });
             addRuleBtn?.addEventListener('click', () => {
                 const sourceColumn = document.getElementById('rule-source-column').value;
                 const value = document.getElementById('rule-value').value;
                 const action = document.getElementById('rule-action').value;
                 const targetColumn = document.getElementById('rule-target-column').value;
-
                 if (!value.trim()) return;
-                
                 overrideRules.push({ id: Date.now(), sourceColumn, value, action, targetColumn });
                 handleRuleChange();
             });
-            
             document.getElementById('active-rules-list')?.addEventListener('click', (e) => {
                 if(e.target.matches('.remove-rule-btn')) {
                     const ruleId = parseInt(e.target.dataset.ruleId, 10);
@@ -896,10 +900,35 @@ yoolstation
                     handleRuleChange();
                 }
             });
-            
             document.getElementById('clear-all-rules-btn')?.addEventListener('click', () => {
                 overrideRules = [];
                 handleRuleChange();
+            });
+
+            // Column operations logic
+            document.getElementById('merge-column-btn')?.addEventListener('click', () => {
+                const sourceCol = document.getElementById('merge-source-column').value;
+                const targetCol = document.getElementById('merge-target-column').value;
+
+                if (sourceCol === targetCol) {
+                    alert('Source and Target columns cannot be the same.');
+                    return;
+                }
+
+                if (confirm(`Are you sure you want to merge all values from "${sourceCol}" into "${targetCol}" and delete the "${sourceCol}" column? This action cannot be undone.`)) {
+                    analysisResults.categoryOverhaulMatrixReport.forEach(row => {
+                        const sourceValue = row[sourceCol];
+                        if (sourceValue !== null && sourceValue !== undefined && String(sourceValue).trim() !== '') {
+                            const targetValue = row[targetCol];
+                            const sourceValues = String(sourceValue).split(' | ').map(v => v.trim());
+                            const targetValues = (!targetValue || String(targetValue).trim() === '') ? [] : String(targetValue).split(' | ').map(v => v.trim());
+                            const combined = new Set([...targetValues, ...sourceValues]);
+                            row[targetCol] = Array.from(combined).join(' | ');
+                        }
+                        delete row[sourceCol];
+                    });
+                    handleRuleChange(); 
+                }
             });
         }
         
@@ -913,6 +942,7 @@ yoolstation
             let meltedData = [];
             matrixData.forEach(row => {
                 facetHeaders.forEach(facetType => {
+                    if (!row.hasOwnProperty(facetType)) return;
                     const facetValue = row[facetType];
                     if (facetValue !== null && facetValue !== undefined && String(facetValue).trim() !== '') {
                         const values = String(facetValue).split(' | ').map(v => v.trim());
