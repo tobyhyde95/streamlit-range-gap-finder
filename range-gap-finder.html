@@ -22,7 +22,7 @@
         .lens-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-color: var(--ts-blue); }
         .lens-card p { font-size: 0.8rem; color: #4b5563; }
         .progress-bar-inner { transition: width 0.3s ease-in-out; }
-        .export-btn:disabled, .pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .export-btn:disabled, .pagination-btn:disabled, .control-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         th[data-sort-key] { cursor: pointer; }
         th .sort-icon { visibility: hidden; }
         th.sorted .sort-icon { visibility: visible; }
@@ -217,6 +217,7 @@ yoolstation
             searchTerm: '', searchKey: null, currentPage: 1, rowsPerPage: 25,
             timeframe: 'monthly'
         };
+        let overrideRules = [];
         const API_KEY = "my-secret-dev-key"; 
         const ui = {
             controlsContainer: document.getElementById('controls-container'),
@@ -237,6 +238,70 @@ yoolstation
                 textarea.value = template.content.textContent.trim();
             }
         }
+
+        function applyOverridesAndMerge(data, headers, hasOnsite) {
+            if (!overrideRules || overrideRules.length === 0) {
+                return JSON.parse(JSON.stringify(data));
+            }
+
+            const aggregationMap = new Map();
+            const facetHeaders = headers.filter(h => 
+                h !== 'Category Mapping' && !h.includes('Traffic') && !h.includes('Searches') && h !== 'KeywordDetails'
+            );
+
+            const metricCols = [
+                'Monthly Organic Traffic', 'Total Monthly Google Searches',
+                ...(hasOnsite ? ['Total On-Site Searches'] : [])
+            ];
+
+            const originalData = JSON.parse(JSON.stringify(data));
+
+            originalData.forEach(originalRow => {
+                let modifiedFacets = { 'Category Mapping': originalRow['Category Mapping'] };
+                facetHeaders.forEach(h => { modifiedFacets[h] = originalRow[h]; });
+
+                overrideRules.forEach(rule => {
+                    const cellValue = modifiedFacets[rule.sourceColumn];
+                    if (cellValue === null || cellValue === undefined) return;
+
+                    const cellValues = String(cellValue).split(' | ').map(v => v.trim());
+                    const ruleValue = String(rule.value).trim();
+                    
+                    if (cellValues.includes(ruleValue)) {
+                        const newSourceValues = cellValues.filter(v => v !== ruleValue);
+                        modifiedFacets[rule.sourceColumn] = newSourceValues.length > 0 ? newSourceValues.join(' | ') : null;
+
+                        if (rule.action === 'move') {
+                            const existingTargetValue = modifiedFacets[rule.targetColumn];
+                            const existingTargetValues = (!existingTargetValue || String(existingTargetValue).trim() === '') ? [] : String(existingTargetValue).split(' | ').map(v => v.trim());
+                            if (!existingTargetValues.includes(ruleValue)) {
+                                existingTargetValues.push(ruleValue);
+                            }
+                            modifiedFacets[rule.targetColumn] = existingTargetValues.join(' | ');
+                        }
+                    }
+                });
+                
+                const key = [modifiedFacets['Category Mapping'] || '', ...facetHeaders.map(h => modifiedFacets[h] || '')].join('||');
+                
+                if (aggregationMap.has(key)) {
+                    const existing = aggregationMap.get(key);
+                    metricCols.forEach(mCol => {
+                        existing[mCol] = (existing[mCol] || 0) + (originalRow[mCol] || 0);
+                    });
+                    if (originalRow.KeywordDetails) {
+                       existing.KeywordDetails.push(...originalRow.KeywordDetails);
+                    }
+                } else {
+                    const newEntry = { ...originalRow, ...modifiedFacets };
+                    newEntry.KeywordDetails = [...(originalRow.KeywordDetails || [])];
+                    aggregationMap.set(key, newEntry);
+                }
+            });
+
+            return Array.from(aggregationMap.values());
+        }
+
 
         function getFilteredData() {
             let filteredData = [...tableState.fullData];
@@ -497,7 +562,7 @@ yoolstation
         function createReportContainer(title, subtitle, customContent = '', extraDescription = '') {
             const regexTipHtml = `<div class="tooltip-container"><svg class="tooltip-icon h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg><span class="tooltip-text"><b>Regex Search Tips:</b><br><code>^word</code> &ndash; Starts with 'word'<br><code>word$</code> &ndash; Ends with 'word'<br><code>word1|word2</code> &ndash; Has 'word1' or 'word2'<br><code>\\bword\\b</code> &ndash; Matches whole word</span></div>`;
             const timeframeToggle = `<div class="flex items-center"><span class="text-sm font-semibold mr-2">Timeframe:</span><button data-timeframe="monthly" class="scope-toggle-btn text-xs font-semibold py-1 px-3 rounded-l-md ${tableState.timeframe === 'monthly' ? 'active' : ''}">Monthly</button><button data-timeframe="annual" class="scope-toggle-btn text-xs font-semibold py-1 px-3 rounded-r-md ${tableState.timeframe === 'annual' ? 'active' : ''}">Annual</button></div>`;
-            return `<div class="bg-white p-6 rounded-xl shadow-lg" data-report-title="${title}"><div class="flex flex-wrap justify-between items-center mb-6 border-b pb-4 gap-4"><div><h2 class="text-2xl font-bold">${title}</h2><p class="text-sm text-gray-600 mt-1">${subtitle}</p></div><div class="flex items-center space-x-2"><button data-export-type="excel" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export Excel</button><button data-export-type="pdf" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export PDF</button><button class="back-to-lenses-btn text-sm font-semibold text-blue-600 hover:underline">&larr; Back to Lenses</button></div></div>${extraDescription ? `<div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 p-3 rounded-md mb-4">${extraDescription}</div>` : ''}<div class="flex flex-wrap justify-between items-center mb-4 gap-4"><div class="flex items-center gap-2"><input type="text" id="table-search-input" placeholder="Filter with text or regex..." class="w-full md:w-auto p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500">${regexTipHtml}</div><div class="flex items-center gap-4">${customContent}${timeframeToggle}</div></div><div id="interactive-table-wrapper"></div><div id="pagination-controls-wrapper" class="flex flex-wrap justify-between items-center mt-4 gap-4"></div></div>`;
+            return `<div class="bg-white p-6 rounded-xl shadow-lg" data-report-title="${title}"><div class="flex flex-wrap justify-between items-center mb-6 border-b pb-4 gap-4"><div><h2 class="text-2xl font-bold">${title}</h2><p class="text-sm text-gray-600 mt-1">${subtitle}</p></div><div class="flex items-center space-x-2"><button data-export-type="excel" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export Excel</button><button data-export-type="pdf" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export PDF</button><button class="back-to-lenses-btn text-sm font-semibold text-blue-600 hover:underline">&larr; Back to Lenses</button></div></div>${extraDescription ? `<div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 p-3 rounded-md mb-4">${extraDescription}</div>` : ''}<div id="manual-overrides-container" class="mb-6"></div><div class="flex flex-wrap justify-between items-center mb-4 gap-4"><div class="flex items-center gap-2"><input type="text" id="table-search-input" placeholder="Filter with text or regex..." class="w-full md:w-auto p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500">${regexTipHtml}</div><div class="flex items-center gap-4">${customContent}${timeframeToggle}</div></div><div id="interactive-table-wrapper"></div><div id="pagination-controls-wrapper" class="flex flex-wrap justify-between items-center mt-4 gap-4"></div></div>`;
         }
 
         function exportCategoryOverhaulToExcel(data, headers, fileName) {
@@ -731,6 +796,184 @@ yoolstation
             checkCanAnalyse();
         }
 
+        function renderOverridesUI(headers) {
+            const container = document.getElementById('manual-overrides-container');
+            if (!container) return;
+
+            const optionsHtml = headers.map(h => `<option value="${h}">${h}</option>`).join('');
+
+            const activeRulesHtml = overrideRules.map(rule => {
+                let ruleText = '';
+                if (rule.action === 'delete') {
+                    ruleText = `From <b>${rule.sourceColumn}</b>, delete & merge value "<b>${rule.value}</b>"`;
+                } else {
+                    ruleText = `From <b>${rule.sourceColumn}</b>, move value "<b>${rule.value}</b>" to <b>${rule.targetColumn}</b>`;
+                }
+                return `<li class="flex justify-between items-center p-2 border-b"><span>${ruleText}</span><button class="remove-rule-btn text-red-500 hover:text-red-700 font-bold" data-rule-id="${rule.id}">&times;</button></li>`;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="border rounded-lg p-4 bg-gray-50">
+                    <details>
+                        <summary class="font-bold text-lg cursor-pointer">Manual Overrides</summary>
+                        <div class="mt-4">
+                            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end p-4 border rounded-md bg-white">
+                                <div class="md:col-span-1">
+                                    <label for="rule-source-column" class="block text-sm font-medium">Column</label>
+                                    <select id="rule-source-column" class="mt-1 block w-full p-2 border-gray-300 rounded-md">${optionsHtml}</select>
+                                </div>
+                                <div class="md:col-span-1">
+                                    <label for="rule-value" class="block text-sm font-medium">Value to Find</label>
+                                    <input type="text" id="rule-value" class="mt-1 block w-full p-2 border-gray-300 rounded-md">
+                                </div>
+                                <div class="md:col-span-1">
+                                    <label for="rule-action" class="block text-sm font-medium">Action</label>
+                                    <select id="rule-action" class="mt-1 block w-full p-2 border-gray-300 rounded-md">
+                                        <option value="delete">Delete & Merge</option>
+                                        <option value="move">Move Value</option>
+                                    </select>
+                                </div>
+                                <div id="rule-target-container" class="md:col-span-1" style="display: none;">
+                                    <label for="rule-target-column" class="block text-sm font-medium">Move to Column</label>
+                                    <select id="rule-target-column" class="mt-1 block w-full p-2 border-gray-300 rounded-md">${optionsHtml}</select>
+                                </div>
+                                <div class="md:col-span-1">
+                                    <button id="add-rule-btn" class="w-full ts-button-primary px-4 py-2 rounded-lg control-btn" disabled>+ Add Rule</button>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="font-semibold">Active Rules</h4>
+                                    ${overrideRules.length > 0 ? '<button id="clear-all-rules-btn" class="text-xs text-red-600 hover:underline">Clear All Rules</button>' : ''}
+                                </div>
+                                <ul id="active-rules-list" class="bg-white rounded-md border">
+                                    ${overrideRules.length > 0 ? activeRulesHtml : '<li class="p-3 text-gray-500 text-center">No active rules.</li>'}
+                                </ul>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            `;
+            setupOverridesEventListeners();
+        }
+
+        function setupOverridesEventListeners() {
+            const actionSelect = document.getElementById('rule-action');
+            const targetContainer = document.getElementById('rule-target-container');
+            const addRuleBtn = document.getElementById('add-rule-btn');
+            const ruleValueInput = document.getElementById('rule-value');
+
+            actionSelect?.addEventListener('change', () => {
+                targetContainer.style.display = actionSelect.value === 'move' ? 'block' : 'none';
+            });
+            
+            ruleValueInput?.addEventListener('input', () => {
+                addRuleBtn.disabled = ruleValueInput.value.trim() === '';
+            });
+
+            const handleRuleChange = () => {
+                const currentView = document.querySelector('[data-report-title]').dataset.reportTitle;
+                if (currentView.includes('Category Overhaul Matrix')) renderCategoryOverhaulMatrixView();
+                else if (currentView.includes('Facet Potential Analysis')) renderFacetPotentialAnalysisView();
+            };
+
+            addRuleBtn?.addEventListener('click', () => {
+                const sourceColumn = document.getElementById('rule-source-column').value;
+                const value = document.getElementById('rule-value').value;
+                const action = document.getElementById('rule-action').value;
+                const targetColumn = document.getElementById('rule-target-column').value;
+
+                if (!value.trim()) return;
+                
+                overrideRules.push({ id: Date.now(), sourceColumn, value, action, targetColumn });
+                handleRuleChange();
+            });
+            
+            document.getElementById('active-rules-list')?.addEventListener('click', (e) => {
+                if(e.target.matches('.remove-rule-btn')) {
+                    const ruleId = parseInt(e.target.dataset.ruleId, 10);
+                    overrideRules = overrideRules.filter(r => r.id !== ruleId);
+                    handleRuleChange();
+                }
+            });
+            
+            document.getElementById('clear-all-rules-btn')?.addEventListener('click', () => {
+                overrideRules = [];
+                handleRuleChange();
+            });
+        }
+        
+        function generateFacetPotentialFromMatrix(matrixData, baseHeaders, hasOnsite) {
+            if (!matrixData || matrixData.length === 0) return [];
+            
+            const facetHeaders = baseHeaders.filter(h => 
+                h !== 'Category Mapping' && !h.includes('Traffic') && !h.includes('Searches') && h !== 'KeywordDetails'
+            );
+            
+            let meltedData = [];
+            matrixData.forEach(row => {
+                facetHeaders.forEach(facetType => {
+                    const facetValue = row[facetType];
+                    if (facetValue !== null && facetValue !== undefined && String(facetValue).trim() !== '') {
+                        const values = String(facetValue).split(' | ').map(v => v.trim());
+                        values.forEach(val => {
+                            let newRow = {
+                                'Category Mapping': row['Category Mapping'],
+                                'Facet Type': facetType,
+                                'Facet Value': val,
+                                'Monthly Organic Traffic': row['Monthly Organic Traffic'] || 0,
+                                'Total Monthly Google Searches': row['Total Monthly Google Searches'] || 0,
+                                'Keyword Count': row.KeywordDetails ? row.KeywordDetails.length : 0
+                            };
+                            if (hasOnsite) {
+                                newRow['Total On-Site Searches'] = row['Total On-Site Searches'] || 0;
+                            }
+                            meltedData.push(newRow);
+                        });
+                    }
+                });
+            });
+
+            const aggregation = {};
+            meltedData.forEach(row => {
+                const key = `${row['Category Mapping']}||${row['Facet Type']}`;
+                if (!aggregation[key]) {
+                    aggregation[key] = {
+                        'Category Mapping': row['Category Mapping'],
+                        'Facet Type': row['Facet Type'],
+                        'Monthly Organic Traffic': 0,
+                        'Total Monthly Google Searches': 0,
+                        'Keyword Count': 0,
+                         'FacetValueDetails': {}
+                    };
+                    if (hasOnsite) aggregation[key]['Total On-Site Searches'] = 0;
+                }
+                aggregation[key]['Monthly Organic Traffic'] += row['Monthly Organic Traffic'];
+                aggregation[key]['Total Monthly Google Searches'] += row['Total Monthly Google Searches'];
+                
+                const detailKey = row['Facet Value'];
+                 if(!aggregation[key].FacetValueDetails[detailKey]) {
+                     aggregation[key].FacetValueDetails[detailKey] = {
+                         'Facet Value': detailKey, 'Monthly Organic Traffic': 0,
+                         'Total Monthly Google Searches': 0, 'Keyword Count': 0,
+                     };
+                     if(hasOnsite) aggregation[key].FacetValueDetails[detailKey]['Total On-Site Searches'] = 0;
+                 }
+                 aggregation[key].FacetValueDetails[detailKey]['Monthly Organic Traffic'] += row['Monthly Organic Traffic'];
+                 aggregation[key].FacetValueDetails[detailKey]['Total Monthly Google Searches'] += row['Total Monthly Google Searches'];
+                 aggregation[key].FacetValueDetails[detailKey]['Keyword Count'] += row['Keyword Count'];
+                 aggregation[key]['Keyword Count'] += row['Keyword Count'];
+                 if(hasOnsite) aggregation[key].FacetValueDetails[detailKey]['Total On-Site Searches'] += row['Total On-Site Searches'];
+            });
+            
+            let finalReport = Object.values(aggregation);
+            finalReport.forEach(row => {
+                row.FacetValueDetails = Object.values(row.FacetValueDetails).sort((a,b) => b['Monthly Organic Traffic'] - a['Monthly Organic Traffic']);
+            });
+            
+            return finalReport;
+        }
+
         function handleResultsNavigation(e) {
             const target = e.target;
             const reportContainer = target.closest('[data-report-title]');
@@ -937,6 +1180,7 @@ yoolstation
         
         function renderInitialControlsView() {
             if (pollingInterval) clearInterval(pollingInterval);
+            overrideRules = [];
             ui.resultsContainer.classList.add('hidden');
             ui.progressContainer.classList.add('hidden');
             ui.controlsContainer.classList.remove('hidden');
@@ -1129,7 +1373,6 @@ yoolstation
             const annualizedData = JSON.parse(JSON.stringify(data)); 
 
             annualizedData.forEach(row => {
-                // Transform top-level rows
                 monthlyToAnnualCols.forEach(col => {
                     const annualCol = col.replace('Monthly', 'Annual');
                     if (row.hasOwnProperty(col)) {
@@ -1138,18 +1381,15 @@ yoolstation
                         } else {
                             row[annualCol] = null;
                         }
-                        delete row[col];
                     }
                 });
 
-                // Transform market share columns [percentage, traffic]
                 Object.keys(row).forEach(key => {
                     if (Array.isArray(row[key]) && row[key].length === 2 && typeof row[key][1] === 'number') {
                         row[key][1] *= 12;
                     }
                 });
 
-                // Transform nested KeywordDetails
                 if (row.KeywordDetails) {
                     row.KeywordDetails.forEach(detail => {
                         monthlyToAnnualCols.forEach(col => {
@@ -1157,16 +1397,12 @@ yoolstation
                             if (detail.hasOwnProperty(col)) {
                                 if (detail[col] !== null && detail[col] !== undefined) {
                                     detail[annualCol] = detail[col] * 12;
-                                } else {
-                                    detail[annualCol] = null;
                                 }
-                                delete detail[col];
                             }
                         });
                     });
                 }
                 
-                // Transform nested FacetValueDetails
                 if (row.FacetValueDetails) {
                     row.FacetValueDetails.forEach(detail => {
                         monthlyToAnnualCols.forEach(col => {
@@ -1174,16 +1410,20 @@ yoolstation
                             if (detail.hasOwnProperty(col)) {
                                 if (detail[col] !== null && detail[col] !== undefined) {
                                     detail[annualCol] = detail[col] * 12;
-                                } else {
-                                    detail[annualCol] = null;
                                 }
-                                delete detail[col];
                             }
                         });
                     });
                 }
             });
-            return annualizedData;
+            return annualizedData.map(row => {
+                const newRow = {};
+                Object.keys(row).forEach(key => {
+                    const newKey = key.replace('Monthly', 'Annual');
+                    newRow[newKey] = row[key];
+                });
+                return newRow;
+            });
         }
 
         function renderKeywordGapAnalysisView() {
@@ -1202,19 +1442,9 @@ yoolstation
             const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
 
             const displayData = transformedData.map(row => {
-                const newRow = {
-                    'Keyword': row['Keyword'],
-                    [displayHeaders[1]]: row[displayHeaders[1]],
-                    '# Ranking Competitors': row['# Ranking Competitors'],
-                    'Top Ranking Competitor': row['Top Ranking Competitor'],
-                    'Top Competitor URL': `<a href="${row['Top Competitor URL']}" target="_blank" class="text-blue-600 hover:underline break-all">${row['Top Competitor URL']}</a>`,
-                    'Highest Competitor Rank': row['Highest Competitor Rank'],
-                    [displayHeaders[6]]: row[displayHeaders[6]],
-                };
-                if(hasOnsiteData) {
-                    newRow[onsiteSearchesHeader] = row['On-Site Searches'];
-                    newRow[opportunityScoreHeader] = row['Opportunity Score'];
-                }
+                const newRow = {};
+                displayHeaders.forEach(h => newRow[h] = row[h]);
+                newRow['Top Competitor URL'] = `<a href="${row['Top Competitor URL']}" target="_blank" class="text-blue-600 hover:underline break-all">${row['Top Competitor URL']}</a>`;
                 return newRow;
             });
 
@@ -1242,19 +1472,10 @@ yoolstation
             const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
 
             const displayData = transformedData.map(row => {
-                const rowData = {
-                    'Keyword Group': row['Keyword Group'], 'TopicID': row['TopicID'], 
-                    [displayHeaders[2]]: row[displayHeaders[2]],
-                    [displayHeaders[3]]: row[displayHeaders[3]],
-                    'Gap Keyword Count': `<button class="text-blue-600 hover:underline view-keywords-btn" data-map-source="${scope}" data-topic-id="${row['TopicID']}">${row['Gap Keyword Count']}</button>`,
-                    'Competitor Avg. Rank': row['Competitor Avg. Rank']
-                };
-                if(hasOnsiteData) {
-                    rowData[totalOnsiteSearchesHeader] = row['Total On-Site Searches'];
-                    rowData[opportunityScoreHeader] = row['Opportunity Score'];
-                    rowData[displayHeaders[5]] = row[displayHeaders[5]];
-                }
-                return rowData;
+                const newRow = {};
+                displayHeaders.forEach(h => newRow[h] = row[h]);
+                newRow['Gap Keyword Count'] = `<button class="text-blue-600 hover:underline view-keywords-btn" data-map-source="${scope}" data-topic-id="${row['TopicID']}">${row['Gap Keyword Count']}</button>`;
+                return newRow;
             });
 
             const subtitle = "Aggregated topics where you have visibility gaps against competitors. 'Core' includes only keywords ranking in the Top 20 for competitors.";
@@ -1270,7 +1491,7 @@ yoolstation
                 return newRow; 
             });
 
-            initializeTable(dataForTable, finalTableHeaders, hasOnsiteData ? 'Opportunity Score' : finalTableHeaders[1], 'Keyword Group');
+            initializeTable(dataForTable, finalTableHeaders, hasOnsiteData ? opportunityScoreHeader : finalTableHeaders[1], 'Keyword Group');
         }
 
         function renderKeywordThreatsAnalysisView() {
@@ -1280,18 +1501,14 @@ yoolstation
             const headers = ['Keyword', 'Monthly Google Searches', 'Our Rank', 'Our URL', 'Our Monthly Organic Traffic', 'Best Competitor', 'Best Competitor Rank', 'Best Competitor URL', 'Best Competitor Monthly Organic Traffic', 'Monthly Traffic Growth Opportunity'];
             const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
             
-            const displayData = transformedData.map(row => ({
-                'Keyword': row['Keyword'], 
-                [displayHeaders[1]]: row[displayHeaders[1]], 
-                'Our Rank': row['Our Rank'],
-                'Our URL': `<a href="${row['Our URL']}" target="_blank" class="text-blue-600 hover:underline break-all">${row['Our URL']}</a>`,
-                [displayHeaders[4]]: row[displayHeaders[4]], 
-                'Best Competitor': row['Best Competitor'],
-                'Best Competitor Rank': row['Best Competitor Rank'],
-                'Best Competitor URL': `<a href="${row['Best Competitor URL']}" target="_blank" class="text-blue-600 hover:underline break-all">${row['Best Competitor URL']}</a>`,
-                [displayHeaders[8]]: row[displayHeaders[8]],
-                [displayHeaders[9]]: row[displayHeaders[9]]
-            }));
+            const displayData = transformedData.map(row => {
+                const newRow = {};
+                displayHeaders.forEach(h => newRow[h] = row[h]);
+                newRow['Our URL'] = `<a href="${row['Our URL']}" target="_blank" class="text-blue-600 hover:underline break-all">${row['Our URL']}</a>`;
+                newRow['Best Competitor URL'] = `<a href="${row['Best Competitor URL']}" target="_blank" class="text-blue-600 hover:underline break-all">${row['Best Competitor URL']}</a>`;
+                return newRow;
+            });
+
             const subtitle = "Keywords where competitors outrank you, prioritised by the potential traffic gain.";
             ui.resultsContainer.innerHTML = createReportContainer('Competitive Opportunities | Individual Keywords', subtitle);
             initializeTable(displayData, displayHeaders, displayHeaders[9], 'Keyword');
@@ -1305,16 +1522,12 @@ yoolstation
             const headers = ['Keyword Group', 'TopicID', 'Keyword Count', 'Total Monthly Google Searches', 'Avg Our Rank', 'Total Our Monthly Traffic', 'Avg Best Competitor Rank', 'Total Best Competitor Monthly Traffic', 'Total Monthly Traffic Growth Opportunity'];
             const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
 
-            const displayData = transformedData.map(row => ({
-                'Keyword Group': row['Keyword Group'], 'TopicID': row['TopicID'],
-                'Keyword Count': `<button class="text-blue-600 hover:underline view-keywords-btn" data-map-source="${mapSource}" data-topic-id="${row['TopicID']}">${row['Keyword Count']}</button>`,
-                [displayHeaders[3]]: row[displayHeaders[3]], 
-                'Avg Our Rank': row['Avg Our Rank'],
-                [displayHeaders[5]]: row[displayHeaders[5]], 
-                'Avg Best Competitor Rank': row['Avg Best Competitor Rank'],
-                [displayHeaders[7]]: row[displayHeaders[7]], 
-                [displayHeaders[8]]: row[displayHeaders[8]]
-            }));
+            const displayData = transformedData.map(row => {
+                const newRow = {};
+                displayHeaders.forEach(h => newRow[h] = row[h]);
+                newRow['Keyword Count'] = `<button class="text-blue-600 hover:underline view-keywords-btn" data-map-source="${mapSource}" data-topic-id="${row['TopicID']}">${row['Keyword Count']}</button>`;
+                return newRow;
+            });
 
             const subtitle = "Topic groups where competitors outrank you, prioritised by the total potential traffic gain. 'Core' shows topics where the competitor is in the Top 10.";
             const threatsDescription = `<b>Note:</b> Metrics are aggregated from keywords where a competitor outranks you. <b>Avg Our Rank</b> is your average position for these keywords, and <b>Avg Best Competitor Rank</b> is the top competitor's average position for the same set of keywords.`;
@@ -1342,8 +1555,8 @@ yoolstation
             const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
             
             const displayData = transformedData.map(row => {
-                const newRow = { 'Keyword': row['Keyword'], [displayHeaders[1]]: row[displayHeaders[1]] };
-                allDomains.forEach(domain => { newRow[domain] = row[domain]; });
+                const newRow = { 'Keyword': row['Keyword'] };
+                displayHeaders.forEach(h => newRow[h] = row[h]);
                 return newRow;
             });
 
@@ -1363,12 +1576,9 @@ yoolstation
             const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
 
             const displayData = transformedData.map(row => {
-                const newRow = {
-                    'Keyword Group': row['Keyword Group'],
-                    'Keyword Count': `<button class="text-blue-600 hover:underline view-keywords-btn" data-map-source="${mapSource}" data-keyword-group="${row['Keyword Group']}">${row['Keyword Count']}</button>`,
-                    [displayHeaders[2]]: row[displayHeaders[2]]
-                };
-                allDomains.forEach(domain => { newRow[domain] = row[domain]; });
+                const newRow = {};
+                displayHeaders.forEach(h => newRow[h] = row[h]);
+                newRow['Keyword Count'] = `<button class="text-blue-600 hover:underline view-keywords-btn" data-map-source="${mapSource}" data-keyword-group="${row['Keyword Group']}">${row['Keyword Count']}</button>`;
                 return newRow;
             });
             
@@ -1380,14 +1590,18 @@ yoolstation
         }
 
         function renderCategoryOverhaulMatrixView() {
-            const { categoryOverhaulMatrixReport } = analysisResults;
-            const transformedData = transformDataForTimeframe(categoryOverhaulMatrixReport, tableState.timeframe);
-
-            if (!transformedData || transformedData.length === 0) {
-                ui.resultsContainer.innerHTML = createReportContainer('Category Overhaul Matrix', 'No data available for this report.', '', '<p>This report could not be generated. This may happen if no traffic data was available or no facets could be extracted from competitor URLs.</p>');
+            const { categoryOverhaulMatrixReport, hasOnsiteData } = analysisResults;
+            
+            if (!categoryOverhaulMatrixReport || categoryOverhaulMatrixReport.length === 0) {
+                ui.resultsContainer.innerHTML = createReportContainer('Category Overhaul Matrix', 'No data available for this report.');
                 return;
             }
+
+            const baseHeaders = Object.keys(categoryOverhaulMatrixReport[0] || {});
             
+            const modifiedData = applyOverridesAndMerge(categoryOverhaulMatrixReport, baseHeaders, hasOnsiteData);
+            const transformedData = transformDataForTimeframe(modifiedData, tableState.timeframe);
+
             const allKeys = new Set();
             transformedData.forEach(row => { Object.keys(row).forEach(key => allKeys.add(key)); });
             
@@ -1395,11 +1609,11 @@ yoolstation
             const endColumnsBases = ['Monthly Organic Traffic', 'Total Monthly Google Searches', 'Total On-Site Searches', 'KeywordDetails'];
             const endColumns = updateHeadersForTimeframe(endColumnsBases, tableState.timeframe);
 
-            let headers = [...preferredOrder.filter(h => allKeys.has(h)), ...Array.from(allKeys).filter(h => !preferredOrder.includes(h) && !endColumns.includes(h)).sort(), ...endColumns.filter(h => allKeys.has(h))];
-            
-            if (!analysisResults.hasOnsiteData) {
-                headers = headers.filter(h => !h.includes('On-Site Searches'));
-            }
+            const finalHeaders = [
+                ...preferredOrder.filter(h => allKeys.has(h)),
+                ...Array.from(allKeys).filter(h => !preferredOrder.includes(h) && !endColumns.includes(h)).sort(),
+                ...endColumns.filter(h => allKeys.has(h))
+            ];
 
             const subtitle = "Analyse competitor taxonomy to find high-value category and facet opportunities.";
             const explainer = `
@@ -1407,55 +1621,50 @@ yoolstation
                     <b>How this report works:</b> This matrix analyzes the architecture of the single highest-ranking URL for every keyword in your dataset to reveal traffic opportunities.
                     <ul class="list-disc list-inside mt-2">
                         <li>Each row represents a unique combination of categories and facets found on top-ranking pages. Click the ▶ button to see the keywords driving each row.</li>
-                        <li><b>Category Mapping</b> is inferred from URL paths and standardized using a synonym map.</li>
-                        <li><b>Derived Facets</b> are attributes (like "Wheeled" or "Steel") extracted from the original category names.</li>
-                        <li>Other facets are extracted from URL query parameters (e.g., ?brand=dewalt).</li>
-                        <li>The tool then uses this learned knowledge to classify pages that don't have explicit facets and discovers new potential facets from keywords themselves.</li>
+                        <li>Use the "Manual Overrides" section to merge or move facet values in real-time. Changes will be reflected in exports and the Facet Potential view.</li>
                     </ul>
                 </div>`;
             
-            const customContent = `
-                <div class="flex items-center">
-                    <input type="checkbox" id="hide-zero-traffic-toggle" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                    <label for="hide-zero-traffic-toggle" class="ml-2 block text-sm text-gray-900">Hide rows with 0 traffic</label>
-                </div>
-            `;
+            const customContent = `<div class="flex items-center"><input type="checkbox" id="hide-zero-traffic-toggle" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"><label for="hide-zero-traffic-toggle" class="ml-2 block text-sm text-gray-900">Hide rows with 0 traffic</label></div>`;
             
             ui.resultsContainer.innerHTML = createReportContainer('Category Overhaul Matrix', subtitle, customContent, explainer);
-            const defaultSortKey = headers.find(h => h.includes('Organic Traffic'));
-            initializeTable(transformedData, headers, defaultSortKey, 'Category Mapping');
+            const defaultSortKey = finalHeaders.find(h => h.includes('Organic Traffic'));
+            initializeTable(transformedData, finalHeaders, defaultSortKey, 'Category Mapping');
             tableState.hideZeroTraffic = false; 
+            renderOverridesUI(baseHeaders.filter(h => h !== 'KeywordDetails'));
         }
 
         function renderFacetPotentialAnalysisView() {
-            const { facetPotentialReport, hasOnsiteData } = analysisResults;
-            const transformedData = transformDataForTimeframe(facetPotentialReport, tableState.timeframe);
+            const { categoryOverhaulMatrixReport, hasOnsiteData } = analysisResults;
             
-            if (!transformedData || transformedData.length === 0) {
+            if (!categoryOverhaulMatrixReport || categoryOverhaulMatrixReport.length === 0) {
                 ui.resultsContainer.innerHTML = createReportContainer('Facet Potential Analysis', 'No data available for this report.');
                 return;
             }
 
-            let headers = ['Facet Value Score', 'Category Mapping', 'Facet Type', 'Keyword Count', 'Monthly Organic Traffic', 'Total Monthly Google Searches'];
-            if (hasOnsiteData) {
-                headers.push('Total On-Site Searches');
-            }
-            if (!transformedData[0].hasOwnProperty('Facet Value Score')) {
-                headers = headers.filter(h => h !== 'Facet Value Score');
-            }
+            const matrixBaseHeaders = Object.keys(categoryOverhaulMatrixReport[0] || {});
+            const modifiedMatrixData = applyOverridesAndMerge(categoryOverhaulMatrixReport, matrixBaseHeaders, hasOnsiteData);
+            
+            const regeneratedData = generateFacetPotentialFromMatrix(modifiedMatrixData, matrixBaseHeaders, hasOnsiteData);
+            const transformedData = transformDataForTimeframe(regeneratedData, tableState.timeframe);
+            
+            let headers = ['Category Mapping', 'Facet Type', 'Keyword Count', 'Monthly Organic Traffic', 'Total Monthly Google Searches'];
+            if (hasOnsiteData) headers.push('Total On-Site Searches');
+            
             const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
             
             const subtitle = "A high-level view of which facet types are most associated with traffic and volume for each category.";
             const explainer = `<div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 p-3 rounded-md mb-4">
-                <b>How to use this report:</b> This analysis rolls up the detailed Category Overhaul Matrix to show you the total value of using a certain <em>type</em> of facet within a category. For example, you can see the total traffic driven by all 'Brand' facets combined for 'Power Drills', helping you prioritize adding brand filters to that category page.
+                <b>How to use this report:</b> This analysis rolls up the detailed Category Overhaul Matrix to show you the total value of using a certain <em>type</em> of facet within a category.
                 <br><br>
-                The <strong>Facet Value Score</strong> is a 0-100 metric that combines the available signals (Monthly Organic Traffic, Google Searches, and On-Site Searches when provided) to help you prioritize the most valuable combinations. The weighting is automatically balanced across the available metrics.
+                <b>Note:</b> Any 'Manual Overrides' you apply are reflected here. The data for this report is dynamically recalculated to ensure consistency.
             </div>`;
 
             ui.resultsContainer.innerHTML = createReportContainer('Facet Potential Analysis', subtitle, '', explainer);
             
-            const defaultSortKey = displayHeaders.includes('Facet Value Score') ? 'Facet Value Score' : displayHeaders.find(h => h.includes('Organic Traffic'));
+            const defaultSortKey = displayHeaders.find(h => h.includes('Organic Traffic'));
             initializeTable(transformedData, displayHeaders, defaultSortKey, 'Category Mapping');
+            renderOverridesUI(matrixBaseHeaders.filter(h => h !== 'KeywordDetails' && h !== 'FacetValueDetails'));
         }
 
         function initializeTable(data, headers, defaultSortKey, defaultSearchKey, competitorDomains = []) {
