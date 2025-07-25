@@ -338,40 +338,55 @@ def _generate_category_overhaul_matrix(df, internal_keyword_col, internal_positi
 
     highest_ranking_df.replace('', np.nan, inplace=True)
 
-    def jaccard_similarity(set1, set2):
-        if not set1 and not set2: return 0.0
-        set1_split = {item.strip() for val in set1 for item in str(val).split(' | ')}
-        set2_split = {item.strip() for val in set2 for item in str(val).split(' | ')}
-        intersection = len(set1_split.intersection(set2_split))
-        union = len(set1_split.union(set2_split))
-        return intersection / union if union > 0 else 0.0
-
-    temp_cols = list(highest_ranking_df.columns)
-    merged_cols_map = {}
-    cols_to_process = [col for col in temp_cols if col not in ['Category Mapping', 'Original Category Mapping', 'Derived Facets', 'Decompounded Type', internal_keyword_col, internal_url_col_name]]
+    # --- START: Granular Facet Consolidation ---
+    print("Performing granular facet consolidation...")
     
+    cols_to_process = [
+        col for col in potential_facet_cols 
+        if col in highest_ranking_df.columns and highest_ranking_df[col].count() > 0
+    ]
+    
+    processed_pairs = set()
+
     for i in range(len(cols_to_process)):
         for j in range(i + 1, len(cols_to_process)):
-            col1, col2 = cols_to_process[i], cols_to_process[j]
-            if col1 in highest_ranking_df and col2 in highest_ranking_df:
-                set1 = set(highest_ranking_df[col1].dropna().unique())
-                set2 = set(highest_ranking_df[col2].dropna().unique())
-                
-                sim_score = jaccard_similarity(set1, set2)
-                if 0.6 <= sim_score < 0.8 and len(set1) > 0 and len(set2) > 0:
-                    print(f"INFO: Near miss for column consolidation: '{col1}' and '{col2}' (Jaccard Similarity: {sim_score:.2f})")
-                if len(set1) > 0 and len(set2) > 0 and sim_score > 0.8:
-                    canonical = col1 if len(col1) <= len(col2) else col2
-                    to_merge = col2 if canonical == col1 else col1
-                    if canonical not in merged_cols_map:
-                         merged_cols_map[canonical] = []
-                    merged_cols_map[canonical].append(to_merge)
-    
-    for canonical, to_merge_list in merged_cols_map.items():
-        for col in to_merge_list:
-            if col in highest_ranking_df.columns and canonical in highest_ranking_df.columns:
-                highest_ranking_df[canonical].fillna(highest_ranking_df[col], inplace=True)
-                highest_ranking_df.drop(columns=[col], inplace=True, errors='ignore')
+            col_A_name = cols_to_process[i]
+            col_B_name = cols_to_process[j]
+
+            if (col_B_name, col_A_name) in processed_pairs:
+                continue
+            processed_pairs.add((col_A_name, col_B_name))
+
+            values_A = set(highest_ranking_df[col_A_name].dropna().unique())
+            values_B = set(highest_ranking_df[col_B_name].dropna().unique())
+            common_values = values_A.intersection(values_B)
+
+            if not common_values:
+                continue
+
+            count_A = highest_ranking_df[col_A_name].count()
+            count_B = highest_ranking_df[col_B_name].count()
+
+            if count_A >= count_B:
+                primary_col_name, secondary_col_name = col_A_name, col_B_name
+                values_secondary = values_B
+            else:
+                primary_col_name, secondary_col_name = col_B_name, col_A_name
+                values_secondary = values_A
+            
+            duplication_rate = len(common_values) / len(values_secondary) if len(values_secondary) > 0 else 0
+            
+            DUPLICATION_THRESHOLD = 0.5 
+
+            if duplication_rate > DUPLICATION_THRESHOLD:
+                print(f"Consolidating: Found {duplication_rate:.1%} overlap. Moving common values from '{secondary_col_name}' to '{primary_col_name}'.")
+
+                mask = highest_ranking_df[secondary_col_name].isin(common_values)
+
+                highest_ranking_df.loc[mask, primary_col_name] = highest_ranking_df.loc[mask, primary_col_name].fillna(highest_ranking_df.loc[mask, secondary_col_name])
+
+                highest_ranking_df.loc[mask, secondary_col_name] = np.nan
+    # --- END: Granular Facet Consolidation ---
 
     # --- START: Enhanced & Intelligent Facet Discovery Logic ---
     if nlp:
