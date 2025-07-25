@@ -61,6 +61,11 @@
             color: #d1d5db;
             text-align: center;
         }
+        .rule-value-item.selected {
+            background-color: #dbeafe; /* A light blue background for selected items */
+            font-weight: 600;
+            color: #1e40af;
+        }
     </style>
 </head>
 <body class="text-gray-800 antialiased">
@@ -268,16 +273,21 @@ yoolstation
                     const ruleValue = String(rule.value).trim();
                     
                     if (cellValues.includes(ruleValue)) {
-                        const newSourceValues = cellValues.filter(v => v !== ruleValue);
-                        modifiedFacets[rule.sourceColumn] = newSourceValues.length > 0 ? newSourceValues.join(' | ') : null;
+                        if (rule.action === 'change') {
+                            const newValues = cellValues.map(v => v === ruleValue ? rule.newValue.trim() : v);
+                            modifiedFacets[rule.sourceColumn] = newValues.join(' | ');
+                        } else {
+                            const newSourceValues = cellValues.filter(v => v !== ruleValue);
+                            modifiedFacets[rule.sourceColumn] = newSourceValues.length > 0 ? newSourceValues.join(' | ') : null;
 
-                        if (rule.action === 'move') {
-                            const existingTargetValue = modifiedFacets[rule.targetColumn];
-                            const existingTargetValues = (!existingTargetValue || String(existingTargetValue).trim() === '') ? [] : String(existingTargetValue).split(' | ').map(v => v.trim());
-                            if (!existingTargetValues.includes(ruleValue)) {
-                                existingTargetValues.push(ruleValue);
+                            if (rule.action === 'move') {
+                                const existingTargetValue = modifiedFacets[rule.targetColumn];
+                                const existingTargetValues = (!existingTargetValue || String(existingTargetValue).trim() === '') ? [] : String(existingTargetValue).split(' | ').map(v => v.trim());
+                                if (!existingTargetValues.includes(ruleValue)) {
+                                    existingTargetValues.push(ruleValue);
+                                }
+                                modifiedFacets[rule.targetColumn] = existingTargetValues.join(' | ');
                             }
-                            modifiedFacets[rule.targetColumn] = existingTargetValues.join(' | ');
                         }
                     }
                 });
@@ -800,14 +810,17 @@ yoolstation
             const container = document.getElementById('manual-overrides-container');
             if (!container) return;
 
-            const optionsHtml = headers.map(h => `<option value="${h}">${h}</option>`).join('');
+            const filteredHeaders = headers.filter(h => !h.includes('Traffic') && !h.includes('Searches'));
+            const optionsHtml = filteredHeaders.map(h => `<option value="${h}">${h}</option>`).join('');
 
             const activeRulesHtml = overrideRules.map(rule => {
-                let ruleText = '';
+                let ruleText = `From <b>${rule.sourceColumn}</b>, `;
                 if (rule.action === 'delete') {
-                    ruleText = `From <b>${rule.sourceColumn}</b>, delete & merge value "<b>${rule.value}</b>"`;
-                } else {
-                    ruleText = `From <b>${rule.sourceColumn}</b>, move value "<b>${rule.value}</b>" to <b>${rule.targetColumn}</b>`;
+                    ruleText += `delete & merge value "<b>${rule.value}</b>"`;
+                } else if (rule.action === 'move') {
+                    ruleText += `move value "<b>${rule.value}</b>" to <b>${rule.targetColumn}</b>`;
+                } else if (rule.action === 'change') {
+                    ruleText += `change value "<b>${rule.value}</b>" to "<b>${rule.newValue}</b>"`;
                 }
                 return `<li class="flex justify-between items-center p-2 border-b"><span>${ruleText}</span><button class="remove-rule-btn text-red-500 hover:text-red-700 font-bold" data-rule-id="${rule.id}">&times;</button></li>`;
             }).join('');
@@ -825,12 +838,43 @@ yoolstation
                             </div>
                             <div class="mt-4">
                                 <div id="value-rules-panel" class="tab-panel">
-                                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end p-4 border rounded-md bg-white">
-                                        <div class="md:col-span-1"><label for="rule-source-column" class="block text-sm font-medium">Column</label><select id="rule-source-column" class="mt-1 block w-full p-2 border-gray-300 rounded-md">${optionsHtml}</select></div>
-                                        <div class="md:col-span-1"><label for="rule-value" class="block text-sm font-medium">Value to Find</label><input type="text" id="rule-value" class="mt-1 block w-full p-2 border-gray-300 rounded-md"></div>
-                                        <div class="md:col-span-1"><label for="rule-action" class="block text-sm font-medium">Action</label><select id="rule-action" class="mt-1 block w-full p-2 border-gray-300 rounded-md"><option value="delete">Delete & Merge</option><option value="move">Move Value</option></select></div>
-                                        <div id="rule-target-container" class="md:col-span-1" style="display: none;"><label for="rule-target-column" class="block text-sm font-medium">Move to Column</label><select id="rule-target-column" class="mt-1 block w-full p-2 border-gray-300 rounded-md">${optionsHtml}</select></div>
-                                        <div class="md:col-span-1"><button id="add-rule-btn" class="w-full ts-button-primary px-4 py-2 rounded-lg control-btn" disabled>+ Add Rule</button></div>
+                                    <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end p-4 border rounded-md bg-white">
+                                        <div class="md:col-span-1">
+                                            <label for="rule-source-column" class="block text-sm font-medium">Column</label>
+                                            <select id="rule-source-column" class="mt-1 block w-full p-2 border-gray-300 rounded-md">${optionsHtml}</select>
+                                        </div>
+                                        <div class="md:col-span-2">
+                                            <label for="rule-value-filter" class="block text-sm font-medium">Values to Find (select one or more)</label>
+                                            <input type="text" id="rule-value-filter" placeholder="Filter values..." class="mt-1 block w-full p-2 border-gray-300 rounded-md text-sm">
+                                            <div class="flex justify-between items-center mt-1 px-1 text-xs">
+                                                <a href="#" id="select-all-values-btn" class="text-blue-600 hover:underline font-semibold">Select All Visible</a>
+                                                <a href="#" id="deselect-all-values-btn" class="text-blue-600 hover:underline font-semibold">Deselect All</a>
+                                            </div>
+                                            <div id="rule-value-listbox" class="mt-1 h-40 border rounded-md overflow-y-auto bg-white">
+                                                <div class="p-2 text-gray-400 text-sm">Select a column first</div>
+                                            </div>
+                                        </div>
+                                        <div class="md:col-span-1">
+                                            <label for="rule-action" class="block text-sm font-medium">Action</label>
+                                            <select id="rule-action" class="mt-1 block w-full p-2 border-gray-300 rounded-md">
+                                                <option value="delete">Delete & Merge</option>
+                                                <option value="move">Move Value</option>
+                                                <option value="change">Change Value</option>
+                                            </select>
+                                        </div>
+                                        <div class="md:col-span-1">
+                                            <div id="rule-target-container" style="display: none;">
+                                                <label for="rule-target-column" class="block text-sm font-medium">Move to Column</label>
+                                                <select id="rule-target-column" class="mt-1 block w-full p-2 border-gray-300 rounded-md">${optionsHtml}</select>
+                                            </div>
+                                            <div id="rule-new-value-container" style="display: none;">
+                                                <label for="rule-new-value" class="block text-sm font-medium">New Value</label>
+                                                <input type="text" id="rule-new-value" class="mt-1 block w-full p-2 border-gray-300 rounded-md">
+                                            </div>
+                                        </div>
+                                        <div class="md:col-span-1">
+                                            <button id="add-rule-btn" class="w-full ts-button-primary px-4 py-2 rounded-lg control-btn" disabled>+ Add Rule(s)</button>
+                                        </div>
                                     </div>
                                     <div class="mt-4">
                                         <div class="flex justify-between items-center mb-2"><h4 class="font-semibold">Active Rules</h4>${overrideRules.length > 0 ? '<button id="clear-all-rules-btn" class="text-xs text-red-600 hover:underline">Clear All Rules</button>' : ''}</div>
@@ -859,7 +903,6 @@ yoolstation
                 else if (currentView.includes('Facet Potential Analysis')) renderFacetPotentialAnalysisView();
             };
             
-            // Tab switching logic
             const tabButtons = document.querySelectorAll('.tab-btn');
             const tabPanels = document.querySelectorAll('.tab-panel');
             tabButtons.forEach(button => {
@@ -876,23 +919,67 @@ yoolstation
                 });
             });
 
-            // Value-based rules logic
-            const actionSelect = document.getElementById('rule-action');
-            const targetContainer = document.getElementById('rule-target-container');
-            const addRuleBtn = document.getElementById('add-rule-btn');
-            const ruleValueInput = document.getElementById('rule-value');
+            const populateValueListbox = () => {
+                const sourceColumnSelect = document.getElementById('rule-source-column');
+                const selectedColumn = sourceColumnSelect.value;
+                const baseHeaders = Object.keys(analysisResults.categoryOverhaulMatrixReport[0] || {});
+                const currentDataState = applyOverridesAndMerge(analysisResults.categoryOverhaulMatrixReport, baseHeaders, analysisResults.hasOnsiteData);
+                
+                const valueSet = new Set();
+                currentDataState.forEach(row => {
+                    const cellValue = row[selectedColumn];
+                    if (cellValue !== null && cellValue !== undefined && String(cellValue).trim() !== '') {
+                        String(cellValue).split(' | ').forEach(v => valueSet.add(v.trim()));
+                    }
+                });
 
-            actionSelect?.addEventListener('change', () => { targetContainer.style.display = actionSelect.value === 'move' ? 'block' : 'none'; });
-            ruleValueInput?.addEventListener('input', () => { addRuleBtn.disabled = ruleValueInput.value.trim() === ''; });
-            addRuleBtn?.addEventListener('click', () => {
+                const sortedValues = Array.from(valueSet).sort();
+                const listbox = document.getElementById('rule-value-listbox');
+                const addRuleBtn = document.getElementById('add-rule-btn');
+
+                if (listbox) {
+                    listbox.innerHTML = sortedValues.length > 0
+                        ? sortedValues.map(v => `
+                            <div class="rule-value-item p-2 text-sm cursor-pointer hover:bg-blue-50 border-b border-gray-100" data-value="${v}" tabindex="0">
+                                ${v}
+                            </div>`).join('')
+                        : '<div class="p-2 text-gray-500 text-sm">No values found in this column</div>';
+                    addRuleBtn.disabled = sortedValues.length === 0;
+                }
+            };
+            
+            document.getElementById('rule-source-column')?.addEventListener('change', populateValueListbox);
+            
+            document.getElementById('rule-action')?.addEventListener('change', (e) => {
+                const action = e.target.value;
+                document.getElementById('rule-target-container').style.display = action === 'move' ? 'block' : 'none';
+                document.getElementById('rule-new-value-container').style.display = action === 'change' ? 'block' : 'none';
+            });
+            
+            document.getElementById('add-rule-btn')?.addEventListener('click', () => {
                 const sourceColumn = document.getElementById('rule-source-column').value;
-                const value = document.getElementById('rule-value').value;
                 const action = document.getElementById('rule-action').value;
                 const targetColumn = document.getElementById('rule-target-column').value;
-                if (!value.trim()) return;
-                overrideRules.push({ id: Date.now(), sourceColumn, value, action, targetColumn });
+                const newValue = document.getElementById('rule-new-value').value;
+                const selectedItems = document.querySelectorAll('#rule-value-listbox .rule-value-item.selected');
+                
+                if (selectedItems.length === 0) {
+                    alert('Please select at least one value from the list.');
+                    return;
+                }
+                if (action === 'change' && !newValue.trim()) {
+                    alert('Please enter a new value for the "Change" action.');
+                    return;
+                }
+                
+                selectedItems.forEach(item => {
+                    const value = item.dataset.value;
+                    overrideRules.push({ id: Date.now(), sourceColumn, value, action, targetColumn, newValue });
+                });
+
                 handleRuleChange();
             });
+            
             document.getElementById('active-rules-list')?.addEventListener('click', (e) => {
                 if(e.target.matches('.remove-rule-btn')) {
                     const ruleId = parseInt(e.target.dataset.ruleId, 10);
@@ -900,12 +987,12 @@ yoolstation
                     handleRuleChange();
                 }
             });
+            
             document.getElementById('clear-all-rules-btn')?.addEventListener('click', () => {
                 overrideRules = [];
                 handleRuleChange();
             });
 
-            // Column operations logic
             document.getElementById('merge-column-btn')?.addEventListener('click', () => {
                 const sourceCol = document.getElementById('merge-source-column').value;
                 const targetCol = document.getElementById('merge-target-column').value;
@@ -930,6 +1017,40 @@ yoolstation
                     handleRuleChange(); 
                 }
             });
+
+            document.getElementById('rule-value-listbox')?.addEventListener('click', (e) => {
+                const item = e.target.closest('.rule-value-item');
+                if (item) {
+                    item.classList.toggle('selected');
+                }
+            });
+
+            document.getElementById('rule-value-filter')?.addEventListener('input', (e) => {
+                const filterText = e.target.value.toLowerCase();
+                const items = document.querySelectorAll('#rule-value-listbox .rule-value-item');
+                items.forEach(item => {
+                    const itemText = item.dataset.value.toLowerCase();
+                    item.style.display = itemText.includes(filterText) ? 'block' : 'none';
+                });
+            });
+
+            document.getElementById('select-all-values-btn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelectorAll('#rule-value-listbox .rule-value-item').forEach(item => {
+                    if (item.style.display !== 'none') {
+                        item.classList.add('selected');
+                    }
+                });
+            });
+
+            document.getElementById('deselect-all-values-btn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelectorAll('#rule-value-listbox .rule-value-item.selected').forEach(item => {
+                    item.classList.remove('selected');
+                });
+            });
+
+            if(document.getElementById('rule-source-column')) populateValueListbox();
         }
         
         function generateFacetPotentialFromMatrix(matrixData, baseHeaders, hasOnsite) {
