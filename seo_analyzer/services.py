@@ -86,7 +86,7 @@ def _calculate_group_market_share(df, keyword_group_col, source_col, traffic_col
     market_share_pct.reset_index(inplace=True)
     return market_share_pct.sort_values('Total Monthly Google Traffic', ascending=False)
 
-def _generate_category_overhaul_matrix(df, internal_keyword_col, internal_position_col, internal_traffic_col, internal_url_col_name, onsite_df, internal_volume_col):
+def _generate_category_overhaul_matrix(df, internal_keyword_col, internal_position_col, internal_traffic_col, internal_url_col_name, onsite_df, internal_volume_col, topic_col='TopicID'):
     """
     Generates a matrix of categories and facets using a "learn and classify" model.
     NOW MODIFIED to return both the detailed matrix and a high-level facet potential report.
@@ -160,6 +160,8 @@ def _generate_category_overhaul_matrix(df, internal_keyword_col, internal_positi
             forms.add(word[:-1])
         else:
             forms.add(word + 's')
+        # INTEGRATED: Add stem to forms for better matching
+        forms.add(stemmer.stem(word))
         return forms
         
     category_counts = highest_ranking_df['Original Category Mapping'].value_counts()
@@ -371,20 +373,183 @@ def _generate_category_overhaul_matrix(df, internal_keyword_col, internal_positi
                 highest_ranking_df[canonical].fillna(highest_ranking_df[col], inplace=True)
                 highest_ranking_df.drop(columns=[col], inplace=True, errors='ignore')
 
-    all_facet_cols = {col for col in potential_facet_cols if col in highest_ranking_df.columns} | {'Derived Facets', 'Discovered Facets'}
+    # --- START: Enhanced & Intelligent Facet Discovery Logic ---
+    if nlp:
+        ATTRIBUTE_SEEDS = nlp("material color size power type feature brand style finish")
+        NOISE_SEEDS = nlp("opinion deal location guide review good best cheap sale offer")
+
+    # --- DYNAMIC NOISE FILTER --
+    dynamic_noise_set = set()
+    if topic_col in highest_ranking_df.columns and highest_ranking_df[topic_col].nunique() > 1:
+        print("Generating dynamic noise filter based on term frequency across topics...")
+        topic_docs = highest_ranking_df.dropna(subset=[internal_keyword_col, topic_col])\
+            .groupby(topic_col)[internal_keyword_col].apply(lambda x: ' '.join(x))
+
+        word_in_topic_count = Counter()
+        all_words = set()
+        for doc in topic_docs:
+            words_in_doc = {token.lemma_ for token in nlp(doc.lower()) if token.is_alpha and len(token.lemma_) > 2}
+            for word in words_in_doc:
+                word_in_topic_count[word] += 1
+            all_words.update(words_in_doc)
+
+        num_topics = highest_ranking_df[topic_col].nunique()
+        noise_threshold = 0.30
+        
+        for word, count in word_in_topic_count.items():
+            if (count / num_topics) > noise_threshold:
+                dynamic_noise_set.add(word)
+        
+        print(f"Dynamically identified {len(dynamic_noise_set)} noise terms to ignore (e.g., {list(dynamic_noise_set)[:5]}).")
+
+    def discover_remaining_facets(row, learned_noise_tokens):
+        if nlp is None:
+            return None
+
+        ignore_tokens = learned_noise_tokens.copy()
+        for token in nlp.Defaults.stop_words:
+            ignore_tokens.add(token)
+
+        if pd.notnull(row['Category Mapping']):
+            for cat_word in str(row['Category Mapping']).lower().split():
+                ignore_tokens.update(get_word_forms(cat_word))
+        
+        # Pre-collect all assigned facet values from the row to ignore
+        assigned_facet_values = set()
+        # Define facet columns to check within this function's scope
+        facet_cols_in_row = [
+            c for c in potential_facet_cols if c in row and pd.notnull(row[c])
+        ]
+        facet_cols_in_row.append('Derived Facets')
+        
+        for col in facet_cols_in_row:
+             if col in row and pd.notnull(row[col]):
+                values = str(row[col]).split(' | ')
+                for val in values:
+                    assigned_facet_values.update(val.strip().lower().split())
+        ignore_tokens.update(assigned_facet_values)
+        
+        kw_text = str(row[internal_keyword_col]).lower()
+        doc = nlp(kw_text)
+        discovered = set()
+        
+        if 'heavy duty' in kw_text:
+            discovered.add('Heavy Duty')
+            kw_text = kw_text.replace('heavy duty', '')
+        
+        doc = nlp(kw_text)
+        potential_tokens = [
+            token for token in doc 
+            if token.pos_ in ['NOUN', 'PROPN', 'ADJ'] 
+            and not token.is_stop and token.is_alpha and len(token.lemma_) > 2
+            and token.lemma_ not in ignore_tokens
+        ]
+
+        for token in potential_tokens:
+            attribute_similarity = token.similarity(ATTRIBUTE_SEEDS)
+            noise_similarity = token.similarity(NOISE_SEEDS)
+            is_location = any(ent.label_ == 'GPE' for ent in nlp(token.text).ents)
+
+            if attribute_similarity > (noise_similarity * 1.1) and not is_location:
+                discovered.add(token.lemma_.title())
+
+        return ', '.join(sorted(list(discovered))) if discovered else None
+        
+    highest_ranking_df['Discovered Facets'] = highest_ranking_df.swifter.apply(
+        discover_remaining_facets, 
+        learned_noise_tokens=dynamic_noise_set,
+        axis=1
+    )
+    
+    # --- NEW (INTEGRATED): Intelligent Facet Organizer ---
+    def _organize_facets(df, explicit_cols_df):
+        print("Organizing and classifying discovered facets...")
+        
+        known_brands = set()
+        if not explicit_cols_df.empty:
+            for col in explicit_cols_df.columns:
+                if col.lower() in ['brand', 'make', 'manufacturer']:
+                    known_brands.update([b.lower() for b in explicit_cols_df[col].dropna().unique()])
+        
+        all_keywords_text = ' '.join(df[internal_keyword_col].dropna().unique())
+        if nlp:
+            kw_doc = nlp(all_keywords_text)
+            known_brands.update({ent.text.lower() for ent in kw_doc.ents if ent.label_ == 'ORG'})
+
+        def _find_brand_column(cols_df, brands_set):
+            for col in cols_df.columns:
+                if col.lower() in ['brand', 'make', 'manufacturer']: return col
+            for col in cols_df.columns:
+                values = cols_df[col].dropna().str.lower().unique()
+                if len(values) == 0: continue
+                matches = sum(1 for v in values if v in brands_set)
+                if (matches / len(values)) > 0.5: return col
+            return None
+        
+        brand_col_name = _find_brand_column(explicit_facets_df, known_brands)
+        
+        new_facet_cols = defaultdict(list)
+        discovered_brands = []
+
+        for _, row in df.iterrows():
+            discovered_str = row.get('Discovered Facets', '')
+            facets = set(discovered_str.split(', ')) if pd.notnull(discovered_str) and discovered_str else set()
+            
+            row_brands, row_voltages, row_powers, row_features = set(), set(), set(), set()
+            for facet in facets:
+                f_lower = facet.lower()
+                if f_lower in known_brands: row_brands.add(facet.title())
+                elif re.search(r'\d+v', f_lower): row_voltages.add(facet)
+                elif f_lower in ['cordless', 'corded', 'electric', 'petrol', 'battery']: row_powers.add(facet.title())
+                else: row_features.add(facet.title())
+            
+            discovered_brands.append(', '.join(sorted(row_brands)) if row_brands else None)
+            new_facet_cols['Voltage'].append(', '.join(sorted(row_voltages)) if row_voltages else None)
+            new_facet_cols['Power Source'].append(', '.join(sorted(row_powers)) if row_powers else None)
+            new_facet_cols['Features'].append(', '.join(sorted(row_features)) if row_features else None)
+
+        if brand_col_name:
+            print(f"Consolidating discovered brands into existing column: '{brand_col_name}'")
+            df[brand_col_name] = df[brand_col_name].astype(str).replace('nan', '')
+            discovered_brands_series = pd.Series(discovered_brands, index=df.index).fillna('')
+            df[brand_col_name] = df[brand_col_name].str.cat(discovered_brands_series, sep=', ').str.strip(', ').replace('', None)
+            df[brand_col_name] = df[brand_col_name].apply(lambda x: ', '.join(sorted(list(set(e.strip() for e in x.split(', ') if e.strip())))) if pd.notnull(x) else None)
+        else:
+            print("No suitable existing brand column found. Creating a new 'Brand' column.")
+            brand_col_name = 'Brand'
+            df[brand_col_name] = discovered_brands
+
+        for col_name, data in new_facet_cols.items():
+            df[col_name] = data
+        
+        df.drop(columns=['Discovered Facets'], inplace=True, errors='ignore')
+        return df, brand_col_name
+
+    highest_ranking_df, brand_col_name = _organize_facets(highest_ranking_df, explicit_facets_df)
+    # --- END OF INTEGRATED LOGIC ---
+    
+    # --- MODIFIED: Define the full set of facet columns including the new organized ones ---
+    all_facet_cols = {col for col in potential_facet_cols if col in highest_ranking_df.columns}
+    all_facet_cols.add('Derived Facets') # From decompounding
+    
+    # Add newly created organized columns
+    newly_organized_cols = {col for col in [brand_col_name, 'Voltage', 'Power Source', 'Features'] if col in highest_ranking_df.columns and col is not None}
+    all_facet_cols.update(newly_organized_cols)
+    
+    # Ensure the now-obsolete 'Discovered Facets' column is not included
+    all_facet_cols.discard('Discovered Facets')
 
     def is_redundant(category, facet_val):
-        if pd.isnull(category) or pd.isnull(facet_val): return False
-        cat_str = str(category).lower().replace('-', ' ')
-        facet_str = str(facet_val).lower().replace('-', ' ')
-        cat_tokens = {item for word in cat_str.split() for item in get_word_forms(word)}
-        facet_tokens = set(facet_str.split())
+        if nlp is None or pd.isnull(category) or pd.isnull(facet_val): 
+            return False
         
-        cat_variations = category_stems.get(stemmer.stem(str(category).lower().replace(' ', '')), [])
-        for variation in cat_variations:
-            cat_tokens.update(get_word_forms(variation))
-            
-        return facet_tokens.issubset(cat_tokens)
+        cat_str = str(category).lower().replace('-', ' ')
+        cat_lemmas = {token.lemma_ for token in nlp(cat_str)}
+
+        facet_str = str(facet_val).lower().replace('-', ' ')
+        facet_lemmas = {token.lemma_ for token in nlp(facet_str)}
+        
+        return facet_lemmas.issubset(cat_lemmas)
 
     for col in all_facet_cols:
         if col in highest_ranking_df.columns and col != 'Category Mapping':
@@ -393,58 +558,6 @@ def _generate_category_overhaul_matrix(df, internal_keyword_col, internal_positi
                 axis=1
             )
             
-    UNIVERSAL_IGNORE_TOKENS = {
-        'for', 'and', 'the', 'with', 'in', 'a', 'of', 'for', 'sale', 'best',
-        'cheap', 'deals', 'price', 'cost', 'vs', 'reviews', 'guide', 'near',
-        'buy', 'offers', 'clearance', 'store', 'shop', 'b&q', 'asda', 'tesco',
-        'halfords', 'middlesbrough', 'sales'
-    }
-
-    def discover_remaining_facets(row):
-        if nlp is None:
-            return None
-
-        ignore_tokens = UNIVERSAL_IGNORE_TOKENS.copy()
-
-        if pd.notnull(row['Category Mapping']):
-            for cat_word in str(row['Category Mapping']).lower().split():
-                ignore_tokens.update(get_word_forms(cat_word))
-
-        synonym_map = {'tool boxes': {'toolbox', 'toolboxes'}, 'multi-tools': {'multitool'}, 'lawnmowers': {'lawnmower'}}
-        cat_lower = str(row.get('Category Mapping', '')).lower()
-        if cat_lower in synonym_map:
-            ignore_tokens.update(synonym_map[cat_lower])
-        
-        try:
-            path_segments = urlparse(str(row[internal_url_col_name])).path.lower().split('/')
-            for segment in path_segments:
-                ignore_tokens.update(segment.replace('-', ' ').replace('_', ' ').split())
-        except:
-            pass
-        
-        assigned_facet_values = set()
-        facet_cols = list(all_facet_cols - {'Discovered Facets'})
-        for col in facet_cols:
-             if col in row and pd.notnull(row[col]):
-                values = str(row[col]).split(' | ')
-                for val in values:
-                    assigned_facet_values.update(val.strip().lower().split())
-        ignore_tokens.update(assigned_facet_values)
-        
-        doc = nlp(str(row[internal_keyword_col]).lower())
-        
-        potential_facets = {token.lemma_ for token in doc if token.pos_ in ['NOUN', 'PROPN', 'ADJ']}
-        
-        discovered = potential_facets - ignore_tokens
-        
-        low_value_terms = {'set', 'kit', 'pack', 'box', 'gun', 'type', 'accessories', 'parts', 'tool', 'bits'}
-        discovered = discovered - low_value_terms
-        
-        discovered_clean = [token.title() for token in discovered if len(token) > 2 and not token.isdigit()]
-        return ', '.join(sorted(discovered_clean)) if discovered_clean else None
-        
-    highest_ranking_df['Discovered Facets'] = highest_ranking_df.swifter.apply(discover_remaining_facets, axis=1)
-
     highest_ranking_df.dropna(axis=1, how='all', inplace=True)
     
     grouping_cols = ['Category Mapping'] + sorted([col for col in all_facet_cols if col in highest_ranking_df.columns])
@@ -498,7 +611,6 @@ def _generate_category_overhaul_matrix(df, internal_keyword_col, internal_positi
 
     matrix_df.sort_values('Monthly Organic Traffic', ascending=False, inplace=True)
     
-    # Convert metric columns to integers for clean display
     for col in ['Monthly Organic Traffic', 'Total Monthly Google Searches', 'Total On-Site Searches']:
         if col in matrix_df.columns:
             matrix_df[col] = matrix_df[col].astype(int)
@@ -511,7 +623,7 @@ def _generate_category_overhaul_matrix(df, internal_keyword_col, internal_positi
     
     matrix_df = matrix_df[final_cols + ['KeywordDetails']]
 
-    # --- START: NEW FACET POTENTIAL ANALYSIS LOGIC ---
+    # --- START: FACET POTENTIAL ANALYSIS LOGIC ---
     facet_potential_report_raw = []
     # Identify all columns that are acting as facets
     facet_cols = [col for col in grouping_cols if col != 'Category Mapping' and col in highest_ranking_df.columns]
@@ -529,7 +641,6 @@ def _generate_category_overhaul_matrix(df, internal_keyword_col, internal_positi
             id_vars.append('On-Site Searches')
             metric_cols.append('On-Site Searches')
 
-        # Use melt to transform the wide facet columns into a long format
         melted_df = highest_ranking_df.melt(
             id_vars=id_vars,
             value_vars=facet_cols,
@@ -537,14 +648,10 @@ def _generate_category_overhaul_matrix(df, internal_keyword_col, internal_positi
             value_name='Facet Value'
         )
 
-        # We only care about rows where a facet value actually existed
         melted_df.dropna(subset=['Facet Value'], inplace=True)
         melted_df = melted_df[melted_df['Facet Value'] != '']
         
         if not melted_df.empty:
-            # --- START: CORRECTED AGGREGATION FOR NESTING ---
-
-            # 1. Create the detailed value-level report first
             value_agg_ops = {col: 'sum' for col in metric_cols}
             value_agg_ops[internal_keyword_col] = pd.Series.nunique
             
@@ -557,13 +664,11 @@ def _generate_category_overhaul_matrix(df, internal_keyword_col, internal_positi
                 internal_keyword_col: 'Keyword Count'
             }, inplace=True, errors='ignore')
 
-            # 2. Now, create the parent-level report by aggregating the value-level data
             parent_cols = ['Category Mapping', 'Facet Type']
             parent_agg_cols = [col for col in ['Monthly Organic Traffic', 'Total Monthly Google Searches', 'Total On-Site Searches', 'Keyword Count'] if col in value_level_df.columns]
             
             parent_level_df = value_level_df.groupby(parent_cols, as_index=False)[parent_agg_cols].sum()
 
-            # 3. Calculate the Facet Value Score on the aggregated parent-level data
             master_weights = {
                 'Monthly Organic Traffic': 0.34,
                 'Total Monthly Google Searches': 0.33,
@@ -572,23 +677,19 @@ def _generate_category_overhaul_matrix(df, internal_keyword_col, internal_positi
             available_cols = [col for col in master_weights.keys() if col in parent_level_df.columns and not parent_level_df[col].isnull().all()]
 
             if available_cols and len(available_cols) > 0:
-                # Re-balance weights based on available data
                 total_weight_available = sum(master_weights[col] for col in available_cols)
                 dynamic_weights = {col: master_weights[col] / total_weight_available for col in available_cols}
                 
-                # Normalize only the available columns
                 scaler = MinMaxScaler()
                 normalized_data = scaler.fit_transform(parent_level_df[available_cols])
                 normalized_df = pd.DataFrame(normalized_data, columns=available_cols, index=parent_level_df.index)
 
-                # Calculate score using the dynamically balanced weights
-                score = pd.Series(0, index=parent_level_df.index)
+                score = pd.Series(0, index=parent_level_df.index, dtype=float)
                 for col, weight in dynamic_weights.items():
                     score += normalized_df[col] * weight
                 
                 parent_level_df['Facet Value Score'] = (score * 100).round(0)
 
-            # 4. EFFICIENTLY gather nested details and merge back to the parent report
             details_series = value_level_df.groupby(parent_cols).apply(
                 lambda g: g.sort_values('Monthly Organic Traffic', ascending=False).to_dict('records')
             )
@@ -596,15 +697,10 @@ def _generate_category_overhaul_matrix(df, internal_keyword_col, internal_positi
             
             final_report_df = parent_level_df.set_index(parent_cols).join(details_series).reset_index()
             
-            # --- END: CORRECTED AGGREGATION FOR NESTING ---
-            
             facet_potential_report_raw = final_report_df.to_dict(orient='records')
-
-    # --- END: NEW FACET POTENTIAL ANALYSIS LOGIC ---
     
     matrix_df.replace({pd.NA: None, np.nan: None, '': None}, inplace=True)
 
-    # MODIFIED: Return a dictionary containing both reports
     return {
         "matrix_report": matrix_df.to_dict(orient='records'),
         "facet_potential_report": facet_potential_report_raw
@@ -821,7 +917,8 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
     needs_clustering = any([
         lenses_to_run.get('content_gaps'), 
         lenses_to_run.get('competitive_opportunities'), 
-        lenses_to_run.get('market_share')
+        lenses_to_run.get('market_share'),
+        lenses_to_run.get('taxonomy_analysis') # Taxonomy lens now benefits from clusters
     ])
     
     topic_names = {}
@@ -1035,7 +1132,8 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
             internal_traffic_col=internal_traffic_col,
             internal_url_col_name=internal_url_col_name,
             onsite_df=onsite_df,
-            internal_volume_col=internal_volume_col
+            internal_volume_col=internal_volume_col,
+            topic_col='TopicID'
         )
         category_overhaul_matrix_report_raw = overhaul_results["matrix_report"]
         facet_potential_report_raw = overhaul_results["facet_potential_report"]
