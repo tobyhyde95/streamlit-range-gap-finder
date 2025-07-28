@@ -850,7 +850,8 @@ yoolstation
                 if (rule.action === 'delete') {
                     ruleText += `delete & merge value "<b>${rule.value}</b>"`;
                 } else if (rule.action === 'move') {
-                    ruleText += `move value "<b>${rule.value}</b>" to <b>${rule.targetColumn}</b>`;
+                    const targetDisplay = rule.isNew ? `new column "<b>${rule.targetColumn}</b>"` : `<b>${rule.targetColumn}</b>`;
+                    ruleText += `move value "<b>${rule.value}</b>" to ${targetDisplay}`;
                 } else if (rule.action === 'change') {
                     const valueDisplay = rule.value === '' ? '<em>(Blank)</em>' : `"${rule.value}"`;
                     ruleText += `change value ${valueDisplay} to "<b>${rule.newValue}</b>"`;
@@ -896,9 +897,14 @@ yoolstation
                                             </select>
                                         </div>
                                         <div class="md:col-span-1">
-                                            <div id="rule-target-container" style="display: none;">
-                                                <label for="rule-target-column" class="block text-sm font-medium">Move to Column</label>
-                                                <select id="rule-target-column" class="mt-1 block w-full p-2 border-gray-300 rounded-md">${optionsHtml}</select>
+                                            <div id="rule-target-container" class="space-y-2" style="display: none;">
+                                                <label class="block text-sm font-medium">Move to Column</label>
+                                                <select id="rule-target-column" class="block w-full p-2 border-gray-300 rounded-md">${optionsHtml}</select>
+                                                <input type="text" id="new-column-name-input" placeholder="New column name..." class="hidden mt-1 block w-full p-2 border-gray-300 rounded-md">
+                                                <div>
+                                                    <input type="checkbox" id="create-new-column-toggle" class="h-4 w-4 rounded border-gray-300">
+                                                    <label for="create-new-column-toggle" class="ml-2 text-sm">Create new column</label>
+                                                </div>
                                             </div>
                                             <div id="rule-new-value-container">
                                                 <label for="rule-new-value" class="block text-sm font-medium">New Value</label>
@@ -995,29 +1001,55 @@ yoolstation
                 document.getElementById('rule-new-value-container').style.display = action === 'change' ? 'block' : 'none';
             });
             
+            document.getElementById('create-new-column-toggle')?.addEventListener('change', (e) => {
+                const isChecked = e.target.checked;
+                document.getElementById('rule-target-column').classList.toggle('hidden', isChecked);
+                document.getElementById('new-column-name-input').classList.toggle('hidden', !isChecked);
+            });
+
             document.getElementById('add-rule-btn')?.addEventListener('click', () => {
                 const sourceColumn = document.getElementById('rule-source-column').value;
                 const action = document.getElementById('rule-action').value;
-                const targetColumn = document.getElementById('rule-target-column').value;
-                const newValue = document.getElementById('rule-new-value').value;
                 const selectedItems = document.querySelectorAll('#rule-value-listbox .rule-value-item.selected');
                 
                 if (selectedItems.length === 0) {
                     alert('Please select at least one value from the list.');
                     return;
                 }
-                if (action === 'change' && !newValue.trim()) {
-                    alert('Please enter a new value for the "Change" action.');
-                    return;
-                }
                 
+                let targetColumn, newValue, isNew = false;
+
+                if (action === 'change') {
+                    newValue = document.getElementById('rule-new-value').value;
+                    if (!newValue.trim()) {
+                        alert('Please enter a new value for the "Change" action.');
+                        return;
+                    }
+                } else if (action === 'move') {
+                    const isCreatingNew = document.getElementById('create-new-column-toggle').checked;
+                    if (isCreatingNew) {
+                        targetColumn = document.getElementById('new-column-name-input').value.trim();
+                        if (!targetColumn) {
+                            alert('Please enter a name for the new column.');
+                            return;
+                        }
+                        const currentHeaders = Object.keys(analysisResults.categoryOverhaulMatrixReport[0] || {});
+                        if (currentHeaders.includes(targetColumn)) {
+                            alert('A column with this name already exists.');
+                            return;
+                        }
+                        isNew = true;
+                        // Add the new column to the underlying data immediately
+                        analysisResults.categoryOverhaulMatrixReport.forEach(row => row[targetColumn] = null);
+                    } else {
+                        targetColumn = document.getElementById('rule-target-column').value;
+                    }
+                }
+
                 selectedItems.forEach(item => {
                     const value = item.dataset.value;
-                    // Prevent adding move/delete rules for blank values
-                    if (value === '' && (action === 'move' || action === 'delete')) {
-                        return; 
-                    }
-                    overrideRules.push({ id: Date.now() + Math.random(), sourceColumn, value, action, targetColumn, newValue });
+                    if (value === '' && (action === 'move' || action === 'delete')) return;
+                    overrideRules.push({ id: Date.now() + Math.random(), sourceColumn, value, action, targetColumn, newValue, isNew });
                 });
 
                 handleRuleChange();
@@ -1163,7 +1195,6 @@ yoolstation
             
             let finalReport = Object.values(aggregation);
             
-            // --- START: Replicate Scoring Logic on Front-End ---
             const masterWeights = {
                 'Monthly Organic Traffic': 0.34,
                 'Total Monthly Google Searches': 0.33,
@@ -1197,12 +1228,11 @@ yoolstation
                     let finalScore = score * 100;
                     const facetKey = `${row['Category Mapping']}||${row['Facet Type']}`;
                     if (inProductNameFacets.has(facetKey)) {
-                        finalScore += 50; // Add bonus points
+                        finalScore += 50;
                     }
-                    row['Facet Value Score'] = Math.round(Math.min(finalScore, 100)); // Cap score at 100
+                    row['Facet Value Score'] = Math.round(Math.min(finalScore, 100));
                 });
             }
-            // --- END: Replicate Scoring Logic on Front-End ---
 
             finalReport.forEach(row => {
                 row.FacetValueDetails = Object.values(row.FacetValueDetails).sort((a,b) => b['Monthly Organic Traffic'] - a['Monthly Organic Traffic']);
