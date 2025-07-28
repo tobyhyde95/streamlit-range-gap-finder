@@ -462,7 +462,7 @@ yoolstation
                 return '<div class="p-4 text-center text-gray-500">No facet value details available.</div>';
             }
 
-            const hasOnsiteData = facetValueDetails[0].hasOwnProperty('Total On-Site Searches');
+            const hasOnsiteData = facetValueDetails[0].hasOwnProperty('Total On-Site Searches') || facetValueDetails[0].hasOwnProperty('Total Annual On-Site Searches');
             let headers = ['Facet Value', 'Keyword Count', 'Monthly Organic Traffic', 'Total Monthly Google Searches'];
             if (hasOnsiteData) headers.push('Total On-Site Searches');
             let displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
@@ -477,7 +477,7 @@ yoolstation
                     <td>${(detail['Keyword Count'] || 0).toLocaleString()}</td>
                     <td>${(Math.round(detail[displayHeaders[2]] || 0)).toLocaleString()}</td>
                     <td>${(Math.round(detail[displayHeaders[3]] || 0)).toLocaleString()}</td>
-                    ${hasOnsiteData ? `<td>${(detail[displayHeaders[4]] || 0).toLocaleString()}</td>` : ''}
+                    ${hasOnsiteData ? `<td>${(Math.round(detail[displayHeaders[4]] || 0)).toLocaleString()}</td>` : ''}
                 </tr>`;
             });
 
@@ -670,6 +670,9 @@ yoolstation
                         };
                         if (detailRow.hasOwnProperty('Total On-Site Searches')) {
                             newBreakdownRow['Total On-Site Searches'] = detailRow['Total On-Site Searches'];
+                        }
+                         if (detailRow.hasOwnProperty('Total Annual On-Site Searches')) {
+                            newBreakdownRow['Total Annual On-Site Searches'] = detailRow['Total Annual On-Site Searches'];
                         }
                         valueBreakdownData.push(newBreakdownRow);
                     });
@@ -1118,6 +1121,7 @@ yoolstation
                 }
                 aggregation[key]['Monthly Organic Traffic'] += row['Monthly Organic Traffic'];
                 aggregation[key]['Total Monthly Google Searches'] += row['Total Monthly Google Searches'];
+                if(hasOnsite) aggregation[key]['Total On-Site Searches'] += row['Total On-Site Searches'];
                 
                 const detailKey = row['Facet Value'];
                  if(!aggregation[key].FacetValueDetails[detailKey]) {
@@ -1537,61 +1541,37 @@ yoolstation
 
         function transformDataForTimeframe(data, timeframe) {
             if (timeframe === 'monthly') return JSON.parse(JSON.stringify(data));
-            
-            const annualizedData = JSON.parse(JSON.stringify(data)); 
 
-            annualizedData.forEach(row => {
-                monthlyToAnnualCols.forEach(col => {
-                    const annualCol = col.replace('Monthly', 'Annual');
-                    if (row.hasOwnProperty(col)) {
-                        if (row[col] !== null && row[col] !== undefined) {
-                            row[annualCol] = row[col] * 12;
-                        } else {
-                            row[annualCol] = null;
+            const dataToAnnualize = JSON.parse(JSON.stringify(data));
+
+            const processObject = (obj) => {
+                if (Array.isArray(obj)) {
+                    return obj.map(processObject);
+                }
+                if (obj !== null && typeof obj === 'object') {
+                    const newObj = {};
+                    for (const key of Object.keys(obj)) {
+                        let value = obj[key];
+                        const newKey = key.replace(/Monthly/g, 'Annual');
+
+                        // Annualize metrics
+                        if (monthlyToAnnualCols.includes(key) && typeof value === 'number') {
+                            value *= 12;
+                        } else if ((key === 'Total On-Site Searches' || key === 'On-Site Searches') && typeof value === 'number') {
+                            value *= 12;
+                        } else if (Array.isArray(value) && value.length === 2 && typeof value[1] === 'number') {
+                            // Handle market share format [percentage, traffic]
+                            value = [value[0], value[1] * 12];
                         }
+                        
+                        newObj[newKey] = processObject(value);
                     }
-                });
-
-                Object.keys(row).forEach(key => {
-                    if (Array.isArray(row[key]) && row[key].length === 2 && typeof row[key][1] === 'number') {
-                        row[key][1] *= 12;
-                    }
-                });
-
-                if (row.KeywordDetails) {
-                    row.KeywordDetails.forEach(detail => {
-                        monthlyToAnnualCols.forEach(col => {
-                           const annualCol = col.replace('Monthly', 'Annual');
-                            if (detail.hasOwnProperty(col)) {
-                                if (detail[col] !== null && detail[col] !== undefined) {
-                                    detail[annualCol] = detail[col] * 12;
-                                }
-                            }
-                        });
-                    });
+                    return newObj;
                 }
-                
-                if (row.FacetValueDetails) {
-                    row.FacetValueDetails.forEach(detail => {
-                        monthlyToAnnualCols.forEach(col => {
-                            const annualCol = col.replace('Monthly', 'Annual');
-                            if (detail.hasOwnProperty(col)) {
-                                if (detail[col] !== null && detail[col] !== undefined) {
-                                    detail[annualCol] = detail[col] * 12;
-                                }
-                            }
-                        });
-                    });
-                }
-            });
-            return annualizedData.map(row => {
-                const newRow = {};
-                Object.keys(row).forEach(key => {
-                    const newKey = key.replace('Monthly', 'Annual');
-                    newRow[newKey] = row[key];
-                });
-                return newRow;
-            });
+                return obj;
+            };
+
+            return dataToAnnualize.map(processObject);
         }
 
         function renderKeywordGapAnalysisView() {
