@@ -267,16 +267,22 @@ yoolstation
 
                 overrideRules.forEach(rule => {
                     const cellValue = modifiedFacets[rule.sourceColumn];
-                    if (cellValue === null || cellValue === undefined) return;
-
-                    const cellValues = String(cellValue).split(' | ').map(v => v.trim());
+                    const isCellBlank = cellValue === null || cellValue === undefined || String(cellValue).trim() === '';
                     const ruleValue = String(rule.value).trim();
                     
-                    if (cellValues.includes(ruleValue)) {
+                    const cellValues = isCellBlank ? [] : String(cellValue).split(' | ').map(v => v.trim());
+
+                    const isMatch = (ruleValue === '' && isCellBlank) || (ruleValue !== '' && !isCellBlank && cellValues.includes(ruleValue));
+
+                    if (isMatch) {
                         if (rule.action === 'change') {
-                            const newValues = cellValues.map(v => v === ruleValue ? rule.newValue.trim() : v);
-                            modifiedFacets[rule.sourceColumn] = newValues.join(' | ');
-                        } else {
+                            if (ruleValue === '') { // This rule changes a blank value
+                                modifiedFacets[rule.sourceColumn] = rule.newValue.trim();
+                            } else { // This rule changes a specific, existing value
+                                const newValues = cellValues.map(v => (v === ruleValue ? rule.newValue.trim() : v));
+                                modifiedFacets[rule.sourceColumn] = newValues.join(' | ');
+                            }
+                        } else if (ruleValue !== '') { // MOVE and DELETE only make sense for non-blank values
                             const newSourceValues = cellValues.filter(v => v !== ruleValue);
                             modifiedFacets[rule.sourceColumn] = newSourceValues.length > 0 ? newSourceValues.join(' | ') : null;
 
@@ -286,7 +292,7 @@ yoolstation
                                 if (!existingTargetValues.includes(ruleValue)) {
                                     existingTargetValues.push(ruleValue);
                                 }
-                                modifiedFacets[rule.targetColumn] = existingTargetValues.join(' | ');
+                                modifiedFacets[rule.targetColumn] = existingTargetValues.sort().join(' | ');
                             }
                         }
                     }
@@ -820,7 +826,8 @@ yoolstation
                 } else if (rule.action === 'move') {
                     ruleText += `move value "<b>${rule.value}</b>" to <b>${rule.targetColumn}</b>`;
                 } else if (rule.action === 'change') {
-                    ruleText += `change value "<b>${rule.value}</b>" to "<b>${rule.newValue}</b>"`;
+                    const valueDisplay = rule.value === '' ? '<em>(Blank)</em>' : `"${rule.value}"`;
+                    ruleText += `change value ${valueDisplay} to "<b>${rule.newValue}</b>"`;
                 }
                 return `<li class="flex justify-between items-center p-2 border-b"><span>${ruleText}</span><button class="remove-rule-btn text-red-500 hover:text-red-700 font-bold" data-rule-id="${rule.id}">&times;</button></li>`;
             }).join('');
@@ -857,9 +864,9 @@ yoolstation
                                         <div class="md:col-span-1">
                                             <label for="rule-action" class="block text-sm font-medium">Action</label>
                                             <select id="rule-action" class="mt-1 block w-full p-2 border-gray-300 rounded-md">
+                                                <option value="change">Change Value</option>
                                                 <option value="delete">Delete & Merge</option>
                                                 <option value="move">Move Value</option>
-                                                <option value="change">Change Value</option>
                                             </select>
                                         </div>
                                         <div class="md:col-span-1">
@@ -867,7 +874,7 @@ yoolstation
                                                 <label for="rule-target-column" class="block text-sm font-medium">Move to Column</label>
                                                 <select id="rule-target-column" class="mt-1 block w-full p-2 border-gray-300 rounded-md">${optionsHtml}</select>
                                             </div>
-                                            <div id="rule-new-value-container" style="display: none;">
+                                            <div id="rule-new-value-container">
                                                 <label for="rule-new-value" class="block text-sm font-medium">New Value</label>
                                                 <input type="text" id="rule-new-value" class="mt-1 block w-full p-2 border-gray-300 rounded-md">
                                             </div>
@@ -926,9 +933,13 @@ yoolstation
                 const currentDataState = applyOverridesAndMerge(analysisResults.categoryOverhaulMatrixReport, baseHeaders, analysisResults.hasOnsiteData);
                 
                 const valueSet = new Set();
+                let hasBlanks = false;
+
                 currentDataState.forEach(row => {
                     const cellValue = row[selectedColumn];
-                    if (cellValue !== null && cellValue !== undefined && String(cellValue).trim() !== '') {
+                    if (cellValue === null || cellValue === undefined || String(cellValue).trim() === '') {
+                        hasBlanks = true;
+                    } else {
                         String(cellValue).split(' | ').forEach(v => valueSet.add(v.trim()));
                     }
                 });
@@ -936,15 +947,17 @@ yoolstation
                 const sortedValues = Array.from(valueSet).sort();
                 const listbox = document.getElementById('rule-value-listbox');
                 const addRuleBtn = document.getElementById('add-rule-btn');
+                
+                let listboxItems = sortedValues.map(v => `<div class="rule-value-item p-2 text-sm cursor-pointer hover:bg-blue-50 border-b" data-value="${v}" tabindex="0">${v}</div>`).join('');
+                
+                if (hasBlanks) {
+                    const blankOptionHtml = `<div class="rule-value-item p-2 text-sm cursor-pointer hover:bg-blue-50 border-b" data-value="" tabindex="0"><em>(Blank)</em></div>`;
+                    listboxItems = blankOptionHtml + listboxItems;
+                }
 
                 if (listbox) {
-                    listbox.innerHTML = sortedValues.length > 0
-                        ? sortedValues.map(v => `
-                            <div class="rule-value-item p-2 text-sm cursor-pointer hover:bg-blue-50 border-b border-gray-100" data-value="${v}" tabindex="0">
-                                ${v}
-                            </div>`).join('')
-                        : '<div class="p-2 text-gray-500 text-sm">No values found in this column</div>';
-                    addRuleBtn.disabled = sortedValues.length === 0;
+                    listbox.innerHTML = listboxItems || '<div class="p-2 text-gray-500 text-sm">No values found</div>';
+                    addRuleBtn.disabled = !listboxItems;
                 }
             };
             
@@ -974,7 +987,11 @@ yoolstation
                 
                 selectedItems.forEach(item => {
                     const value = item.dataset.value;
-                    overrideRules.push({ id: Date.now(), sourceColumn, value, action, targetColumn, newValue });
+                    // Prevent adding move/delete rules for blank values
+                    if (value === '' && (action === 'move' || action === 'delete')) {
+                        return; 
+                    }
+                    overrideRules.push({ id: Date.now() + Math.random(), sourceColumn, value, action, targetColumn, newValue });
                 });
 
                 handleRuleChange();
@@ -982,7 +999,7 @@ yoolstation
             
             document.getElementById('active-rules-list')?.addEventListener('click', (e) => {
                 if(e.target.matches('.remove-rule-btn')) {
-                    const ruleId = parseInt(e.target.dataset.ruleId, 10);
+                    const ruleId = parseFloat(e.target.dataset.ruleId);
                     overrideRules = overrideRules.filter(r => r.id !== ruleId);
                     handleRuleChange();
                 }
