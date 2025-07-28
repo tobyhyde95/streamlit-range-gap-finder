@@ -491,9 +491,15 @@ yoolstation
             const isNestableReport = data[0] && (data[0].hasOwnProperty('KeywordDetails') || data[0].hasOwnProperty('FacetValueDetails'));
             
             const baseFacetHeaders = ['Category Mapping', 'Facet Type', 'Monthly Organic Traffic', 'Total Monthly Google Searches', 'Total On-Site Searches', 'Facet Value Score'];
+            
+            // --- FIX START ---
             const facetHeaders = isNestableReport 
-                ? headers.filter(h => !baseFacetHeaders.some(base => h.includes(base)))
+                ? headers.filter(h => {
+                    const baseHeaderForCheck = h.replace('Annual', 'Monthly');
+                    return !baseFacetHeaders.some(base => baseHeaderForCheck.includes(base));
+                  })
                 : [];
+            // --- FIX END ---
             
             let headerHtml = '';
 
@@ -522,8 +528,14 @@ yoolstation
                     let val = row[h];
                     let cellClass = 'p-3 border-t text-sm';
                     const isFacetColumn = isNestableReport && facetHeaders.includes(h);
-                    const lowerHeader = h.toLowerCase();
-                    const isNumericDataCol = (lowerHeader.includes('traffic') || lowerHeader.includes('searches')) && !lowerHeader.includes('on-site');
+
+                    // --- START: SIMPLIFIED FORMATTING LOGIC ---
+                    const baseHeader = h.replace('Annual', 'Monthly');
+                    const isKnownMetric = monthlyToAnnualCols.includes(baseHeader) || 
+                                          h.includes('On-Site Searches') ||
+                                          h.includes('Keyword Count') ||
+                                          h === '# Ranking Competitors' ||
+                                          h === 'Opportunity Score';
 
                     if (isFacetColumn) {
                         cellClass += ' facet-cell';
@@ -533,11 +545,10 @@ yoolstation
                         }
                     } else if (Array.isArray(val)) { 
                         val = `${val[0].toFixed(1)}% (${(val[1] || 0).toLocaleString()})`;
-                    } else if (isNumericDataCol) {
-                        val = Math.round(val || 0).toLocaleString();
-                    } else if (typeof val === 'number' && !lowerHeader.includes('rank') && !lowerHeader.includes('score')) {
-                        val = Math.round(val || 0).toLocaleString();
+                    } else if (isKnownMetric && !h.toLowerCase().includes('rank')) {
+                        val = Math.round(Number(val) || 0).toLocaleString();
                     }
+                    // --- END: SIMPLIFIED FORMATTING LOGIC ---
                     
                     return `<td class="${cellClass}">${val !== null && val !== undefined ? val : ''}</td>`;
                 }).join('');
