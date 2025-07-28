@@ -223,6 +223,7 @@ yoolstation
             timeframe: 'monthly'
         };
         let overrideRules = [];
+        let inProductNameFacets = new Set(); // To store state of "In Product Name" checkboxes
         const API_KEY = "my-secret-dev-key"; 
         const ui = {
             controlsContainer: document.getElementById('controls-container'),
@@ -489,6 +490,7 @@ yoolstation
             if (!data || data.length === 0) return `<div class="text-center text-gray-500 p-8 border rounded-lg bg-gray-50">No results match your search.</div>`;
             
             const isNestableReport = data[0] && (data[0].hasOwnProperty('KeywordDetails') || data[0].hasOwnProperty('FacetValueDetails'));
+            const isFacetPotentialReport = data[0] && data[0].hasOwnProperty('FacetValueDetails');
             
             const baseFacetHeaders = ['Category Mapping', 'Facet Type', 'Monthly Organic Traffic', 'Total Monthly Google Searches', 'Total On-Site Searches', 'Facet Value Score'];
             
@@ -509,6 +511,10 @@ yoolstation
                 const sortIcon = isSorted ? (tableState.sortDir === 'asc' ? '▲' : '▼') : '';
                 return `<th data-sort-key="${h}" class="p-3 text-left text-xs font-bold uppercase ${isSorted ? 'sorted' : ''}">${h.replace(/_/g, ' ')} <span class="sort-icon">${sortIcon}</span></th>`;
             }).join('');
+            
+            if (isFacetPotentialReport) {
+                headerHtml += `<th class="p-3 text-left text-xs font-bold uppercase">In Product Name</th>`;
+            }
 
             let bodyHtml = '';
             data.forEach(row => {
@@ -527,13 +533,13 @@ yoolstation
                     let cellClass = 'p-3 border-t text-sm';
                     const isFacetColumn = isNestableReport && facetHeaders.includes(h);
 
-                    // --- START: SIMPLIFIED FORMATTING LOGIC ---
                     const baseHeader = h.replace('Annual', 'Monthly');
                     const isKnownMetric = monthlyToAnnualCols.includes(baseHeader) || 
                                           h.includes('On-Site Searches') ||
                                           h.includes('Keyword Count') ||
                                           h === '# Ranking Competitors' ||
-                                          h === 'Opportunity Score';
+                                          h === 'Opportunity Score' ||
+                                          h === 'Facet Value Score';
 
                     if (isFacetColumn) {
                         cellClass += ' facet-cell';
@@ -546,11 +552,18 @@ yoolstation
                     } else if (isKnownMetric && !h.toLowerCase().includes('rank')) {
                         val = Math.round(Number(val) || 0).toLocaleString();
                     }
-                    // --- END: SIMPLIFIED FORMATTING LOGIC ---
                     
                     return `<td class="${cellClass}">${val !== null && val !== undefined ? val : ''}</td>`;
                 }).join('');
                 
+                if (isFacetPotentialReport) {
+                    const facetKey = `${row['Category Mapping']}||${row['Facet Type']}`;
+                    const isChecked = inProductNameFacets.has(facetKey);
+                    cells += `<td class="p-3 border-t text-sm text-center">
+                        <input type="checkbox" class="in-product-name-toggle h-4 w-4" data-facet-key="${facetKey}" ${isChecked ? 'checked' : ''}>
+                    </td>`;
+                }
+
                 bodyHtml += `<tr class="hover:bg-gray-50">${cells}</tr>`;
 
                 if (isNestableReport) {
@@ -560,7 +573,7 @@ yoolstation
                     } else if (row.FacetValueDetails) {
                         nestedHtml = createNestedFacetValueTable(row.FacetValueDetails);
                     }
-                    bodyHtml += `<tr class="keyword-details-row"><td colspan="${headers.length + 1}" class="keyword-details-cell">${nestedHtml}</td></tr>`;
+                    bodyHtml += `<tr class="keyword-details-row"><td colspan="${headers.length + (isNestableReport ? 1 : 0) + (isFacetPotentialReport ? 1 : 0)}" class="keyword-details-cell">${nestedHtml}</td></tr>`;
                 }
             });
             
@@ -570,6 +583,7 @@ yoolstation
                 let footerCells = '';
                 if(isNestableReport) footerCells += '<td></td>';
                 footerCells += headers.map(h => `<td class="p-3 text-sm">${totalRowData[h]}</td>`).join('');
+                if(isFacetPotentialReport) footerCells += '<td></td>';
                 footerHtml = `<tfoot><tr>${footerCells}</tr></tfoot>`;
             }
 
@@ -1148,6 +1162,48 @@ yoolstation
             });
             
             let finalReport = Object.values(aggregation);
+            
+            // --- START: Replicate Scoring Logic on Front-End ---
+            const masterWeights = {
+                'Monthly Organic Traffic': 0.34,
+                'Total Monthly Google Searches': 0.33,
+                'Total On-Site Searches': 0.33
+            };
+            const availableCols = Object.keys(masterWeights).filter(col => 
+                finalReport.length > 0 && finalReport[0].hasOwnProperty(col)
+            );
+
+            if (availableCols.length > 0) {
+                const totalWeightAvailable = availableCols.reduce((sum, col) => sum + masterWeights[col], 0);
+                const dynamicWeights = {};
+                availableCols.forEach(col => {
+                    dynamicWeights[col] = masterWeights[col] / totalWeightAvailable;
+                });
+
+                const minMax = {};
+                availableCols.forEach(col => {
+                    const values = finalReport.map(row => row[col]);
+                    minMax[col] = { min: Math.min(...values), max: Math.max(...values) };
+                });
+
+                finalReport.forEach(row => {
+                    let score = 0;
+                    availableCols.forEach(col => {
+                        const { min, max } = minMax[col];
+                        const normalized = (max > min) ? (row[col] - min) / (max - min) : 0;
+                        score += normalized * dynamicWeights[col];
+                    });
+                    
+                    let finalScore = score * 100;
+                    const facetKey = `${row['Category Mapping']}||${row['Facet Type']}`;
+                    if (inProductNameFacets.has(facetKey)) {
+                        finalScore += 50; // Add bonus points
+                    }
+                    row['Facet Value Score'] = Math.round(Math.min(finalScore, 100)); // Cap score at 100
+                });
+            }
+            // --- END: Replicate Scoring Logic on Front-End ---
+
             finalReport.forEach(row => {
                 row.FacetValueDetails = Object.values(row.FacetValueDetails).sort((a,b) => b['Monthly Organic Traffic'] - a['Monthly Organic Traffic']);
             });
@@ -1158,6 +1214,17 @@ yoolstation
         function handleResultsNavigation(e) {
             const target = e.target;
             const reportContainer = target.closest('[data-report-title]');
+
+            if (target.matches('.in-product-name-toggle')) {
+                const facetKey = target.dataset.facetKey;
+                if (target.checked) {
+                    inProductNameFacets.add(facetKey);
+                } else {
+                    inProductNameFacets.delete(facetKey);
+                }
+                renderFacetPotentialAnalysisView(); // Re-render to apply new scores
+                return;
+            }
 
             const exportBtn = target.closest('.export-btn');
             if (exportBtn) {
@@ -1362,6 +1429,7 @@ yoolstation
         function renderInitialControlsView() {
             if (pollingInterval) clearInterval(pollingInterval);
             overrideRules = [];
+            inProductNameFacets = new Set(); // Reset for new analysis
             ui.resultsContainer.classList.add('hidden');
             ui.progressContainer.classList.add('hidden');
             ui.controlsContainer.classList.remove('hidden');
@@ -1803,7 +1871,7 @@ yoolstation
             const regeneratedData = generateFacetPotentialFromMatrix(modifiedMatrixData, matrixBaseHeaders, hasOnsiteData);
             const transformedData = transformDataForTimeframe(regeneratedData, tableState.timeframe);
             
-            let headers = ['Category Mapping', 'Facet Type', 'Keyword Count', 'Monthly Organic Traffic', 'Total Monthly Google Searches'];
+            let headers = ['Category Mapping', 'Facet Type', 'Keyword Count', 'Facet Value Score', 'Monthly Organic Traffic', 'Total Monthly Google Searches'];
             if (hasOnsiteData) headers.push('Total On-Site Searches');
             
             const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
@@ -1812,12 +1880,12 @@ yoolstation
             const explainer = `<div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 p-3 rounded-md mb-4">
                 <b>How to use this report:</b> This analysis rolls up the detailed Category Overhaul Matrix to show you the total value of using a certain <em>type</em> of facet within a category.
                 <br><br>
-                <b>Note:</b> Any 'Manual Overrides' you apply are reflected here. The data for this report is dynamically recalculated to ensure consistency.
+                <b>Note:</b> Tick the "In Product Name" box for a facet you know is part of a core product name (e.g., "iPhone" for the "Mobile Phones" category) to give it a score boost. Any manual overrides applied are also reflected here.
             </div>`;
 
             ui.resultsContainer.innerHTML = createReportContainer('Facet Potential Analysis', subtitle, '', explainer);
             
-            const defaultSortKey = displayHeaders.find(h => h.includes('Organic Traffic'));
+            const defaultSortKey = displayHeaders.find(h => h.includes('Facet Value Score'));
             initializeTable(transformedData, displayHeaders, defaultSortKey, 'Category Mapping');
             renderOverridesUI(matrixBaseHeaders.filter(h => h !== 'KeywordDetails' && h !== 'FacetValueDetails'));
         }
