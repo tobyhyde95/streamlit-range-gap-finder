@@ -1,5 +1,5 @@
 #!/bin/bash
-# To run this application: ./start.sh
+# To run this application: scripts/start.sh
 
 echo "--- Starting Range Gap Finder v2 Application ---"
 
