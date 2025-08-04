@@ -1681,23 +1681,37 @@ yoolstation
 
         function renderKeywordGapAnalysisView() {
             const { keywordGapReport, hasOnsiteData, onsiteDateRange } = analysisResults;
-            const transformedData = transformDataForTimeframe(keywordGapReport, tableState.timeframe);
+            let transformedData = transformDataForTimeframe(keywordGapReport, tableState.timeframe);
 
             const dateSuffix = onsiteDateRange ? ` (${onsiteDateRange})` : '';
             const onsiteSearchesHeader = `On-Site Searches${dateSuffix}`;
             const opportunityScoreHeader = 'Opportunity Score';
+            const staticOnsiteSearchesKey = 'On-Site Searches'; // The key name from Python
 
             let headers = ['Keyword', 'Monthly Google Searches', '# Ranking Competitors', 'Top Ranking Competitor', 'Top Competitor URL', 'Highest Competitor Rank', 'Top Competitor Monthly Organic Traffic'];
             
             if (hasOnsiteData) {
+                // Add the dynamic header name to our list of headers
                 headers.push(onsiteSearchesHeader, opportunityScoreHeader);
+                
+                // RENAME THE KEY in the data to match the dynamic header name
+                transformedData.forEach(row => {
+                    if (row.hasOwnProperty(staticOnsiteSearchesKey)) {
+                        row[onsiteSearchesHeader] = row[staticOnsiteSearchesKey];
+                        delete row[staticOnsiteSearchesKey];
+                    }
+                });
             }
+
             const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
 
             const displayData = transformedData.map(row => {
-                const newRow = {};
-                displayHeaders.forEach(h => newRow[h] = row[h]);
-                newRow['Top Competitor URL'] = `<a href="${row['Top Competitor URL']}" target="_blank" class="text-blue-600 hover:underline break-all">${row['Top Competitor URL']}</a>`;
+                const newRow = {...row};
+                const urlHeader = 'Top Competitor URL';
+                const urlKeyInRow = Object.keys(newRow).find(k => k.includes(urlHeader));
+                if (urlKeyInRow && newRow[urlKeyInRow]) {
+                    newRow[urlKeyInRow] = `<a href="${newRow[urlKeyInRow]}" target="_blank" class="text-blue-600 hover:underline break-all">${newRow[urlKeyInRow]}</a>`;
+                }
                 return newRow;
             });
 
@@ -1705,29 +1719,48 @@ yoolstation
             const scoreDescription = `The <strong>Opportunity Score</strong> is a 0-100 metric calculated by weighting on-site search volume (40%), Google search volume (20%), and the top competitor's traffic (40%) to prioritise your most valuable content gaps.`;
             const description = GAP_ANALYSIS_CAVEAT + (hasOnsiteData ? `<br><br>${scoreDescription}`: '');
             ui.resultsContainer.innerHTML = createReportContainer('Content Gaps | Individual Keywords', subtitle, '', description);
-            initializeTable(displayData, displayHeaders, hasOnsiteData ? 'Opportunity Score' : displayHeaders[1], 'Keyword');
+
+            const defaultSortKeyFromHeaders = hasOnsiteData ? opportunityScoreHeader : headers[1];
+            const defaultSortKey = updateHeadersForTimeframe([defaultSortKeyFromHeaders], tableState.timeframe)[0];
+            initializeTable(displayData, displayHeaders, defaultSortKey, 'Keyword');
         }
 
         function renderTopicGapAnalysisView(scope = 'core') {
             const reportData = (scope === 'core') ? analysisResults.coreTopicGapReport : analysisResults.topicGapReport;
-            const transformedData = transformDataForTimeframe(reportData, tableState.timeframe);
+            let transformedData = transformDataForTimeframe(reportData, tableState.timeframe);
 
             const { hasOnsiteData, onsiteDateRange } = analysisResults;
             const dateSuffix = onsiteDateRange ? ` (${onsiteDateRange})` : '';
             
             const opportunityScoreHeader = `Opportunity Score`;
+            const staticOnsiteSearchesKey = `Total On-Site Searches`;
             const totalOnsiteSearchesHeader = `Total On-Site Searches${dateSuffix}`;
 
             let headers = ['Keyword Group', 'TopicID', 'Total Monthly Google Searches', 'Total Competitor Monthly Organic Traffic', 'Gap Keyword Count', 'Competitor Avg. Rank'];
+            
             if(hasOnsiteData) {
                 headers = ['Keyword Group', 'TopicID', opportunityScoreHeader, 'Total Monthly Google Searches', totalOnsiteSearchesHeader, 'Total Competitor Monthly Organic Traffic', 'Gap Keyword Count', 'Competitor Avg. Rank'];
+                
+                const keyInData = updateHeadersForTimeframe([staticOnsiteSearchesKey], tableState.timeframe)[0];
+                const keyForDisplay = updateHeadersForTimeframe([totalOnsiteSearchesHeader], tableState.timeframe)[0];
+
+                transformedData.forEach(row => {
+                    if (row.hasOwnProperty(keyInData)) {
+                        row[keyForDisplay] = row[keyInData];
+                        if (keyInData !== keyForDisplay) {
+                           delete row[keyInData];
+                        }
+                    }
+                });
             }
             const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
 
             const displayData = transformedData.map(row => {
-                const newRow = {};
-                displayHeaders.forEach(h => newRow[h] = row[h]);
-                newRow['Gap Keyword Count'] = `<button class="text-blue-600 hover:underline view-keywords-btn" data-map-source="${scope}" data-topic-id="${row['TopicID']}">${row['Gap Keyword Count']}</button>`;
+                const newRow = {...row};
+                const gapCountKey = Object.keys(newRow).find(k => k.includes('Gap Keyword Count'));
+                if (gapCountKey) {
+                    newRow[gapCountKey] = `<button class="text-blue-600 hover:underline view-keywords-btn" data-map-source="${scope}" data-topic-id="${row['TopicID']}">${row[gapCountKey]}</button>`;
+                }
                 return newRow;
             });
 
@@ -1743,8 +1776,11 @@ yoolstation
                 delete newRow.TopicID;
                 return newRow; 
             });
+            
+            const defaultSortKeyFromHeaders = hasOnsiteData ? opportunityScoreHeader : 'Total Monthly Google Searches';
+            const defaultSortKey = updateHeadersForTimeframe([defaultSortKeyFromHeaders], tableState.timeframe)[0];
 
-            initializeTable(dataForTable, finalTableHeaders, hasOnsiteData ? opportunityScoreHeader : finalTableHeaders[1], 'Keyword Group');
+            initializeTable(dataForTable, finalTableHeaders, defaultSortKey, 'Keyword Group');
         }
 
         function renderKeywordThreatsAnalysisView() {
