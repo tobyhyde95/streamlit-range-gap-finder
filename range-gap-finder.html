@@ -533,7 +533,7 @@ yoolstation
                     let cellClass = 'p-3 border-t text-sm';
                     const isFacetColumn = isNestableReport && facetHeaders.includes(h);
 
-                    const baseHeader = h.replace('Annual', 'Monthly');
+                    const baseHeader = h.replace('Annual', 'Monthly').replace(/ \(.+\)$/, '');
                     const isKnownMetric = monthlyToAnnualCols.includes(baseHeader) || 
                                           h.includes('On-Site Searches') ||
                                           h.includes('Keyword Count') ||
@@ -550,7 +550,12 @@ yoolstation
                     } else if (Array.isArray(val)) { 
                         val = `${val[0].toFixed(1)}% (${(val[1] || 0).toLocaleString()})`;
                     } else if (isKnownMetric && !h.toLowerCase().includes('rank')) {
-                        val = Math.round(Number(val) || 0).toLocaleString();
+                        // FIX: Do not attempt to format a value that is already HTML (like our button)
+                        if (typeof val === 'string' && val.startsWith('<button')) {
+                            // Keep the value as is.
+                        } else {
+                            val = Math.round(Number(val) || 0).toLocaleString();
+                        }
                     }
                     
                     return `<td class="${cellClass}">${val !== null && val !== undefined ? val : ''}</td>`;
