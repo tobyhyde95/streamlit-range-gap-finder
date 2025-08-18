@@ -1,6 +1,7 @@
 import re
 from collections import Counter, defaultdict
 from urllib.parse import urlparse, parse_qs
+from functools import lru_cache
 
 import numpy as np
 import pandas as pd
@@ -86,6 +87,7 @@ def _generate_category_overhaul_matrix(
     highest_ranking_df['On-Site Searches'] = highest_ranking_df.get('On-Site Searches', pd.Series(0, index=highest_ranking_df.index)).fillna(0).astype(int)
     highest_ranking_df['Original Category Mapping'] = highest_ranking_df[internal_url_col_name].apply(find_best_category, candidates=strong_candidates)
 
+    @lru_cache(maxsize=None)
     def get_word_forms(word):
         word = str(word).lower()
         forms = {word}

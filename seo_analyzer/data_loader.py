@@ -18,12 +18,11 @@ def read_csv_with_encoding_fallback(file_stream) -> Optional[pd.DataFrame]:
     """Reads a CSV file stream with a fallback to latin-1 encoding."""
     try:
         file_stream.seek(0)
-        file_content = file_stream.read()
         try:
-            decoded_content = file_content.decode('UTF-8')
-        except UnicodeDecodeError:
-            decoded_content = file_content.decode('latin-1')
-        df = pd.read_csv(io.StringIO(decoded_content))
+            df = pd.read_csv(file_stream, encoding='UTF-8')
+        except (UnicodeDecodeError, pd.errors.ParserError):
+            file_stream.seek(0)
+            df = pd.read_csv(file_stream, encoding='latin-1')
         df.columns = df.columns.str.strip()
         return df
     except Exception as e:
