@@ -8,7 +8,7 @@ from .tasks import run_analysis_task
 import tempfile
 import uuid
 
-app = flask.Flask(__name__)
+app = flask.Flask(__name__, static_folder='../assets', static_url_path='/assets')
 CORS(app)
 
 SECRET_API_KEY = "my-secret-dev-key" 
@@ -20,6 +20,16 @@ def require_api_key(f):
             return flask.jsonify({"error": "Invalid or missing API key"}), 403
         return f(*args, **kwargs)
     return decorated_function
+
+@app.route("/")
+def index():
+    """Serve the main HTML file."""
+    return flask.send_from_directory('..', 'range-gap-finder.html')
+
+@app.route("/range-gap-finder.html")
+def main_page():
+    """Serve the main HTML file."""
+    return flask.send_from_directory('..', 'range-gap-finder.html')
 
 @app.route("/process", methods=["POST"])
 @require_api_key

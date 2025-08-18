@@ -2,30 +2,15 @@
 import pandas as pd
 import json
 import numpy as np
-from . import utils
 from . import analysis
+from . import data_loader
+from . import market_share_analysis as market
+from . import taxonomy_analysis as taxonomy
+from . import report_generator as reports
 from sklearn.preprocessing import MinMaxScaler
-from urllib.parse import urlparse, parse_qs
 import re
-from collections import Counter, defaultdict
-import os
-from nltk.stem import PorterStemmer
-import spacy
-import swifter
-import subprocess
-import sys
 
-# Load the SpaCy model, and download it if it's missing
-try:
-    nlp = spacy.load("en_core_web_md")
-except OSError:
-    print("Spacy model 'en_core_web_md' not found. Downloading now...")
-    try:
-        subprocess.run([sys.executable, "-m", "spacy", "download", "en_core_web_md"], check=True)
-        nlp = spacy.load("en_core_web_md")
-    except (subprocess.CalledProcessError, OSError):
-        print("Failed to download or load SpaCy model. Please run 'python -m spacy download en_core_web_md' manually.")
-        nlp = None
+# Heavy NLP and taxonomy logic resides in taxonomy_analysis module
 
 
 def _classify_intent(keyword):
@@ -39,58 +24,27 @@ def _classify_intent(keyword):
         return 'Informational'
     return 'Commercial'
 
-def _calculate_keyword_market_share(df, keyword_col, source_col, traffic_col):
-    """Calculates estimated traffic share per individual keyword."""
-    if traffic_col not in df.columns or df[traffic_col].isnull().all():
-        return []
-
-    df_filtered = df.dropna(subset=[keyword_col, source_col, traffic_col])
-    
-    traffic_pivot = df_filtered.pivot_table(index=keyword_col, columns=source_col, values=traffic_col, fill_value=0)
-    traffic_pivot['Total Monthly Google Traffic'] = traffic_pivot.sum(axis=1)
-    
-    non_zero_traffic_mask = traffic_pivot['Total Monthly Google Traffic'] > 0
-    
-    all_sources = df_filtered[source_col].unique()
-    for source in all_sources:
-        if source in traffic_pivot.columns:
-            share = np.where(
-                non_zero_traffic_mask,
-                (traffic_pivot[source] / traffic_pivot['Total Monthly Google Traffic']) * 100,
-                0
-            )
-            traffic_pivot[source] = list(zip(share, traffic_pivot[source]))
-
-    traffic_pivot.reset_index(inplace=True)
-    traffic_pivot.rename(columns={keyword_col: 'Keyword'}, inplace=True)
-    
-    traffic_pivot.replace({np.nan: None}, inplace=True)
-    return traffic_pivot.sort_values('Total Monthly Google Traffic', ascending=False).to_dict(orient='records')
+# Moved to market_share_analysis
 
 
-def _calculate_group_market_share(df, keyword_group_col, source_col, traffic_col):
-    """Calculates estimated traffic share per keyword group."""
-    if traffic_col not in df.columns or df[traffic_col].isnull().all():
-        return pd.DataFrame()
-    
-    df_filtered = df.dropna(subset=[keyword_group_col, source_col, traffic_col])
-    market_share = df_filtered.groupby([keyword_group_col, source_col])[traffic_col].sum().unstack(fill_value=0)
-    total_traffic = market_share.sum(axis=1)
-    
-    market_share_pct = market_share.copy()
-    for col in market_share.columns:
-        share = (market_share[col] / total_traffic).where(total_traffic > 0, 0) * 100
-        market_share_pct[col] = list(zip(share, market_share[col]))
-        
-    market_share_pct['Total Monthly Google Traffic'] = total_traffic
-    market_share_pct.reset_index(inplace=True)
-    return market_share_pct.sort_values('Total Monthly Google Traffic', ascending=False)
+# Moved to market_share_analysis
 
 def _generate_category_overhaul_matrix(df, internal_keyword_col, internal_position_col, internal_traffic_col, internal_url_col_name, onsite_df, internal_volume_col, topic_col='TopicID'):
     """
     Generates a matrix of categories and facets using a "learn and classify" model.
     NOW MODIFIED to return both the detailed matrix and a high-level facet potential report.
     """
+    # Delegated to taxonomy_analysis module to keep this file lean
+    return taxonomy._generate_category_overhaul_matrix(
+        df,
+        internal_keyword_col=internal_keyword_col,
+        internal_position_col=internal_position_col,
+        internal_traffic_col=internal_traffic_col,
+        internal_url_col_name=internal_url_col_name,
+        onsite_df=onsite_df,
+        internal_volume_col=internal_volume_col,
+        topic_col=topic_col,
+    )
     if df.empty or internal_traffic_col not in df.columns:
         return {
             "matrix_report": [],
@@ -831,103 +785,39 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
     group_market_share_keyword_map, core_group_market_share_keyword_map = {}, {}
     category_overhaul_matrix_report_raw, facet_potential_report_raw = [], []
 
-    with open(our_file_path, 'rb') as f:
-        our_df = utils.read_csv_with_encoding_fallback(f)
-    if our_df is None: raise ValueError("Could not read your domain's CSV file.")
-    
-    original_our_df_cols = our_df.columns.tolist()
-    rename_map_our = {col: col.replace(' ', '').replace('_', '') for col in original_our_df_cols}
-    our_df.rename(columns=rename_map_our, inplace=True)
-    
-    if our_df.columns.has_duplicates:
-        our_df = our_df.groupby(level=0, axis=1).apply(lambda group: group.ffill(axis=1).bfill(axis=1).iloc[:, 0])
-    
-    cols_to_drop_our = [col for col in our_df.columns if col.lower() in COLS_TO_EXCLUDE_AT_SOURCE]
-    if cols_to_drop_our:
-        our_df.drop(columns=cols_to_drop_our, inplace=True)
+    # Delegate to data_loader for clean data ingestion and normalization
+    our_df, our_domain = data_loader.load_our_dataframe(
+        our_file_path=our_file_path,
+        internal_keyword_col=internal_keyword_col,
+        internal_position_col=internal_position_col,
+        internal_url_col_name=internal_url_col_name,
+    )
 
-    if internal_keyword_col in our_df.columns:
-        our_df[internal_keyword_col] = our_df[internal_keyword_col].astype(str).str.strip().str.lower()
+    competitor_dfs, competitor_domains = data_loader.load_competitor_dataframes(
+        competitor_file_paths=competitor_file_paths,
+        internal_keyword_col=internal_keyword_col,
+        internal_url_col_name=internal_url_col_name,
+        our_domain=our_domain,
+    )
 
-    required_internal_cols = {internal_keyword_col, internal_position_col, internal_url_col_name}
-    if not required_internal_cols.issubset(our_df.columns):
-        missing_original = ", ".join([col for col in options['columnMap'].values() if col.replace(' ', '').replace('_', '') not in our_df.columns])
-        raise ValueError(f"Your main file is missing required columns based on your mapping: {missing_original}")
-    
-    our_domain = next((d for d in (utils.get_domain_from_url(url) for url in our_df[internal_url_col_name].head(10)) if d), None)
-    if not our_domain: raise ValueError(f"Could not determine your domain from the URL column.")
-    our_df['Source'] = our_domain
-    
-    competitor_dfs, competitor_domains = [], []
-    for f_path in competitor_file_paths:
-        with open(f_path, 'rb') as f_stream:
-            df = utils.read_csv_with_encoding_fallback(f_stream)
-            if df is not None:
-                original_comp_df_cols = df.columns.tolist()
-                rename_map_comp = {col: col.replace(' ', '').replace('_', '') for col in original_comp_df_cols}
-                df.rename(columns=rename_map_comp, inplace=True)
-
-                if df.columns.has_duplicates:
-                    df = df.groupby(level=0, axis=1).apply(lambda group: group.ffill(axis=1).bfill(axis=1).iloc[:, 0])
-
-                cols_to_drop_comp = [col for col in df.columns if col.lower() in COLS_TO_EXCLUDE_AT_SOURCE]
-                if cols_to_drop_comp:
-                    df.drop(columns=cols_to_drop_comp, inplace=True)
-
-                if internal_keyword_col in df.columns:
-                    df[internal_keyword_col] = df[internal_keyword_col].astype(str).str.strip().str.lower()
-                if internal_url_col_name in df.columns:
-                    comp_domain = next((d for d in (utils.get_domain_from_url(url) for url in df[internal_url_col_name].head(10)) if d and d != our_domain), None)
-                    if comp_domain:
-                        df['Source'] = comp_domain
-                        competitor_domains.append(comp_domain)
-                        competitor_dfs.append(df)
-
-    all_dfs = [our_df] + competitor_dfs
-    master_df = pd.concat(all_dfs, ignore_index=True)
+    master_df = data_loader.build_master_dataframe(our_df, competitor_dfs)
 
     # --- FILTERING LOGIC ---
-    for col in [internal_position_col, internal_volume_col, internal_traffic_col]:
-        if col and col in master_df.columns: 
-            master_df[col] = pd.to_numeric(master_df[col], errors='coerce')
+    master_df = data_loader.coerce_numeric_columns(
+        master_df,
+        [internal_position_col, internal_volume_col, internal_traffic_col]
+    )
 
-    if excluded_keywords:
-        print(f"Excluding {len(excluded_keywords)} branded terms...")
-        exclude_pattern = '|'.join([re.escape(kw) for kw in excluded_keywords])
-        initial_rows = len(master_df)
-        master_df = master_df[~master_df[internal_keyword_col].str.contains(exclude_pattern, case=False, na=False)]
-        print(f"Removed {initial_rows - len(master_df)} rows containing branded keywords.")
-
-    if rank_from or rank_to:
-        initial_rows = len(master_df)
-        master_df.dropna(subset=[internal_position_col], inplace=True)
-        
-        if rank_from:
-            try:
-                master_df = master_df[master_df[internal_position_col] >= int(rank_from)]
-            except (ValueError, TypeError):
-                print(f"Warning: Invalid 'Ranking From' value '{rank_from}'.")
-        
-        if rank_to:
-            try:
-                master_df = master_df[master_df[internal_position_col] <= int(rank_to)]
-            except (ValueError, TypeError):
-                print(f"Warning: Invalid 'Ranking To' value '{rank_to}'.")
-        
-        master_df = master_df.copy()
-        print(f"Filtered by rank. Removed {initial_rows - len(master_df)} rows.")
+    master_df = data_loader.apply_pre_filters(
+        master_df=master_df,
+        excluded_keywords=excluded_keywords,
+        rank_from=rank_from,
+        rank_to=rank_to,
+        internal_keyword_col=internal_keyword_col,
+        internal_position_col=internal_position_col,
+    )
     
-    has_onsite_data = False
-    onsite_df = None
-    if onsite_file_path:
-        with open(onsite_file_path, 'rb') as f:
-            onsite_df_raw = utils.read_csv_with_encoding_fallback(f)
-            if onsite_df_raw is not None and len(onsite_df_raw.columns) >= 2:
-                onsite_df_raw.columns = ['keyword', 'searches']
-                onsite_df_raw['keyword'] = onsite_df_raw['keyword'].astype(str).str.strip().str.lower()
-                onsite_df_raw['searches'] = pd.to_numeric(onsite_df_raw['searches'], errors='coerce').fillna(0).astype(int)
-                onsite_df = onsite_df_raw.groupby('keyword')['searches'].sum().reset_index()
-                has_onsite_data = True
+    onsite_df, has_onsite_data = data_loader.load_onsite_data(onsite_file_path)
 
     needs_clustering = any([
         lenses_to_run.get('content_gaps'), 
@@ -1031,20 +921,19 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
                     else: core_topic_gap_report_raw, core_topic_keyword_map_by_topicid = [], {}
                     continue
 
-                topic_agg_df, topic_map = create_topic_report(report_df, onsite_df)
+                topic_agg_df, topic_map = reports.create_topic_report(
+                    df_for_topic_report_input=report_df,
+                    full_onsite_df=onsite_df,
+                    internal_keyword_col=internal_keyword_col,
+                    internal_position_col=internal_position_col,
+                    internal_volume_col=internal_volume_col,
+                    internal_traffic_col=internal_traffic_col,
+                    topic_names=topic_names,
+                    has_onsite_data=has_onsite_data,
+                )
 
                 if has_onsite_data and not topic_agg_df.empty:
-                    score_cols_agg = ['TotalMonthlyGoogleSearches', 'TotalCompetitorMonthlyOrganicTraffic', 'OnSiteSearches']
-                    valid_score_cols_agg = [col for col in score_cols_agg if col in topic_agg_df.columns]
-                    
-                    if len(valid_score_cols_agg) > 0:
-                        scaler_agg = MinMaxScaler()
-                        topic_agg_df[valid_score_cols_agg] = topic_agg_df[valid_score_cols_agg].fillna(0)
-                        normalized_data_agg = scaler_agg.fit_transform(topic_agg_df[valid_score_cols_agg])
-                        normalized_df_agg = pd.DataFrame(normalized_data_agg, columns=valid_score_cols_agg, index=topic_agg_df.index)
-                        
-                        weights_agg = {'TotalMonthlyGoogleSearches': 0.20, 'TotalCompetitorMonthlyOrganicTraffic': 0.40, 'OnSiteSearches': 0.40}
-                        topic_agg_df['Opportunity Score'] = sum(normalized_df_agg.get(col, 0) * weights_agg.get(col, 0) for col in valid_score_cols_agg) * 100
+                    topic_agg_df = reports.add_opportunity_scores_if_applicable(topic_agg_df, has_onsite_data)
 
                 rename_dict = {
                     "TotalMonthlyGoogleSearches": "Total Monthly Google Searches",
@@ -1114,16 +1003,26 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
                     keyword_threats_df.replace({np.nan: None}, inplace=True)
                     keyword_threats_report_raw = keyword_threats_df.to_dict(orient='records')
                     
-                    topic_threats_report_raw, topic_threats_keyword_map_by_topicid = create_threat_topic_report(keyword_threats_df)
+                    topic_threats_report_raw, topic_threats_keyword_map_by_topicid = reports.create_threat_topic_report(
+                        df_for_threats_input=keyword_threats_df,
+                        master_df=master_df,
+                        internal_keyword_col=internal_keyword_col,
+                        topic_names=topic_names
+                    )
                     
                     core_leakage_df = keyword_threats_df.dropna(subset=['Best Competitor Rank'])
                     core_leakage_df = core_leakage_df[core_leakage_df['Best Competitor Rank'] <= 10].copy()
-                    core_topic_threats_report_raw, core_topic_threats_keyword_map_by_topicid = create_threat_topic_report(core_leakage_df)
+                    core_topic_threats_report_raw, core_topic_threats_keyword_map_by_topicid = reports.create_threat_topic_report(
+                        df_for_threats_input=core_leakage_df,
+                        master_df=master_df,
+                        internal_keyword_col=internal_keyword_col,
+                        topic_names=topic_names
+                    )
 
     if lenses_to_run.get('market_share') and internal_traffic_col:
-        keyword_market_share_report_raw = _calculate_keyword_market_share(master_df, internal_keyword_col, 'Source', internal_traffic_col)
+        keyword_market_share_report_raw = market._calculate_keyword_market_share(master_df, internal_keyword_col, 'Source', internal_traffic_col)
         
-        group_market_share_df = _calculate_group_market_share(master_df, 'Keyword Group', 'Source', internal_traffic_col)
+        group_market_share_df = market._calculate_group_market_share(master_df, 'Keyword Group', 'Source', internal_traffic_col)
         if not group_market_share_df.empty:
             group_market_share_keyword_map = master_df.groupby('Keyword Group')[internal_keyword_col].unique().apply(list).to_dict()
             group_market_share_df['Keyword Count'] = group_market_share_df['Keyword Group'].map(lambda g: len(group_market_share_keyword_map.get(g, [])))
@@ -1131,7 +1030,7 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
             group_market_share_report_raw = group_market_share_df.to_dict(orient='records')
 
         core_master_df = master_df[master_df[internal_position_col] <= 20].copy()
-        core_group_market_share_df = _calculate_group_market_share(core_master_df, 'Keyword Group', 'Source', internal_traffic_col)
+        core_group_market_share_df = market._calculate_group_market_share(core_master_df, 'Keyword Group', 'Source', internal_traffic_col)
         if not core_group_market_share_df.empty:
             core_group_market_share_keyword_map = core_master_df.groupby('Keyword Group')[internal_keyword_col].unique().apply(list).to_dict()
             core_group_market_share_df['Keyword Count'] = core_group_market_share_df['Keyword Group'].map(lambda g: len(core_group_market_share_keyword_map.get(g, [])))
@@ -1140,7 +1039,7 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
 
     report("Generating Category Overhaul Matrix...", 4, total_steps)
     if lenses_to_run.get('taxonomy_analysis'):
-        overhaul_results = _generate_category_overhaul_matrix(
+        overhaul_results = taxonomy._generate_category_overhaul_matrix(
             master_df.copy(),
             internal_keyword_col=internal_keyword_col,
             internal_position_col=internal_position_col,
