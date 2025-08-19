@@ -562,6 +562,14 @@ def _generate_category_overhaul_matrix(
             facet_potential_report_raw = final_report_df.to_dict(orient='records')
 
     matrix_df.replace({pd.NA: None, np.nan: None, '': None}, inplace=True)
+    
+    # Debug: Check if KeywordDetails are being populated
+    sample_row = matrix_df.iloc[0] if not matrix_df.empty else None
+    if sample_row is not None and 'KeywordDetails' in sample_row:
+        print(f"Debug: Sample row has {len(sample_row['KeywordDetails'])} KeywordDetails")
+        if len(sample_row['KeywordDetails']) > 0:
+            print(f"Debug: First KeywordDetail sample: {sample_row['KeywordDetails'][0]}")
+    
     return {
         "matrix_report": matrix_df.to_dict(orient='records'),
         "facet_potential_report": facet_potential_report_raw

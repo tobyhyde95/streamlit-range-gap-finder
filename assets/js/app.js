@@ -429,26 +429,80 @@
         data.forEach(parentRow => {
             const rowKey = createRowKey(parentRow, keyGenHeaders);
             if (parentRow.KeywordDetails && parentRow.KeywordDetails.length > 0) {
+                // Debug: Log the first keyword detail to see its structure
+                if (keywordBreakdownData.length === 0) {
+                    console.log('Sample KeywordDetail structure:', parentRow.KeywordDetails[0]);
+                    console.log('Sample Keyword value:', parentRow.KeywordDetails[0]['Keyword']);
+                }
                 parentRow.KeywordDetails.forEach(keywordRow => {
                     const newBreakdownRow = {};
                     keyGenHeaders.forEach(pHeader => {
                         newBreakdownRow[pHeader] = parentRow[pHeader];
                     });
-                    newBreakdownRow[`${annualSuffix} Google Searches`] = keywordRow[`${annualSuffix} Google Searches`];
-                    newBreakdownRow['On-Site Searches'] = keywordRow['On-Site Searches'];
-                    newBreakdownRow[`${annualSuffix} Organic Traffic`] = keywordRow[`${annualSuffix} Organic Traffic`];
-                    newBreakdownRow['Top Ranking Competitor'] = keywordRow['Top Ranking Competitor'];
-                    newBreakdownRow['Rank'] = keywordRow.Rank;
-                    newBreakdownRow['Ranking URL'] = keywordRow.URL;
+                    // Use the static field names that Python creates
+                    newBreakdownRow['Keyword'] = keywordRow['Keyword'] || '';
+                    newBreakdownRow['Monthly Google Searches'] = keywordRow['Monthly Google Searches'] || 0;
+                    newBreakdownRow['On-Site Searches'] = keywordRow['On-Site Searches'] || 0;
+                    newBreakdownRow['Monthly Organic Traffic'] = keywordRow['Monthly Organic Traffic'] || 0;
+                    newBreakdownRow['Top Ranking Competitor'] = keywordRow['Top Ranking Competitor'] || 'N/A';
+                    newBreakdownRow['Rank'] = keywordRow['Rank'] || 'N/A';
+                    newBreakdownRow['URL'] = keywordRow['URL'] || '#';
                     newBreakdownRow['Category & Facet Key'] = rowKey;
                     keywordBreakdownData.push(newBreakdownRow);
                 });
             }
         });
 
+        console.log('Created keywordBreakdownData with', keywordBreakdownData.length, 'rows');
         if (keywordBreakdownData.length > 0) {
-            const ws2 = XLSX.utils.json_to_sheet(keywordBreakdownData);
+            console.log('Sample breakdown row structure:', Object.keys(keywordBreakdownData[0]));
+            console.log('Sample breakdown row Keyword value:', keywordBreakdownData[0]['Keyword']);
+        }
+        if (keywordBreakdownData.length > 0) {
+            console.log('Creating Excel sheet for Keyword Breakdown...');
+            
+            // Reorder columns to put Keyword in Column B
+            const reorderedData = keywordBreakdownData.map(row => {
+                const reorderedRow = {};
+                // First column: Category & Facet Key
+                reorderedRow['Category & Facet Key'] = row['Category & Facet Key'];
+                // Second column: Keyword
+                reorderedRow['Keyword'] = row['Keyword'];
+                // Add all other columns in their original order
+                Object.keys(row).forEach(key => {
+                    if (key !== 'Category & Facet Key' && key !== 'Keyword') {
+                        reorderedRow[key] = row[key];
+                    }
+                });
+                return reorderedRow;
+            });
+            
+            const ws2 = XLSX.utils.json_to_sheet(reorderedData);
+            
+            // Set column widths to ensure all columns are visible
+            const colWidths = [];
+            const headers = Object.keys(reorderedData[0] || {});
+            headers.forEach(header => {
+                // Set reasonable column widths based on content
+                if (header === 'Keyword') {
+                    colWidths.push({ wch: 30 }); // Wider for keywords
+                } else if (header === 'URL') {
+                    colWidths.push({ wch: 50 }); // Wider for URLs
+                } else if (header === 'Category & Facet Key') {
+                    colWidths.push({ wch: 25 }); // Wider for category keys
+                } else if (header.includes('Traffic') || header.includes('Searches')) {
+                    colWidths.push({ wch: 15 }); // Medium for numbers
+                } else {
+                    colWidths.push({ wch: 12 }); // Default width
+                }
+            });
+            ws2['!cols'] = colWidths;
+            
+            console.log('Excel sheet created, appending to workbook...');
             XLSX.utils.book_append_sheet(wb, ws2, "Keyword Breakdown");
+            console.log('Sheet appended successfully');
+        } else {
+            console.log('No keyword breakdown data to export');
         }
 
         XLSX.writeFile(wb, `${fileName}.xlsx`);
@@ -479,8 +533,8 @@
                         'Facet Type': parentRow['Facet Type'],
                         'Facet Value': detailRow['Facet Value'],
                         'Keyword Count': detailRow['Keyword Count'],
-                        [`${annualSuffix} Organic Traffic`]: detailRow[`${annualSuffix} Organic Traffic`],
-                        [`Total ${annualSuffix} Google Searches`]: detailRow[`Total ${annualSuffix} Google Searches`],
+                        [`${annualSuffix} Organic Traffic`]: detailRow[`${annualSuffix} Organic Traffic`] || detailRow['Monthly Organic Traffic'] || 0,
+                        [`Total ${annualSuffix} Google Searches`]: detailRow[`Total ${annualSuffix} Google Searches`] || detailRow['Total Monthly Google Searches'] || 0,
                     };
                     if (detailRow.hasOwnProperty('Total On-Site Searches')) {
                         newBreakdownRow['Total On-Site Searches'] = detailRow['Total On-Site Searches'];
@@ -1056,10 +1110,19 @@
             const headersToExport = updateHeadersForTimeframe(tableState.headers, tableState.timeframe);
 
             if (title.includes('Category Overhaul Matrix') && exportType === 'excel') {
-                exportCategoryOverhaulToExcel(dataToExport, headersToExport, fileName);
+                // Use the original data from analysisResults instead of the processed data
+                const originalData = analysisResults.categoryOverhaulMatrixReport;
+                const processedData = applyOverridesAndMerge(originalData, Object.keys(originalData[0] || {}), analysisResults.hasOnsiteData);
+                const transformedData = transformDataForTimeframe(processedData, tableState.timeframe);
+                exportCategoryOverhaulToExcel(transformedData, headersToExport, fileName);
             }
             else if (title.includes('Facet Potential Analysis') && exportType === 'excel') {
-                exportFacetPotentialToExcel(dataToExport, headersToExport, fileName);
+                // Use the original data from analysisResults instead of the processed data
+                const originalData = analysisResults.categoryOverhaulMatrixReport;
+                const processedData = applyOverridesAndMerge(originalData, Object.keys(originalData[0] || {}), analysisResults.hasOnsiteData);
+                const regeneratedData = generateFacetPotentialFromMatrix(processedData, Object.keys(originalData[0] || {}), analysisResults.hasOnsiteData);
+                const transformedData = transformDataForTimeframe(regeneratedData, tableState.timeframe);
+                exportFacetPotentialToExcel(transformedData, headersToExport, fileName);
             } 
             else if (exportType === 'excel') {
                 exportToExcel(dataToExport, headersToExport, fileName);
