@@ -2,7 +2,8 @@
   "identifier_patterns": [
     "^\\d+$",
     "^cat\\d+$",
-    "^p-\\d+$"
+    "^p-\\d+$",
+    "^c\\d+$"
   ],
   "category_synonyms": {
     "sdsdrills": "sds-drill",
