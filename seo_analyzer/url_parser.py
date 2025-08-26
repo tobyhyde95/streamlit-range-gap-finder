@@ -83,8 +83,6 @@ class URLParser:
         except Exception:
             return None
     
-<<<<<<< HEAD
-=======
     def _extract_contextual_category_name(self, category_id: str, path_segments: List[str]) -> Optional[str]:
         """
         Extract a meaningful category name from the URL context around a category ID.
@@ -185,113 +183,12 @@ class URLParser:
         
         return None
     
->>>>>>> d3fb681d795e96d9c04eb042ef3546d446c8bf95
     def _matches_identifier_pattern(self, segment: str) -> bool:
         """Check if a segment matches any identifier pattern."""
         for pattern in self.config.get("identifier_patterns", []):
             if re.match(pattern, segment, re.IGNORECASE):
                 return True
         return False
-    
-    def _extract_contextual_category_name(self, category_id: str, path_segments: List[str]) -> Optional[str]:
-        """
-        Extract a meaningful category name from the URL context around a category ID.
-        
-        Args:
-            category_id: The category ID found in the URL
-            path_segments: All path segments from the URL
-            
-        Returns:
-            A meaningful category name or None if no context found
-        """
-        try:
-            # Find the position of the category ID in the path
-            id_index = path_segments.index(category_id)
-            
-            # Look for descriptive segments before the category ID
-            contextual_segments = []
-            
-            # Check segments before the ID (up to 2 segments back)
-            for i in range(max(0, id_index - 2), id_index):
-                segment = path_segments[i]
-                if not self._matches_identifier_pattern(segment):
-                    cleaned = segment.replace('-', ' ').replace('_', ' ').title()
-                    if len(cleaned) > 2:
-                        contextual_segments.append(cleaned)
-            
-            # Check segments after the ID (up to 1 segment forward)
-            for i in range(id_index + 1, min(len(path_segments), id_index + 2)):
-                segment = path_segments[i]
-                if not self._matches_identifier_pattern(segment):
-                    cleaned = segment.replace('-', ' ').replace('_', ' ').title()
-                    if len(cleaned) > 2:
-                        contextual_segments.append(cleaned)
-            
-            # If we found contextual segments, combine them intelligently
-            if contextual_segments:
-                # Remove duplicates while preserving order
-                unique_segments = []
-                for segment in contextual_segments:
-                    if segment not in unique_segments:
-                        unique_segments.append(segment)
-                
-                # Combine segments, preferring the most descriptive
-                if len(unique_segments) == 1:
-                    return unique_segments[0]
-                elif len(unique_segments) >= 2:
-                    # Combine the two most relevant segments
-                    combined = f"{unique_segments[0]} {unique_segments[1]}"
-                    return combined
-            
-            # If no contextual segments found, try to infer from the category ID pattern
-            return self._infer_category_from_id_pattern(category_id)
-            
-        except (ValueError, IndexError):
-            return None
-    
-    def _infer_category_from_id_pattern(self, category_id: str) -> Optional[str]:
-        """
-        Infer a category name from the category ID pattern itself.
-        
-        Args:
-            category_id: The category ID to analyze
-            
-        Returns:
-            An inferred category name or None
-        """
-        # Common patterns in category IDs
-        if category_id.startswith('c') and category_id[1:].isdigit():
-            # Pattern like c74, c852, etc.
-            # Try to extract meaningful information from the number
-            number = int(category_id[1:])
-            
-            # For very low numbers, they might be top-level categories
-            if number < 100:
-                return "Main Category"
-            elif number < 1000:
-                return "Sub Category"
-            else:
-                return "Product Category"
-        
-        elif category_id.startswith('cat') and category_id[3:].isdigit():
-            # Pattern like cat830704
-            return "Product Category"
-        
-        elif category_id.startswith('p-') and category_id[2:].isdigit():
-            # Pattern like p-12345
-            return "Product Category"
-        
-        elif category_id.isdigit():
-            # Pure numeric ID
-            number = int(category_id)
-            if number < 100:
-                return "Main Category"
-            elif number < 1000:
-                return "Sub Category"
-            else:
-                return "Product Category"
-        
-        return None
     
     def _post_process_category(self, raw_segment: str) -> str:
         """
@@ -352,7 +249,6 @@ class URLParser:
         with open(config_path, 'w') as f:
             json.dump(self.config, f, indent=2)
     
-<<<<<<< HEAD
     def add_category_synonym(self, raw_term: str, canonical_term: str) -> None:
         """Add a new category synonym to the configuration."""
         if "category_synonyms" not in self.config:
