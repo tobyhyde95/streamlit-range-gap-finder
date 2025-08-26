@@ -650,6 +650,7 @@
     }
 
     function populateColumnMappers(headers) {
+        console.log('populateColumnMappers called with headers:', headers);
         const colMap = { keywordCol: 'Keyword', urlCol: 'URL', positionCol: 'Position', volumeCol: 'Volume', trafficCol: 'Traffic' };
         let mapperHtml = '';
         Object.entries(colMap).forEach(([key, label]) => {
@@ -1886,15 +1887,88 @@
             if (ourFileInput.files.length > 0) {
                 const file = ourFileInput.files[0];
                 const text = await file.text();
-                const headers = text.split('\n')[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+                
+                // Debug: Log the first few characters to understand the format
+                console.log('CSV first line:', text.split('\n')[0]);
+                console.log('CSV first 200 chars:', text.substring(0, 200));
+                
+                // Parse CSV headers properly, handling quoted fields and different delimiters
+                function parseCSVHeaders(csvText) {
+                    const firstLine = csvText.split('\n')[0];
+                    
+                    // First, try to detect the delimiter
+                    const commaCount = (firstLine.match(/,/g) || []).length;
+                    const tabCount = (firstLine.match(/\t/g) || []).length;
+                    const semicolonCount = (firstLine.match(/;/g) || []).length;
+                    
+                    let delimiter = ',';
+                    if (tabCount > commaCount && tabCount > semicolonCount) {
+                        delimiter = '\t';
+                    } else if (semicolonCount > commaCount) {
+                        delimiter = ';';
+                    }
+                    
+                    const headers = [];
+                    let current = '';
+                    let inQuotes = false;
+                    
+                    for (let i = 0; i < firstLine.length; i++) {
+                        const char = firstLine[i];
+                        
+                        if (char === '"') {
+                            inQuotes = !inQuotes;
+                        } else if (char === delimiter && !inQuotes) {
+                            headers.push(current.trim().replace(/^"|"$/g, ''));
+                            current = '';
+                        } else {
+                            current += char;
+                        }
+                    }
+                    
+                    // Add the last field
+                    headers.push(current.trim().replace(/^"|"$/g, ''));
+                    
+                    // If we only got one header, try splitting by spaces as fallback
+                    if (headers.length === 1 && headers[0].includes(' ')) {
+                        console.log('Falling back to space-based splitting for:', headers[0]);
+                        // Split by spaces but be more careful about quoted strings
+                        const spaceSplit = headers[0].split(/\s+/).map(h => h.trim().replace(/^"|"$/g, ''));
+                        console.log('Space-split result:', spaceSplit);
+                        return spaceSplit;
+                    }
+                    
+                    console.log('Parsed headers:', headers);
+                    return headers;
+                }
+                
+                const headers = parseCSVHeaders(text);
 
                 const COLS_TO_EXCLUDE_FROM_UI = [
                     'country code', 'location', 'serp features', 'kd', 'cpc', 'paid traffic',
                     'current url inside', 'updated', 'branded', 'local', 'navigational',
                     'informational', 'commercial', 'transactional'
                 ];
-                const filteredHeaders = headers.filter(h => !COLS_TO_EXCLUDE_FROM_UI.includes(h.toLowerCase()));
-                populateColumnMappers(filteredHeaders);
+                // Also exclude the normalized versions (without spaces) to match backend
+                const COLS_TO_EXCLUDE_NORMALIZED = [
+                    'countrycode', 'location', 'serpfeatures', 'kd', 'cpc', 'paidtraffic',
+                    'currenturlinside', 'updated', 'branded', 'local', 'navigational',
+                    'informational', 'commercial', 'transactional'
+                ];
+                console.log('All headers before filtering:', headers);
+                const filteredHeaders = headers.filter(h => 
+                    !COLS_TO_EXCLUDE_FROM_UI.includes(h.toLowerCase()) && 
+                    !COLS_TO_EXCLUDE_NORMALIZED.includes(h.toLowerCase().replace(/\s+/g, ''))
+                );
+                console.log('Headers after filtering:', filteredHeaders);
+                console.log('Excluded headers:', headers.filter(h => 
+                    COLS_TO_EXCLUDE_FROM_UI.includes(h.toLowerCase()) || 
+                    COLS_TO_EXCLUDE_NORMALIZED.includes(h.toLowerCase().replace(/\s+/g, ''))
+                ));
+                
+                // If filtering removed all headers, use the original headers
+                const finalHeaders = filteredHeaders.length > 0 ? filteredHeaders : headers;
+                console.log('Final headers to use:', finalHeaders);
+                populateColumnMappers(finalHeaders);
                 columnMappingContainer.classList.remove('hidden');
             } else {
                 columnMappingContainer.classList.add('hidden');

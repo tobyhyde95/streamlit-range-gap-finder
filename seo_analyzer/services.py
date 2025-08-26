@@ -66,6 +66,7 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
     report("Parsing and validating inputs...", 1, total_steps)
     try:
         options = json.loads(options_str)
+        print(f"Column mapping options: {options['columnMap']}")
         internal_keyword_col = options['columnMap']['keywordCol'].replace(' ', '').replace('_', '')
         internal_position_col = options['columnMap']['positionCol'].replace(' ', '').replace('_', '')
         internal_url_col_name = options['columnMap']['urlCol'].replace(' ', '').replace('_', '')
@@ -76,6 +77,14 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
         lenses_to_run = options.get('lensesToRun', {})
         rank_from = options.get('rankFrom')
         rank_to = options.get('rankTo')
+        
+        print(f"Normalized column names:")
+        print(f"  keyword: '{internal_keyword_col}'")
+        print(f"  position: '{internal_position_col}'")
+        print(f"  url: '{internal_url_col_name}'")
+        print(f"  volume: '{internal_volume_col}'")
+        print(f"  traffic: '{internal_traffic_col}'")
+        
     except (json.JSONDecodeError, KeyError) as e:
         raise ValueError(f"Invalid or missing options provided in request: {e}")
     
