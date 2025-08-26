@@ -92,19 +92,11 @@ def test_config_management():
     
     url_parser = URLParser()
     
-    # Test adding new synonyms
-    print("Adding new category synonym...")
-    url_parser.add_category_synonym("powertool", "power-tool")
-    
+    # Test adding new facet synonym
     print("Adding new facet synonym...")
     url_parser.add_facet_synonym("tool_length", "length_mm")
     
-    # Test the new synonyms
-    test_url = "https://example.com/c/powertool/drills"
-    category = url_parser.extract_category_from_url(test_url)
-    print(f"URL with new synonym: {test_url}")
-    print(f"  Extracted Category: {category}")
-    
+    # Test the new synonym
     normalized_facet = url_parser.normalize_facet_key("tool_length")
     print(f"Facet with new synonym: tool_length -> {normalized_facet}")
 
