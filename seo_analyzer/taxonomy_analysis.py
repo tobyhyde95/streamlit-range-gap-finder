@@ -574,5 +574,3 @@ def _generate_category_overhaul_matrix(
         "matrix_report": matrix_df.to_dict(orient='records'),
         "facet_potential_report": facet_potential_report_raw
     }
-
-
