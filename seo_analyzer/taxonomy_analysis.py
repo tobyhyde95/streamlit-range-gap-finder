@@ -11,6 +11,14 @@ import swifter
 import subprocess
 import sys
 
+# Import the enhanced URL parser
+try:
+    from .url_parser import URLParser
+    from .synonym_discovery import SynonymDiscovery
+except ImportError:
+    from url_parser import URLParser
+    from synonym_discovery import SynonymDiscovery
+
 
 try:
     nlp = spacy.load("en_core_web_md")
@@ -31,11 +39,14 @@ def _generate_category_overhaul_matrix(
     internal_url_col_name,
     onsite_df,
     internal_volume_col,
-    topic_col='TopicID'
+    topic_col='TopicID',
+    enable_enhanced_parsing=True,
+    enable_synonym_discovery=True
 ):
     """
     Generates a matrix of categories and facets using a "learn and classify" model.
     Returns detailed matrix and a high-level facet potential report.
+    Now supports enhanced URL parsing with configurable patterns and synonym discovery.
     """
     if df.empty or internal_traffic_col not in df.columns:
         return {
@@ -43,41 +54,74 @@ def _generate_category_overhaul_matrix(
             "facet_potential_report": []
         }
 
+    # Initialize enhanced URL parser and synonym discovery
+    url_parser = URLParser() if enable_enhanced_parsing else None
+    synonym_discovery = SynonymDiscovery() if enable_synonym_discovery else None
+    
     stemmer = PorterStemmer()
     df_sorted = df.sort_values([internal_keyword_col, internal_position_col], ascending=[True, True])
     highest_ranking_df = df_sorted.drop_duplicates(subset=[internal_keyword_col], keep='first').copy()
 
     print("Learning category candidates from URL structures...")
-    all_segments = []
+    
     unique_urls = highest_ranking_df[internal_url_col_name].dropna().unique()
-    for url in unique_urls:
-        try:
-            path_segments = [
-                s.replace('-', ' ').replace('_', ' ')
-                for s in urlparse(str(url)).path.lower().strip('/').split('/')
-                if re.search(r'[a-zA-Z]', s) and len(s) > 3 and not re.search(r'\d', s)
-            ]
-            all_segments.extend(path_segments)
-        except Exception:
-            continue
+    
+    if enable_enhanced_parsing and url_parser:
+        print("Using enhanced URL parser with configurable patterns...")
+        
+        # Use enhanced category extraction
+        highest_ranking_df['Original Category Mapping'] = highest_ranking_df[internal_url_col_name].apply(
+            lambda url: url_parser.extract_category_from_url(url)
+        )
+        
+        # Discover synonyms if enabled
+        if enable_synonym_discovery and synonym_discovery:
+            print("Discovering potential synonyms from URLs...")
+            candidates = synonym_discovery.discover_synonyms_from_urls(unique_urls.tolist())
+            if candidates:
+                stored_ids = synonym_discovery.store_candidates(candidates)
+                print(f"Discovered {len(candidates)} potential synonyms, stored {len(stored_ids)} in database")
+        
+        # Get strong candidates from the enhanced extraction
+        category_counts = highest_ranking_df['Original Category Mapping'].value_counts()
+        min_freq = max(2, int(len(unique_urls) * 0.01))
+        strong_candidates = set(category_counts[category_counts >= min_freq].index)
+        
+    else:
+        print("Using legacy URL parsing...")
+        # Legacy logic for backward compatibility
+        all_segments = []
+        for url in unique_urls:
+            try:
+                path_segments = [
+                    s.replace('-', ' ').replace('_', ' ')
+                    for s in urlparse(str(url)).path.lower().strip('/').split('/')
+                    if re.search(r'[a-zA-Z]', s) and len(s) > 3 and not re.search(r'\d', s)
+                ]
+                all_segments.extend(path_segments)
+            except Exception:
+                continue
 
-    segment_freq = Counter(all_segments)
-    min_freq = max(2, int(len(unique_urls) * 0.01))
-    strong_candidates = {segment for segment, freq in segment_freq.items() if freq >= min_freq}
+        segment_freq = Counter(all_segments)
+        min_freq = max(2, int(len(unique_urls) * 0.01))
+        strong_candidates = {segment for segment, freq in segment_freq.items() if freq >= min_freq}
 
-    def find_best_category(url, candidates):
-        try:
-            path_segments = [
-                s.replace('-', ' ').replace('_', ' ')
-                for s in urlparse(str(url)).path.lower().strip('/').split('/')
-            ]
-            valid_matches = [segment for segment in path_segments if segment in candidates]
-            if not valid_matches:
+        def find_best_category(url, candidates):
+            try:
+                path_segments = [
+                    s.replace('-', ' ').replace('_', ' ')
+                    for s in urlparse(str(url)).path.lower().strip('/').split('/')
+                ]
+                valid_matches = [segment for segment in path_segments if segment in candidates]
+                if not valid_matches:
+                    return None
+                best_match = valid_matches[-1]
+                return best_match.title()
+            except Exception:
                 return None
-            best_match = valid_matches[-1]
-            return best_match.title()
-        except Exception:
-            return None
+        
+        # This line is already handled in the enhanced parsing section above
+        pass
 
     if onsite_df is not None and not onsite_df.empty:
         highest_ranking_df = pd.merge(highest_ranking_df, onsite_df, left_on=internal_keyword_col, right_on='keyword', how='left')
@@ -85,7 +129,7 @@ def _generate_category_overhaul_matrix(
         highest_ranking_df.drop(columns=['keyword'], inplace=True, errors='ignore')
 
     highest_ranking_df['On-Site Searches'] = highest_ranking_df.get('On-Site Searches', pd.Series(0, index=highest_ranking_df.index)).fillna(0).astype(int)
-    highest_ranking_df['Original Category Mapping'] = highest_ranking_df[internal_url_col_name].apply(find_best_category, candidates=strong_candidates)
+    # Original Category Mapping is already set in the enhanced parsing section above
 
     @lru_cache(maxsize=None)
     def get_word_forms(word):
@@ -182,9 +226,16 @@ def _generate_category_overhaul_matrix(
                 current_cat = row['Category Mapping']
                 if current_cat in generic_categories_to_reclassify:
                     try:
-                        url_path = urlparse(str(row[internal_url_col_name])).path.lower().strip('/')
-                        if url_path == current_cat.lower().replace(' ', '-'):
-                            return current_cat
+                        if enable_enhanced_parsing and url_parser:
+                            # Use enhanced URL parser for category extraction
+                            extracted_cat = url_parser.extract_category_from_url(row[internal_url_col_name])
+                            if extracted_cat and extracted_cat != current_cat:
+                                return extracted_cat
+                        else:
+                            # Legacy URL parsing
+                            url_path = urlparse(str(row[internal_url_col_name])).path.lower().strip('/')
+                            if url_path == current_cat.lower().replace(' ', '-'):
+                                return current_cat
                     except Exception:
                         pass
                     kw_tokens = set(str(row[internal_keyword_col]).lower().split())
@@ -207,7 +258,18 @@ def _generate_category_overhaul_matrix(
 
     def extract_url_facets(url):
         try:
-            return {k.lower(): clean_facet_value(v[0]) for k, v in parse_qs(urlparse(str(url)).query).items() if v}
+            if enable_enhanced_parsing and url_parser:
+                # Use enhanced facet normalization
+                raw_facets = parse_qs(urlparse(str(url)).query)
+                normalized_facets = {}
+                for key, values in raw_facets.items():
+                    if values:
+                        normalized_key = url_parser.normalize_facet_key(key)
+                        normalized_facets[normalized_key] = clean_facet_value(values[0])
+                return normalized_facets
+            else:
+                # Legacy facet extraction
+                return {k.lower(): clean_facet_value(v[0]) for k, v in parse_qs(urlparse(str(url)).query).items() if v}
         except Exception:
             return {}
 
