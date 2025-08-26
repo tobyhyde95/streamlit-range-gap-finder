@@ -1,14 +1,20 @@
 # seo_analyzer/tasks.py
 import io
 import os
-from .celery_app import celery_app
+try:
+    from .celery_app import celery_app
+except ImportError:
+    from celery_app import celery_app
 import shutil
 
 @celery_app.task(bind=True)
 def run_analysis_task(self, our_file_path, competitor_file_paths, onsite_file_path, options_str, temp_dir):
     """This is the Celery task that performs the analysis, now with progress reporting."""
 
-    from . import services
+    try:
+        from . import services
+    except ImportError:
+        import services
     
     try:
         # We pass the update_state function to the main logic

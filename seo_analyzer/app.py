@@ -4,14 +4,22 @@ import argparse
 import flask
 from flask_cors import CORS
 from functools import wraps
-from .tasks import run_analysis_task 
+try:
+    from .tasks import run_analysis_task
+    from .synonym_discovery import SynonymDiscovery
+except ImportError:
+    from tasks import run_analysis_task
+    from synonym_discovery import SynonymDiscovery
 import tempfile
 import uuid
 
 app = flask.Flask(__name__, static_folder='../assets', static_url_path='/assets')
 CORS(app)
 
-SECRET_API_KEY = "my-secret-dev-key" 
+SECRET_API_KEY = "my-secret-dev-key"
+
+# Initialize synonym discovery system
+synonym_discovery = SynonymDiscovery() 
 
 def require_api_key(f):
     @wraps(f)
@@ -30,6 +38,16 @@ def index():
 def main_page():
     """Serve the main HTML file."""
     return flask.send_from_directory('..', 'range-gap-finder.html')
+
+@app.route("/suggestions-review.html")
+def suggestions_review():
+    """Serve the suggestions review HTML file."""
+    return flask.send_from_directory('..', 'suggestions-review.html')
+
+@app.route("/config-manager.html")
+def config_manager():
+    """Serve the configuration manager HTML file."""
+    return flask.send_from_directory('..', 'config-manager.html')
 
 @app.route("/process", methods=["POST"])
 @require_api_key
@@ -90,6 +108,117 @@ def task_status(task_id):
             'error': str(task.info)
         }
     return flask.jsonify(response)
+
+@app.route("/api/suggestions", methods=["GET"])
+@require_api_key
+def get_suggestions():
+    """Get all pending synonym suggestions."""
+    try:
+        suggestions = synonym_discovery.get_pending_suggestions()
+        return flask.jsonify(suggestions)
+    except Exception as e:
+        return flask.jsonify({"error": f"Failed to get suggestions: {e}"}), 500
+
+@app.route("/api/suggestions/update", methods=["POST"])
+@require_api_key
+def update_suggestions():
+    """Update suggestion statuses (approve or reject)."""
+    try:
+        data = flask.request.get_json()
+        if not data or 'updates' not in data:
+            return flask.jsonify({"error": "Missing updates data"}), 400
+        
+        updates = data['updates']
+        if not isinstance(updates, list):
+            return flask.jsonify({"error": "Updates must be a list"}), 400
+        
+        # Validate each update
+        for update in updates:
+            if not isinstance(update, dict) or 'id' not in update or 'action' not in update:
+                return flask.jsonify({"error": "Each update must have 'id' and 'action' fields"}), 400
+            if update['action'] not in ['approve', 'reject']:
+                return flask.jsonify({"error": "Action must be 'approve' or 'reject'"}), 400
+        
+        result = synonym_discovery.bulk_update_suggestions(updates)
+        return flask.jsonify(result)
+        
+    except Exception as e:
+        return flask.jsonify({"error": f"Failed to update suggestions: {e}"}), 500
+
+@app.route("/api/suggestions/discover", methods=["POST"])
+@require_api_key
+def discover_synonyms():
+    """Discover new synonyms from uploaded URLs."""
+    try:
+        data = flask.request.get_json()
+        if not data or 'urls' not in data:
+            return flask.jsonify({"error": "Missing URLs data"}), 400
+        
+        urls = data['urls']
+        if not isinstance(urls, list):
+            return flask.jsonify({"error": "URLs must be a list"}), 400
+        
+        # Discover synonyms
+        candidates = synonym_discovery.discover_synonyms_from_urls(urls)
+        
+        # Store candidates in database
+        stored_ids = synonym_discovery.store_candidates(candidates)
+        
+        return flask.jsonify({
+            "discovered_count": len(candidates),
+            "stored_count": len(stored_ids),
+            "candidates": candidates
+        })
+        
+    except Exception as e:
+        return flask.jsonify({"error": f"Failed to discover synonyms: {e}"}), 500
+
+@app.route("/api/config", methods=["GET"])
+@require_api_key
+def get_config():
+    """Get current configuration."""
+    try:
+        return flask.jsonify(synonym_discovery.url_parser.config)
+    except Exception as e:
+        return flask.jsonify({"error": f"Failed to get config: {e}"}), 500
+
+@app.route("/api/config", methods=["POST"])
+@require_api_key
+def update_config():
+    """Update configuration with new synonym rules."""
+    try:
+        data = flask.request.get_json()
+        if not data:
+            return flask.jsonify({"error": "Missing configuration data"}), 400
+        
+        # Update the configuration
+        synonym_discovery.url_parser.update_config(data)
+        
+        return flask.jsonify({"message": "Configuration updated successfully"})
+        
+    except Exception as e:
+        return flask.jsonify({"error": f"Failed to update config: {e}"}), 500
+
+@app.route("/api/config/synonyms", methods=["POST"])
+@require_api_key
+def add_synonym():
+    """Add a single synonym rule."""
+    try:
+        data = flask.request.get_json()
+        if not data or 'type' not in data or 'raw_term' not in data or 'canonical_term' not in data:
+            return flask.jsonify({"error": "Missing required fields: type, raw_term, canonical_term"}), 400
+        
+        if data['type'] == 'category':
+            synonym_discovery.url_parser.add_category_synonym(data['raw_term'], data['canonical_term'])
+        elif data['type'] == 'facet':
+            synonym_discovery.url_parser.add_facet_synonym(data['raw_term'], data['canonical_term'])
+        else:
+            return flask.jsonify({"error": "Type must be 'category' or 'facet'"}), 400
+        
+        return flask.jsonify({"message": f"Added {data['type']} synonym: {data['raw_term']} -> {data['canonical_term']}"})
+        
+    except Exception as e:
+        return flask.jsonify({"error": f"Failed to add synonym: {e}"}), 500
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run Flask app.')
