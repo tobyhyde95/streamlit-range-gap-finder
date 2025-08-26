@@ -392,7 +392,7 @@
     function createReportContainer(title, subtitle, customContent = '', extraDescription = '') {
         const regexTipHtml = `<div class="tooltip-container"><svg class="tooltip-icon h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg><span class="tooltip-text"><b>Regex Search Tips:</b><br><code>^word</code> &ndash; Starts with 'word'<br><code>word$</code> &ndash; Ends with 'word'<br><code>word1|word2</code> &ndash; Has 'word1' or 'word2'<br><code>\\bword\\b</code> &ndash; Matches whole word</span></div>`;
         const timeframeToggle = `<div class="flex items-center"><span class="text-sm font-semibold mr-2">Timeframe:</span><button data-timeframe="monthly" class="scope-toggle-btn text-xs font-semibold py-1 px-3 rounded-l-md ${tableState.timeframe === 'monthly' ? 'active' : ''}">Monthly</button><button data-timeframe="annual" class="scope-toggle-btn text-xs font-semibold py-1 px-3 rounded-r-md ${tableState.timeframe === 'annual' ? 'active' : ''}">Annual</button></div>`;
-        return `<div class="bg-white p-6 rounded-xl shadow-lg" data-report-title="${title}"><div class="flex flex-wrap justify-between items-center mb-6 border-b pb-4 gap-4"><div><h2 class="text-2xl font-bold">${title}</h2><p class="text-sm text-gray-600 mt-1">${subtitle}</p></div><div class="flex items-center space-x-2"><button data-export-type="excel" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export Excel</button><button data-export-type="pdf" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export PDF</button><button class="back-to-lenses-btn text-sm font-semibold text-blue-600 hover:underline">&larr; Back to Lenses</button></div></div>${extraDescription ? `<div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 p-3 rounded-md mb-4">${extraDescription}</div>` : ''}<div id="manual-overrides-container" class="mb-6"></div><div class="flex flex-wrap justify-between items-center mb-4 gap-4"><div class="flex items-center gap-2"><input type="text" id="table-search-input" placeholder="Filter with text or regex..." class="w-full md:w-auto p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500">${regexTipHtml}</div><div class="flex items-center gap-4">${customContent}${timeframeToggle}</div></div><div id="interactive-table-wrapper"></div><div id="pagination-controls-wrapper" class="flex flex-wrap justify-between items-center mt-4 gap-4"></div></div>`;
+        return `<div class="bg-white p-6 rounded-xl shadow-lg" data-report-title="${title}"><div class="flex flex-wrap justify-between items-center mb-6 border-b pb-4 gap-4"><div><h2 class="text-2xl font-bold">${title}</h2><p class="text-sm text-gray-600 mt-1">${subtitle}</p></div><div class="flex items-center space-x-2"><button data-export-type="excel" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export Excel</button><button data-export-type="json" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export JSON</button><button data-export-type="pdf" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export PDF</button><button class="back-to-lenses-btn text-sm font-semibold text-blue-600 hover:underline">&larr; Back to Lenses</button></div></div>${extraDescription ? `<div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 p-3 rounded-md mb-4">${extraDescription}</div>` : ''}<div id="manual-overrides-container" class="mb-6"></div><div class="flex flex-wrap justify-between items-center mb-4 gap-4"><div class="flex items-center gap-2"><input type="text" id="table-search-input" placeholder="Filter with text or regex..." class="w-full md:w-auto p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500">${regexTipHtml}</div><div class="flex items-center gap-4">${customContent}${timeframeToggle}</div></div><div id="interactive-table-wrapper"></div><div id="pagination-controls-wrapper" class="flex flex-wrap justify-between items-center mt-4 gap-4"></div></div>`;
     }
 
     function exportCategoryOverhaulToExcel(data, headers, fileName) {
@@ -594,6 +594,180 @@
             columnStyles: { text: { cellWidth: 'auto' } }
         });
         doc.save(`${fileName}.pdf`);
+    }
+
+    function exportCategoryOverhaulToJson(data, headers, fileName) {
+        // Create a comprehensive JSON export with all nested data
+        const exportData = {
+            metadata: {
+                exportType: "Category Overhaul Matrix",
+                exportDate: new Date().toISOString(),
+                timeframe: tableState.timeframe,
+                totalRows: data.length,
+                columns: headers.filter(h => h !== '')
+            },
+            summary: {
+                totalTraffic: data.reduce((sum, row) => sum + (row['Monthly Organic Traffic'] || 0), 0),
+                totalSearches: data.reduce((sum, row) => sum + (row['Total Monthly Google Searches'] || 0), 0),
+                totalKeywords: data.reduce((sum, row) => sum + (row.KeywordDetails ? row.KeywordDetails.length : 0), 0)
+            },
+            matrix: data.map(row => {
+                const cleanRow = {};
+                headers.forEach(header => {
+                    if (header !== '' && header !== 'KeywordDetails') {
+                        let value = row[header];
+                        // Clean HTML from values
+                        if (typeof value === 'string') {
+                            value = value.replace(/<[^>]*>?/gm, '');
+                        }
+                        cleanRow[header] = value;
+                    }
+                });
+                
+                // Add keyword details if they exist
+                if (row.KeywordDetails && row.KeywordDetails.length > 0) {
+                    cleanRow.keywordDetails = row.KeywordDetails.map(kw => ({
+                        keyword: kw.Keyword || '',
+                        monthlyGoogleSearches: kw['Monthly Google Searches'] || 0,
+                        onSiteSearches: kw['On-Site Searches'] || 0,
+                        monthlyOrganicTraffic: kw['Monthly Organic Traffic'] || 0,
+                        topRankingCompetitor: kw['Top Ranking Competitor'] || '',
+                        rank: kw.Rank || '',
+                        url: kw.URL || ''
+                    }));
+                } else {
+                    cleanRow.keywordDetails = [];
+                }
+                
+                return cleanRow;
+            })
+        };
+
+        // Create and download the JSON file
+        const jsonString = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${fileName}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function exportFacetPotentialToJson(data, headers, fileName) {
+        // Create a comprehensive JSON export with all nested data
+        const exportData = {
+            metadata: {
+                exportType: "Facet Potential Analysis",
+                exportDate: new Date().toISOString(),
+                timeframe: tableState.timeframe,
+                totalRows: data.length,
+                columns: headers.filter(h => h !== '')
+            },
+            summary: {
+                totalTraffic: data.reduce((sum, row) => sum + (row['Monthly Organic Traffic'] || 0), 0),
+                totalSearches: data.reduce((sum, row) => sum + (row['Total Monthly Google Searches'] || 0), 0),
+                totalKeywords: data.reduce((sum, row) => sum + (row['Keyword Count'] || 0), 0)
+            },
+            facetAnalysis: data.map(row => {
+                const cleanRow = {};
+                headers.forEach(header => {
+                    if (header !== '' && header !== 'FacetValueDetails') {
+                        let value = row[header];
+                        // Clean HTML from values
+                        if (typeof value === 'string') {
+                            value = value.replace(/<[^>]*>?/gm, '');
+                        }
+                        cleanRow[header] = value;
+                    }
+                });
+                
+                // Add facet value details if they exist
+                if (row.FacetValueDetails && row.FacetValueDetails.length > 0) {
+                    cleanRow.facetValueDetails = row.FacetValueDetails.map(detail => ({
+                        facetValue: detail['Facet Value'] || '',
+                        keywordCount: detail['Keyword Count'] || 0,
+                        monthlyOrganicTraffic: detail['Monthly Organic Traffic'] || 0,
+                        totalMonthlyGoogleSearches: detail['Total Monthly Google Searches'] || 0,
+                        totalOnSiteSearches: detail['Total On-Site Searches'] || 0
+                    }));
+                } else {
+                    cleanRow.facetValueDetails = [];
+                }
+                
+                return cleanRow;
+            })
+        };
+
+        // Create and download the JSON file
+        const jsonString = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${fileName}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function exportToJson(data, headers, fileName, title) {
+        // Create a comprehensive JSON export for general reports
+        const exportData = {
+            metadata: {
+                exportType: title,
+                exportDate: new Date().toISOString(),
+                timeframe: tableState.timeframe,
+                totalRows: data.length,
+                columns: headers.filter(h => h !== '')
+            },
+            summary: {
+                totalTraffic: data.reduce((sum, row) => {
+                    const trafficCol = headers.find(h => h.includes('Organic Traffic'));
+                    return sum + (row[trafficCol] || 0);
+                }, 0),
+                totalSearches: data.reduce((sum, row) => {
+                    const searchCol = headers.find(h => h.includes('Google Searches'));
+                    return sum + (row[searchCol] || 0);
+                }, 0)
+            },
+            data: data.map(row => {
+                const cleanRow = {};
+                headers.forEach(header => {
+                    if (header !== '') {
+                        let value = row[header];
+                        // Clean HTML from values
+                        if (typeof value === 'string') {
+                            value = value.replace(/<[^>]*>?/gm, '');
+                        }
+                        // Handle market share arrays
+                        if (Array.isArray(value)) {
+                            value = {
+                                percentage: value[0],
+                                traffic: value[1]
+                            };
+                        }
+                        cleanRow[header] = value;
+                    }
+                });
+                return cleanRow;
+            })
+        };
+
+        // Create and download the JSON file
+        const jsonString = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${fileName}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
 
     function openKeywordModal(topicID, mapSource) {
@@ -1110,23 +1284,35 @@
             const dataToExport = getFilteredData();
             const headersToExport = updateHeadersForTimeframe(tableState.headers, tableState.timeframe);
 
-            if (title.includes('Category Overhaul Matrix') && exportType === 'excel') {
+            if (title.includes('Category Overhaul Matrix')) {
                 // Use the original data from analysisResults instead of the processed data
                 const originalData = analysisResults.categoryOverhaulMatrixReport;
                 const processedData = applyOverridesAndMerge(originalData, Object.keys(originalData[0] || {}), analysisResults.hasOnsiteData);
                 const transformedData = transformDataForTimeframe(processedData, tableState.timeframe);
-                exportCategoryOverhaulToExcel(transformedData, headersToExport, fileName);
+                
+                if (exportType === 'excel') {
+                    exportCategoryOverhaulToExcel(transformedData, headersToExport, fileName);
+                } else if (exportType === 'json') {
+                    exportCategoryOverhaulToJson(transformedData, headersToExport, fileName);
+                }
             }
-            else if (title.includes('Facet Potential Analysis') && exportType === 'excel') {
+            else if (title.includes('Facet Potential Analysis')) {
                 // Use the original data from analysisResults instead of the processed data
                 const originalData = analysisResults.categoryOverhaulMatrixReport;
                 const processedData = applyOverridesAndMerge(originalData, Object.keys(originalData[0] || {}), analysisResults.hasOnsiteData);
                 const regeneratedData = generateFacetPotentialFromMatrix(processedData, Object.keys(originalData[0] || {}), analysisResults.hasOnsiteData);
                 const transformedData = transformDataForTimeframe(regeneratedData, tableState.timeframe);
-                exportFacetPotentialToExcel(transformedData, headersToExport, fileName);
+                
+                if (exportType === 'excel') {
+                    exportFacetPotentialToExcel(transformedData, headersToExport, fileName);
+                } else if (exportType === 'json') {
+                    exportFacetPotentialToJson(transformedData, headersToExport, fileName);
+                }
             } 
             else if (exportType === 'excel') {
                 exportToExcel(dataToExport, headersToExport, fileName);
+            } else if (exportType === 'json') {
+                exportToJson(dataToExport, headersToExport, fileName, title);
             } else if (exportType === 'pdf') {
                 exportToPdf(dataToExport, headersToExport, fileName, title);
             }
