@@ -33,7 +33,7 @@ class URLParser:
     def extract_category_from_url(self, url: str) -> Optional[str]:
         """
         Extract category from URL path using intelligent pattern recognition.
-        Prioritizes human-readable category names and extracts context from surrounding URL segments.
+        Prioritizes the most specific (last) human-readable category name in the URL path.
         
         Args:
             url: The URL to parse
@@ -46,9 +46,9 @@ class URLParser:
             parsed_url = urlparse(str(url))
             path_segments = [s for s in parsed_url.path.strip('/').split('/') if s]
             
-            # First, look for human-readable category names (non-ID segments)
+            # Look for human-readable category names (non-ID segments) from end to beginning
             human_readable_categories = []
-            for segment in path_segments:
+            for segment in reversed(path_segments):  # Process from end to beginning
                 # Skip segments that match identifier patterns
                 if self._matches_identifier_pattern(segment):
                     continue
@@ -61,13 +61,13 @@ class URLParser:
                     if processed and processed != cleaned:
                         human_readable_categories.append(processed)
                     else:
-                        human_readable_categories.append(cleaned.title())
+                        # Return the original segment format (with hyphens) instead of title case
+                        human_readable_categories.append(segment.lower())
             
-            # If we found human-readable categories, return the most relevant one
+            # If we found human-readable categories, return the most specific one (first in reversed order)
             if human_readable_categories:
-                # Prefer longer, more descriptive category names
-                best_category = max(human_readable_categories, key=len)
-                return best_category
+                # Return the most specific category (closest to the end of the URL)
+                return human_readable_categories[0]
             
             # If no human-readable categories found, try to extract context from category IDs
             for segment in reversed(path_segments):

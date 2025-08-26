@@ -1,0 +1,4258 @@
+{
+  "validation_timestamp": "2025-08-26T17:35:12.927328",
+  "analysis_timestamp": "2025-08-26T17:35:12.921375",
+  "total_rows_validated": 202,
+  "summary": {
+    "total_rows": 202,
+    "correct_mappings": 0,
+    "incorrect_mappings": 202,
+    "accuracy_percentage": 0.0,
+    "common_issues": {
+      "No category could be extracted from URL": 202
+    }
+  },
+  "validation_results": [
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "concrete-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "plasterboard-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "decking-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "woodscrews",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "electrical-socket-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "self-tapping-drilling-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "stainless-steel-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "security-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "screw-caps-cups",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "roofing-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "24797-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "screws-trade-packs",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "timber-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "self-drilling-tek-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "hinge-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "flooring-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "brass-wood-screws-c31",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "diy580655.cat",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "coach-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "twinthread-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "collated-screws-c133",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "structural-timber-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "screw-measuring-information",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "tongue-tite-tongue-groove",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "23837-woodscrews",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "23871-concrete-bolts-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "23838-decking-timber-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "23848-self-tapping-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "socket-allen-cap-screws-din-912-bs4168-iso-4762",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "machine-screws-c27",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "self-tapping-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "23855-drywall-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "tek-screw-colour-caps",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "speciality-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "hexagon-setscrews",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "decking-roofing-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "drywall",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "small-hinged-screw-cap-d-grey",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "23857-collated-drywall-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "23946-coach-screw",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "window-fitting-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "sheet-to-timber",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "23964-multi-fix-concrete-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "sheet-to-heavy-section-steel",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "50090soloc-solo-chipboard-woodscrews-pz-double-countersunk-yellow",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "wood-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "euro-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "twinthread-woodscrews",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "timco-selfdrill-screws-metal-to-metal",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "hook-folded-eye-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "brass-machine-screws2",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "socket-shoulder-screws-grade-10-9-metric",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "number-plate-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "masonry-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "24663-screws-plastic-plugs",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "electrical-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "wood-to-heavy-section-steel",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "mirror-screws-accessories-c97",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "collated-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "coach-screws-din-571-bright-zinc-plated-galvanised",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "screw-cups-caps",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "countersunk-torx-apt-anchor-screwbolt-steel-zinc-plated-or-stainless-steel",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "collated-chipboard-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "hexagon-head-high-tensile-set-screws-din-933-grade-8-8",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "wood-construction-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "unifix-drywall-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "taptite-alternative-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "solo-woodscrews-screw-size-chart",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "machine-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "anthplast-two-piece-screw-caps-anthracite-grey",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "brass-screws-stainless-c21",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "100shp-screw-hooks-zinc",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "bmhw85-metal-construction-timber-to-heavy-section-screws-countersunk-wing-tip-self-drilling-exterior-silver-organic",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "s22w16b-metal-construction-stitching-screws-for-sheet-to-sheet-hex-epdm-washer-self-drilling-exterior-silver-organic",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "stitchers",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "drywall-screws-c134",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "concrete-screws-c138",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "stud-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "socket-allen-countersunk-screws-grade-10-9-din-7991",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "0680cscnb-coach-screws-nylon-plugs-zinc",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "anchor-screwbolt-fixing-hxb-concreto-anchor-screw",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "grub-screw",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "large-small-hinged-screw-caps",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "shccyellowp-hinged-screw-caps-small-yellow",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "drywall-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "chrome-on-brass-wood-screws-c52",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "self-drill-roofing",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "24647-timber-screw-hex-exterior-silver",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "torx-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "24771-self-tapping-screw-flange-head",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "24148-button-socket-screw-stainless-steel",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "616cskssp-socket-screws-hex-nuts-countersunk-stainless-steel",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "24054-mirror-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "window-screws-c139",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "fire-rated-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "m12-hexagon-head-set-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "screw-types-and-information",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "hexagon-head-flange-high-tensile-serrated-set-screws-din-6921-grade-8-8",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "quik-drive-quick-drive-collated-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "516capssp-socket-screws-hex-nuts-cap-stainless-steel",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "brass-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "dewalt-screwbolts",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "v20-screws.pdf",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "black-outdoor-round-head-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "screw-hooks-screw-eyes-screw-cover-caps-c85",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "button-head-machine-screw-stainless-steel",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "tite-fix-wood-screws-range",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "stainless-steel-countersunk-socket-screws-a2-din-7991-fasteners",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "creamplast-two-piece-screw-caps-cream",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "countersunk-machine-screw-stainless-steel",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "23845-roofing-construction-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "shccgreyp-hinged-screw-caps-small-light-grey",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "collated-drywall-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "screws-for-timber-wood-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "00081cmir200-mirror-hanging-screws-zinc-chrome-dome",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "stainless-steel-socket-cap-screw-a2-din-912-fasteners",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "tbazsp-metal-speed-plugs-screws-zinc",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "24046-advanced-coach-screw",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "24056-screw-cups",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "s1230ssp-set-screws-hex-nuts-stainless-steel",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "round-head-hammer-drive-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "pan-head-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "self-drilling-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "countersunk-head-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "lhccdgreyp-hinged-screw-caps-large-dark-grey",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "knurled-brass-inset-screw-cups",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "s850ssp-set-screws-hex-nuts-stainless-steel",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "concrete-screws-masonry-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "round-head-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "23854-window-fabrication-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "srplugp-red-plastic-plugs-with-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "lhccbrownp-hinged-screw-caps-large-brown",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "lhccgreyp-hinged-screw-caps-large-light-grey",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "magnetic-hex-screwdriver-bit-holders",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "quikdrive-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "pancake-head-self-drilling-screws-bi-metal",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "extra-hard-phillips-screwdriver-bits",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "291z-baypole-screws-wafer-flange-ph-self-drilling-point-zinc",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "stainless-steel-self-drill-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "self-drilling-screws-tek-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "self-drilling-screws-hexagon-cover-caps",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "40035class-classic-multi-purpose-screws-pz-double-countersunk-a2-stainless-steel",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "timco-velocity-premium-multi-use-wood-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "825snzb-set-screws-hex-nuts-grade-88-zinc",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "860scsy-advanced-coach-screws-hex-flange-yellow",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "screwdriver-bits-sets",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "24182-screw-eye-and-hook",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "collated-screw-systems",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "excalibur-flange-hexagon-head-screwbolt",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "slotted-raised-countersunk-c60",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "slotted-pan-head-c74",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "00038coldys-collated-drywall-screws-ph-bugle-coarse-thread-black",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "wood-screws-c36",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "window-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "unc-unf-fasteners-unc-unf-bolts-nuts-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "tray640-mixed-tray-set-screws-nuts-washers-a2-stainless-steel",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "socket-allen-set-screws-din-916",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "socket-cap-screws-c5",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "socket-screws-c2",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "specialist-construction-screws-c136",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "square-head-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "timco-concrete-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "thumb-screws-c65",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "timco-c2-woodscrews-classic-multi-purpose-flooring-mdf-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "stainless-steel-slot-cheese-head-machine-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "tek-screw-washers",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "super-tek-8-hex-self-drill-screws-for-heavy-steel-4-22mm",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "surface-screw-cup-washers-c28",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "low-head-socket-allen-cap-screws-high-tensile-self-colour-minimum-grade-8-8-din-7984",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "grub-screws-cone-point-c70",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "pvc-composite-decking-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "mild-steel-countersunk-slot-machine-screws-din-963",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "mild-steel-countersunk-pozi-machine-screws-din-965",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "metalwork-connector-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "dsn75b-drive-screws-galvanised",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "excalibur-countersunk-head-screwbolt",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "fp19-metal-construction-sheet-framing-screws-ph-low-profile-pancake-exterior-silver-organic",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "screw-cup-finishing-washers-c59",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "screw-trade-packs",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "collated-flooring-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "collated-decking-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "dart-double-magenetic-screwdriver-bit-holder-impact-driver-bits",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "chromeplast-two-piece-screw-caps-chrome",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "carcass-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "button-head-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "150sft-screw-in-frame-tie",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "24132-coach-screw-zinc",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "24121-drywall-screw-self-drilling",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "150indexwsst-timber-frame-construction-landscaping-screws-wafer-a2-stainless-steel",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "10114bjc-blackjax-woodscrews-pz-round-black-organic",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "08916whsd-metal-construction-sheet-framing-screws-ph-wafer-self-drilling-zinc",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "08112fcmirp-mirror-screws-zinc-chrome-flat",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "08112cmirp-mirror-screws-zinc-chrome-dome",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "08100cscnb-coach-screws-nylon-plugs-zinc",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "27246-ratcheting-screwdriver-bit-set",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "30sep-screw-eyes-zinc",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "880ini-heavy-duty-timber-screws-hex-exterior-silver",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "a-2-304-stainless-steel-hexagon-set-screw-din-931",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "screws-for-plastics",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "00038drys-drywall-screws-ph-bugle-fine-thread-grey",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "zh38w16-metal-construction-heavy-section-screws-hex-epdm-washer-self-drilling-zinc",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    }
+  ]
+}

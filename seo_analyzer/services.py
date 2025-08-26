@@ -2,6 +2,7 @@
 import pandas as pd
 import json
 import numpy as np
+from datetime import datetime
 from . import analysis
 from . import data_loader
 from . import market_share_analysis as market
@@ -362,6 +363,22 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
         )
         category_overhaul_matrix_report_raw = overhaul_results["matrix_report"]
         facet_potential_report_raw = overhaul_results["facet_potential_report"]
+        
+        # Automatically validate category mapping logic
+        if category_overhaul_matrix_report_raw:
+            try:
+                import sys
+                import os
+                sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'validation_tests'))
+                from category_mapping_validator import validate_category_overhaul_matrix_automation
+                analysis_timestamp = datetime.now().isoformat()
+                validation_results = validate_category_overhaul_matrix_automation(
+                    category_overhaul_matrix_report_raw, 
+                    analysis_timestamp
+                )
+                print(f"📊 Category Mapping Validation: {validation_results['summary']['accuracy_percentage']}% accuracy")
+            except Exception as e:
+                print(f"⚠️  Category mapping validation failed: {str(e)}")
     else:
         print("Skipping Taxonomy & Architecture analysis as per user request.")
 
