@@ -1,0 +1,20 @@
+{
+  "identifier_patterns": [
+    "^\\d+$",
+    "^cat\\d+$",
+    "^p-\\d+$"
+  ],
+  "category_synonyms": {
+    "sdsdrills": "sds-drill",
+    "powertool": "power-tool"
+  },
+  "facet_synonyms": {
+    "length (mm)": "length_mm",
+    "screwlength": "length_mm",
+    "diameter (mm)": "diameter_mm",
+    "screwdiametermm": "diameter_mm",
+    "tool_length": "length_mm",
+    "length_mm": "length_mm",
+    "diameter_mm": "diameter_mm"
+  }
+}
