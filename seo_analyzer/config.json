@@ -3,7 +3,19 @@
     "^\\d+$",
     "^cat\\d+$",
     "^p-\\d+$",
-    "^c\\d+$"
+    "^c\\d+$",
+    "^.*\\d+\\.cat$",
+    "^.*\\d+\\.Cat$",
+    "^.*\\d+\\.CAT$",
+    "^diy\\d+\\.cat$",
+    "^diy\\d+\\.Cat$",
+    "^diy\\d+\\.CAT$",
+    "^Diy\\d+\\.cat$",
+    "^Diy\\d+\\.Cat$",
+    "^Diy\\d+\\.CAT$",
+    "^DIY\\d+\\.cat$",
+    "^DIY\\d+\\.Cat$",
+    "^DIY\\d+\\.CAT$"
   ],
   "category_synonyms": {
     "sdsdrills": "sds-drill",
