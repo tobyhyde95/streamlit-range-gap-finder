@@ -4,30 +4,17 @@
     "^cat\\d+$",
     "^p-\\d+$",
     "^c\\d+$",
-    "^.*\\d+\\.cat$",
-    "^.*\\d+\\.Cat$",
-    "^.*\\d+\\.CAT$",
-    "^diy\\d+\\.cat$",
-    "^diy\\d+\\.Cat$",
-    "^diy\\d+\\.CAT$",
-    "^Diy\\d+\\.cat$",
-    "^Diy\\d+\\.Cat$",
-    "^Diy\\d+\\.CAT$",
-    "^DIY\\d+\\.cat$",
-    "^DIY\\d+\\.Cat$",
-    "^DIY\\d+\\.CAT$"
+    "^diy\\d+$"
   ],
-  "category_synonyms": {
-    "sdsdrills": "sds-drill",
-    "powertool": "power-tool"
-  },
+  "category_synonyms": {},
   "facet_synonyms": {
-    "length (mm)": "length_mm",
-    "screwlength": "length_mm",
-    "diameter (mm)": "diameter_mm",
-    "screwdiametermm": "diameter_mm",
-    "tool_length": "length_mm",
-    "length_mm": "length_mm",
-    "diameter_mm": "diameter_mm"
+    "diameter (mm)": "diameter",
+    "diameter_mm": "diameter",
+    "length": "length",
+    "length (mm)": "length",
+    "length_mm": "length",
+    "screwdiametermm": "diameter",
+    "screwlength": "length",
+    "tool_length": "length"
   }
 }

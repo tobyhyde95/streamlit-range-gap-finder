@@ -20,6 +20,9 @@
             <div class="flex justify-between items-center">
                 <h1 class="text-3xl font-extrabold">SEO Competitor & Gap Analyser</h1>
                 <div class="flex gap-2">
+                    <button id="project-manager-btn" class="bg-blue-700 hover:bg-blue-600 px-4 py-2 rounded-lg transition-colors">
+                        Project Manager
+                    </button>
                     <a href="/suggestions-review.html" class="bg-blue-700 hover:bg-blue-600 px-4 py-2 rounded-lg transition-colors">
                         Review Synonyms
                     </a>
@@ -45,6 +48,52 @@
                 <button id="modal-close-btn" class="text-2xl font-bold">&times;</button>
             </div>
             <div id="modal-keyword-list"></div>
+        </div>
+    </div>
+
+    <div id="project-manager-modal" class="modal-overlay hidden">
+        <div class="modal-content max-w-4xl">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="font-bold text-xl">Project Manager</h3>
+                <button id="project-modal-close-btn" class="text-2xl font-bold">&times;</button>
+            </div>
+            <div class="mb-4">
+                <button id="new-project-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                    Create New Project
+                </button>
+            </div>
+            <div id="project-list" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <div id="new-project-modal" class="modal-overlay hidden">
+        <div class="modal-content max-w-md">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="font-bold text-xl">Create New Project</h3>
+                <button id="new-project-modal-close-btn" class="text-2xl font-bold">&times;</button>
+            </div>
+            <form id="new-project-form" class="space-y-4">
+                <div>
+                    <label for="project-name" class="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
+                    <input type="text" id="project-name" name="name" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="project-description" class="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+                    <textarea id="project-description" name="description" rows="3"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" id="cancel-new-project-btn" 
+                            class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors">
+                        Create Project
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 

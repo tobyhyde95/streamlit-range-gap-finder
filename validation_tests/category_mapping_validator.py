@@ -162,6 +162,7 @@ class CategoryMappingValidator:
             r'^c\d+$',    # c74
             r'^p-\d+$',   # p-12345
             r'^\d+$',     # 12345
+            r'^diy\d+$',  # diy580655
         ]
         
         import re

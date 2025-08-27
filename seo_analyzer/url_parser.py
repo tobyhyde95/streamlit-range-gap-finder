@@ -25,7 +25,7 @@ class URLParser:
         except FileNotFoundError:
             # Return default config if file doesn't exist
             return {
-                "identifier_patterns": ["^\\d+$", "^cat\\d+$", "^p-\\d+$", "^c\\d+$"],
+                "identifier_patterns": ["^\\d+$", "^cat\\d+$", "^p-\\d+$", "^c\\d+$", "^diy\\d+$"],
                 "category_synonyms": {},
                 "facet_synonyms": {}
             }

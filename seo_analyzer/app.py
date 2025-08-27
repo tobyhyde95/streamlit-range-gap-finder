@@ -7,9 +7,11 @@ from functools import wraps
 try:
     from .tasks import run_analysis_task
     from .synonym_discovery import SynonymDiscovery
+    from .project_manager import ProjectManager
 except ImportError:
     from tasks import run_analysis_task
     from synonym_discovery import SynonymDiscovery
+    from project_manager import ProjectManager
 import tempfile
 import uuid
 
@@ -19,7 +21,10 @@ CORS(app)
 SECRET_API_KEY = "my-secret-dev-key"
 
 # Initialize synonym discovery system
-synonym_discovery = SynonymDiscovery() 
+synonym_discovery = SynonymDiscovery()
+
+# Initialize project manager
+project_manager = ProjectManager() 
 
 def require_api_key(f):
     @wraps(f)
@@ -219,6 +224,138 @@ def add_synonym():
         
     except Exception as e:
         return flask.jsonify({"error": f"Failed to add synonym: {e}"}), 500
+
+# Project Management API Endpoints
+@app.route("/api/projects", methods=["GET"])
+@require_api_key
+def get_projects():
+    """Get all taxonomy architecture projects."""
+    try:
+        analysis_type = flask.request.args.get('analysis_type', 'taxonomy_architecture')
+        projects = project_manager.get_projects(analysis_type)
+        return flask.jsonify(projects)
+    except Exception as e:
+        return flask.jsonify({"error": f"Failed to get projects: {e}"}), 500
+
+@app.route("/api/projects", methods=["POST"])
+@require_api_key
+def create_project():
+    """Create a new project."""
+    try:
+        data = flask.request.get_json()
+        if not data or 'name' not in data:
+            return flask.jsonify({"error": "Project name is required"}), 400
+        
+        name = data['name']
+        description = data.get('description', '')
+        analysis_type = data.get('analysis_type', 'taxonomy_architecture')
+        
+        project = project_manager.create_project(name, description, analysis_type)
+        return flask.jsonify(project), 201
+    except Exception as e:
+        return flask.jsonify({"error": f"Failed to create project: {e}"}), 500
+
+@app.route("/api/projects/<int:project_id>", methods=["GET"])
+@require_api_key
+def get_project(project_id):
+    """Get a specific project."""
+    try:
+        project = project_manager.get_project(project_id)
+        if not project:
+            return flask.jsonify({"error": "Project not found"}), 404
+        
+        return flask.jsonify(project)
+    except Exception as e:
+        return flask.jsonify({"error": f"Failed to get project: {e}"}), 500
+
+@app.route("/api/projects/<int:project_id>", methods=["PUT"])
+@require_api_key
+def update_project(project_id):
+    """Update project details."""
+    try:
+        data = flask.request.get_json()
+        if not data:
+            return flask.jsonify({"error": "No update data provided"}), 400
+        
+        success = project_manager.update_project(
+            project_id,
+            name=data.get('name'),
+            description=data.get('description')
+        )
+        
+        if success:
+            return flask.jsonify({"message": "Project updated successfully"})
+        else:
+            return flask.jsonify({"error": "Failed to update project"}), 400
+    except Exception as e:
+        return flask.jsonify({"error": f"Failed to update project: {e}"}), 500
+
+@app.route("/api/projects/<int:project_id>", methods=["DELETE"])
+@require_api_key
+def delete_project(project_id):
+    """Delete a project."""
+    try:
+        success = project_manager.delete_project(project_id)
+        if success:
+            return flask.jsonify({"message": "Project deleted successfully"})
+        else:
+            return flask.jsonify({"error": "Failed to delete project"}), 400
+    except Exception as e:
+        return flask.jsonify({"error": f"Failed to delete project: {e}"}), 500
+
+@app.route("/api/projects/<int:project_id>/save", methods=["POST"])
+@require_api_key
+def save_project_state(project_id):
+    """Save the current state of a project."""
+    try:
+        data = flask.request.get_json()
+        if not data:
+            return flask.jsonify({"error": "No state data provided"}), 400
+        
+        success = project_manager.save_project_state(project_id, data)
+        if success:
+            return flask.jsonify({"message": "Project state saved successfully"})
+        else:
+            return flask.jsonify({"error": "Failed to save project state"}), 400
+    except Exception as e:
+        return flask.jsonify({"error": f"Failed to save project state: {e}"}), 500
+
+@app.route("/api/projects/<int:project_id>/load", methods=["GET"])
+@require_api_key
+def load_project(project_id):
+    """Load a project with all its files and state."""
+    try:
+        project_data = project_manager.load_project_for_analysis(project_id)
+        return flask.jsonify(project_data)
+    except ValueError as e:
+        return flask.jsonify({"error": str(e)}), 404
+    except Exception as e:
+        return flask.jsonify({"error": f"Failed to load project: {e}"}), 500
+
+@app.route("/api/projects/<int:project_id>/files", methods=["POST"])
+@require_api_key
+def save_project_files(project_id):
+    """Save uploaded files for a project."""
+    try:
+        files = {
+            'our_file': flask.request.files.get('ourFile'),
+            'competitor_files': flask.request.files.getlist('competitorFiles'),
+            'onsite_file': flask.request.files.get('onsiteFile')
+        }
+        
+        # Remove None values
+        files = {k: v for k, v in files.items() if v}
+        
+        if not files:
+            return flask.jsonify({"error": "No files provided"}), 400
+        
+        saved_files = project_manager.save_project_files(project_id, files)
+        return flask.jsonify({
+            "message": "Files saved successfully",
+            "saved_files": saved_files
+        })
+    except Exception as e:
+        return flask.jsonify({"error": f"Failed to save files: {e}"}), 500
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run Flask app.')

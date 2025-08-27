@@ -392,7 +392,8 @@
     function createReportContainer(title, subtitle, customContent = '', extraDescription = '') {
         const regexTipHtml = `<div class="tooltip-container"><svg class="tooltip-icon h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg><span class="tooltip-text"><b>Regex Search Tips:</b><br><code>^word</code> &ndash; Starts with 'word'<br><code>word$</code> &ndash; Ends with 'word'<br><code>word1|word2</code> &ndash; Has 'word1' or 'word2'<br><code>\\bword\\b</code> &ndash; Matches whole word</span></div>`;
         const timeframeToggle = `<div class="flex items-center"><span class="text-sm font-semibold mr-2">Timeframe:</span><button data-timeframe="monthly" class="scope-toggle-btn text-xs font-semibold py-1 px-3 rounded-l-md ${tableState.timeframe === 'monthly' ? 'active' : ''}">Monthly</button><button data-timeframe="annual" class="scope-toggle-btn text-xs font-semibold py-1 px-3 rounded-r-md ${tableState.timeframe === 'annual' ? 'active' : ''}">Annual</button></div>`;
-        return `<div class="bg-white p-6 rounded-xl shadow-lg" data-report-title="${title}"><div class="flex flex-wrap justify-between items-center mb-6 border-b pb-4 gap-4"><div><h2 class="text-2xl font-bold">${title}</h2><p class="text-sm text-gray-600 mt-1">${subtitle}</p></div><div class="flex items-center space-x-2"><button data-export-type="excel" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export Excel</button><button data-export-type="json" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export JSON</button><button data-export-type="pdf" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export PDF</button><button class="back-to-lenses-btn text-sm font-semibold text-blue-600 hover:underline">&larr; Back to Lenses</button></div></div>${extraDescription ? `<div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 p-3 rounded-md mb-4">${extraDescription}</div>` : ''}<div id="manual-overrides-container" class="mb-6"></div><div class="flex flex-wrap justify-between items-center mb-4 gap-4"><div class="flex items-center gap-2"><input type="text" id="table-search-input" placeholder="Filter with text or regex..." class="w-full md:w-auto p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500">${regexTipHtml}</div><div class="flex items-center gap-4">${customContent}${timeframeToggle}</div></div><div id="interactive-table-wrapper"></div><div id="pagination-controls-wrapper" class="flex flex-wrap justify-between items-center mt-4 gap-4"></div></div>`;
+        const saveButton = currentProject ? `<button onclick="saveProjectState()" class="save-project-btn text-xs font-semibold py-1 px-3 rounded border border-green-300 hover:bg-green-100 text-green-700">💾 Save Project</button>` : '';
+        return `<div class="bg-white p-6 rounded-xl shadow-lg" data-report-title="${title}"><div class="flex flex-wrap justify-between items-center mb-6 border-b pb-4 gap-4"><div><h2 class="text-2xl font-bold">${title}</h2><p class="text-sm text-gray-600 mt-1">${subtitle}</p></div><div class="flex items-center space-x-2">${saveButton}<button data-export-type="excel" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export Excel</button><button data-export-type="json" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export JSON</button><button data-export-type="pdf" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export PDF</button><button class="back-to-lenses-btn text-sm font-semibold text-blue-600 hover:underline">&larr; Back to Lenses</button></div></div>${extraDescription ? `<div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 p-3 rounded-md mb-4">${extraDescription}</div>` : ''}<div id="manual-overrides-container" class="mb-6"></div><div class="flex flex-wrap justify-between items-center mb-4 gap-4"><div class="flex items-center gap-2"><input type="text" id="table-search-input" placeholder="Filter with text or regex..." class="w-full md:w-auto p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500">${regexTipHtml}</div><div class="flex items-center gap-4">${customContent}${timeframeToggle}</div></div><div id="interactive-table-wrapper"></div><div id="pagination-controls-wrapper" class="flex flex-wrap justify-between items-center mt-4 gap-4"></div></div>`;
     }
 
     function exportCategoryOverhaulToExcel(data, headers, fileName) {
@@ -1406,6 +1407,34 @@
     }
 
     async function handleAnalysis() {
+        // If we have a current project, save files to it first
+        if (currentProject) {
+            try {
+                const fileFormData = new FormData();
+                fileFormData.append('ourFile', document.getElementById('our-file').files[0]);
+                Array.from(document.getElementById('competitor-files').files).forEach(file => { 
+                    fileFormData.append('competitorFiles', file); 
+                });
+                const onsiteFile = document.getElementById('onsite-file').files[0];
+                if (onsiteFile) fileFormData.append('onsiteFile', onsiteFile);
+
+                const response = await fetch(`/api/projects/${currentProject.id}/files`, {
+                    method: 'POST',
+                    headers: { 'X-API-KEY': API_KEY },
+                    body: fileFormData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save files to project');
+                }
+
+                showNotification('Files saved to project', 'success');
+            } catch (error) {
+                console.error('Error saving files to project:', error);
+                showNotification('Warning: Could not save files to project', 'error');
+            }
+        }
+
         const formData = new FormData();
         formData.append('ourFile', document.getElementById('our-file').files[0]);
         Array.from(document.getElementById('competitor-files').files).forEach(file => { formData.append('competitorFiles', file); });
@@ -1505,8 +1534,23 @@
         ui.progressContainer.classList.add('hidden');
         ui.controlsContainer.classList.remove('hidden');
 
+        const projectStatus = currentProject ? `
+            <div class="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="font-semibold text-green-800">Active Project: ${currentProject.name}</h3>
+                        <p class="text-sm text-green-600">Your work will be saved to this project</p>
+                    </div>
+                    <button onclick="saveProjectState()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
+                        💾 Save Project
+                    </button>
+                </div>
+            </div>
+        ` : '';
+
         ui.controlsContainer.innerHTML = `
             <div class="bg-white p-8 rounded-xl shadow-lg max-w-4xl mx-auto">
+                ${projectStatus}
                 <div class="space-y-8">
                     <div>
                         <h2 class="text-2xl font-bold">1. Upload Your & Competitor Exports</h2>
@@ -2170,6 +2214,309 @@
     
     document.addEventListener('DOMContentLoaded', () => {
         renderInitialControlsView();
+        initializeProjectManager();
     });
+
+    // Project Management System
+    let currentProject = null;
+    let projectManager = {
+        modal: document.getElementById('project-manager-modal'),
+        newProjectModal: document.getElementById('new-project-modal'),
+        projectList: document.getElementById('project-list'),
+        newProjectForm: document.getElementById('new-project-form')
+    };
+
+    function initializeProjectManager() {
+        // Project manager button
+        document.getElementById('project-manager-btn').addEventListener('click', () => {
+            projectManager.modal.classList.remove('hidden');
+            loadProjects();
+        });
+
+        // Close buttons
+        document.getElementById('project-modal-close-btn').addEventListener('click', () => {
+            projectManager.modal.classList.add('hidden');
+        });
+
+        document.getElementById('new-project-modal-close-btn').addEventListener('click', () => {
+            projectManager.newProjectModal.classList.add('hidden');
+        });
+
+        document.getElementById('cancel-new-project-btn').addEventListener('click', () => {
+            projectManager.newProjectModal.classList.add('hidden');
+        });
+
+        // New project button
+        document.getElementById('new-project-btn').addEventListener('click', () => {
+            projectManager.newProjectModal.classList.remove('hidden');
+        });
+
+        // New project form
+        projectManager.newProjectForm.addEventListener('submit', handleCreateProject);
+
+        // Close modals when clicking outside
+        projectManager.modal.addEventListener('click', (e) => {
+            if (e.target === projectManager.modal) {
+                projectManager.modal.classList.add('hidden');
+            }
+        });
+
+        projectManager.newProjectModal.addEventListener('click', (e) => {
+            if (e.target === projectManager.newProjectModal) {
+                projectManager.newProjectModal.classList.add('hidden');
+            }
+        });
+    }
+
+    async function loadProjects() {
+        try {
+            const response = await fetch('/api/projects?analysis_type=taxonomy_architecture', {
+                headers: {
+                    'X-API-KEY': API_KEY
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to load projects');
+            }
+
+            const projects = await response.json();
+            renderProjectList(projects);
+        } catch (error) {
+            console.error('Error loading projects:', error);
+            showNotification('Error loading projects', 'error');
+        }
+    }
+
+    function renderProjectList(projects) {
+        if (projects.length === 0) {
+            projectManager.projectList.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <p>No projects found. Create your first project to get started!</p>
+                </div>
+            `;
+            return;
+        }
+
+        projectManager.projectList.innerHTML = projects.map(project => `
+            <div class="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <h4 class="font-semibold text-lg">${project.name}</h4>
+                        <p class="text-sm text-gray-600">${project.description || 'No description'}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="loadProject(${project.id})" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                            Load
+                        </button>
+                        <button onclick="deleteProject(${project.id})" 
+                                class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+                <div class="text-xs text-gray-500">
+                    Created: ${new Date(project.created_at).toLocaleDateString()}
+                    ${project.updated_at !== project.created_at ? 
+                        ` | Updated: ${new Date(project.updated_at).toLocaleDateString()}` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function handleCreateProject(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const projectData = {
+            name: formData.get('name'),
+            description: formData.get('description'),
+            analysis_type: 'taxonomy_architecture'
+        };
+
+        try {
+            const response = await fetch('/api/projects', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-KEY': API_KEY
+                },
+                body: JSON.stringify(projectData)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to create project');
+            }
+
+            const project = await response.json();
+            currentProject = project;
+            
+            projectManager.newProjectModal.classList.add('hidden');
+            projectManager.newProjectForm.reset();
+            
+            showNotification('Project created successfully!', 'success');
+            loadProjects();
+            
+            // Update UI to show current project
+            updateProjectUI();
+        } catch (error) {
+            console.error('Error creating project:', error);
+            showNotification('Error creating project', 'error');
+        }
+    }
+
+    async function loadProject(projectId) {
+        try {
+            const response = await fetch(`/api/projects/${projectId}/load`, {
+                headers: {
+                    'X-API-KEY': API_KEY
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to load project');
+            }
+
+            const projectData = await response.json();
+            currentProject = projectData.project;
+            
+            // Load project state if available
+            if (projectData.state) {
+                loadProjectState(projectData.state);
+            }
+            
+            projectManager.modal.classList.add('hidden');
+            showNotification('Project loaded successfully!', 'success');
+            
+            // Update UI to show current project
+            updateProjectUI();
+        } catch (error) {
+            console.error('Error loading project:', error);
+            showNotification('Error loading project', 'error');
+        }
+    }
+
+    function loadProjectState(state) {
+        // Load analysis results if available
+        if (state.analysisResults) {
+            analysisResults = state.analysisResults;
+            renderResults();
+        }
+        
+        // Load table state if available
+        if (state.tableState) {
+            tableState = { ...tableState, ...state.tableState };
+        }
+        
+        // Load override rules if available
+        if (state.overrideRules) {
+            overrideRules = state.overrideRules;
+        }
+    }
+
+    async function saveProjectState() {
+        if (!currentProject) {
+            showNotification('No active project to save', 'error');
+            return;
+        }
+
+        const stateData = {
+            analysisResults: analysisResults,
+            tableState: tableState,
+            overrideRules: overrideRules,
+            savedAt: new Date().toISOString()
+        };
+
+        try {
+            const response = await fetch(`/api/projects/${currentProject.id}/save`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-KEY': API_KEY
+                },
+                body: JSON.stringify(stateData)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save project state');
+            }
+
+            showNotification('Project saved successfully!', 'success');
+        } catch (error) {
+            console.error('Error saving project:', error);
+            showNotification('Error saving project', 'error');
+        }
+    }
+
+    async function deleteProject(projectId) {
+        if (!confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/projects/${projectId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-API-KEY': API_KEY
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete project');
+            }
+
+            showNotification('Project deleted successfully!', 'success');
+            loadProjects();
+            
+            // If this was the current project, clear it
+            if (currentProject && currentProject.id === projectId) {
+                currentProject = null;
+                updateProjectUI();
+            }
+        } catch (error) {
+            console.error('Error deleting project:', error);
+            showNotification('Error deleting project', 'error');
+        }
+    }
+
+    function updateProjectUI() {
+        const projectBtn = document.getElementById('project-manager-btn');
+        
+        if (currentProject) {
+            projectBtn.textContent = `Project: ${currentProject.name}`;
+            projectBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            projectBtn.classList.remove('bg-blue-700', 'hover:bg-blue-600');
+        } else {
+            projectBtn.textContent = 'Project Manager';
+            projectBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            projectBtn.classList.add('bg-blue-700', 'hover:bg-blue-600');
+        }
+    }
+
+    function showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+            type === 'success' ? 'bg-green-500 text-white' :
+            type === 'error' ? 'bg-red-500 text-white' :
+            'bg-blue-500 text-white'
+        }`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 3000);
+    }
+
+    // Make functions globally available
+    window.loadProject = loadProject;
+    window.deleteProject = deleteProject;
+    window.saveProjectState = saveProjectState;
 
 })();
