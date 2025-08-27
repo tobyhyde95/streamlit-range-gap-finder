@@ -219,6 +219,7 @@ class ProjectManager:
             ''', (project_id,))
             
             files = {}
+            competitor_count = 0
             for row in cursor.fetchall():
                 file_type = row[0]
                 file_path = row[1]
@@ -226,14 +227,16 @@ class ProjectManager:
                 
                 if file_type == 'our_file':
                     files['our_file'] = file_path
+                    files['our_file_original_name'] = original_filename
                 elif file_type == 'competitor_file':
                     if 'competitor_files' not in files:
                         files['competitor_files'] = []
                     files['competitor_files'].append(file_path)
+                    competitor_count += 1
+                    files[f'competitor_file_{competitor_count}_original_name'] = original_filename
                 elif file_type == 'onsite_file':
                     files['onsite_file'] = file_path
-                
-                files[f'{file_type}_original_name'] = original_filename
+                    files['onsite_file_original_name'] = original_filename
             
             return files
     
@@ -314,8 +317,30 @@ class ProjectManager:
         files = self.get_project_files(project_id)
         state = self.get_latest_project_state(project_id)
         
+        # Add file metadata for frontend restoration
+        file_metadata = {}
+        if files.get('our_file'):
+            file_metadata['our_file'] = {
+                'path': files['our_file'],
+                'original_name': files.get('our_file_original_name', 'our_data.csv')
+            }
+        if files.get('competitor_files'):
+            file_metadata['competitor_files'] = []
+            for i, path in enumerate(files['competitor_files']):
+                original_name = files.get(f'competitor_file_{i+1}_original_name', f'competitor_{i+1}.csv')
+                file_metadata['competitor_files'].append({
+                    'path': path,
+                    'original_name': original_name
+                })
+        if files.get('onsite_file'):
+            file_metadata['onsite_file'] = {
+                'path': files['onsite_file'],
+                'original_name': files.get('onsite_file_original_name', 'onsite_data.csv')
+            }
+        
         return {
             "project": project,
             "files": files,
+            "file_metadata": file_metadata,
             "state": state
         }

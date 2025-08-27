@@ -58,33 +58,78 @@ def config_manager():
 @require_api_key
 def start_processing():
     try:
-        if 'ourFile' not in flask.request.files or 'competitorFiles' not in flask.request.files:
-            return flask.jsonify({"error": "Missing required files."}), 400
+        # Check if we're using project files
+        use_project_files = flask.request.form.get('useProjectFiles') == 'true'
+        project_id = flask.request.form.get('projectId')
         
-        our_file = flask.request.files['ourFile']
-        competitor_files = flask.request.files.getlist('competitorFiles')
-        onsite_file = flask.request.files.get('onsiteFile')
-        options = flask.request.form['options']
+        if use_project_files and project_id:
+            # Use files from project
+            try:
+                project_data = project_manager.load_project_for_analysis(int(project_id))
+                files = project_data['files']
+                
+                temp_dir = tempfile.mkdtemp()
+                our_file_path = files.get('our_file')
+                competitor_file_paths = files.get('competitor_files', [])
+                onsite_file_path = files.get('onsite_file')
+                
+                # Copy files to temp directory if they exist
+                if our_file_path and os.path.exists(our_file_path):
+                    temp_our_file = os.path.join(temp_dir, f"{uuid.uuid4()}.csv")
+                    import shutil
+                    shutil.copy2(our_file_path, temp_our_file)
+                    our_file_path = temp_our_file
+                
+                temp_competitor_paths = []
+                for comp_file in competitor_file_paths:
+                    if os.path.exists(comp_file):
+                        temp_comp_file = os.path.join(temp_dir, f"{uuid.uuid4()}.csv")
+                        shutil.copy2(comp_file, temp_comp_file)
+                        temp_competitor_paths.append(temp_comp_file)
+                
+                if onsite_file_path and os.path.exists(onsite_file_path):
+                    temp_onsite_file = os.path.join(temp_dir, f"{uuid.uuid4()}.csv")
+                    shutil.copy2(onsite_file_path, temp_onsite_file)
+                    onsite_file_path = temp_onsite_file
+                
+                options = flask.request.form['options']
+                
+                task = run_analysis_task.delay(
+                    our_file_path, temp_competitor_paths, onsite_file_path, options, temp_dir
+                )
+                return flask.jsonify({"task_id": task.id}), 202
+                
+            except Exception as e:
+                return flask.jsonify({"error": f"Failed to load project files: {e}"}), 400
+        else:
+            # Use uploaded files (original logic)
+            if 'ourFile' not in flask.request.files or 'competitorFiles' not in flask.request.files:
+                return flask.jsonify({"error": "Missing required files."}), 400
+            
+            our_file = flask.request.files['ourFile']
+            competitor_files = flask.request.files.getlist('competitorFiles')
+            onsite_file = flask.request.files.get('onsiteFile')
+            options = flask.request.form['options']
 
-        temp_dir = tempfile.mkdtemp()
-        our_file_path = os.path.join(temp_dir, f"{uuid.uuid4()}.csv")
-        our_file.save(our_file_path)
+            temp_dir = tempfile.mkdtemp()
+            our_file_path = os.path.join(temp_dir, f"{uuid.uuid4()}.csv")
+            our_file.save(our_file_path)
 
-        competitor_file_paths = []
-        for f in competitor_files:
-            path = os.path.join(temp_dir, f"{uuid.uuid4()}.csv")
-            f.save(path)
-            competitor_file_paths.append(path)
+            competitor_file_paths = []
+            for f in competitor_files:
+                path = os.path.join(temp_dir, f"{uuid.uuid4()}.csv")
+                f.save(path)
+                competitor_file_paths.append(path)
 
-        onsite_file_path = None
-        if onsite_file:
-            onsite_file_path = os.path.join(temp_dir, f"{uuid.uuid4()}.csv")
-            onsite_file.save(onsite_file_path)
+            onsite_file_path = None
+            if onsite_file:
+                onsite_file_path = os.path.join(temp_dir, f"{uuid.uuid4()}.csv")
+                onsite_file.save(onsite_file_path)
 
-        task = run_analysis_task.delay(
-            our_file_path, competitor_file_paths, onsite_file_path, options, temp_dir
-        )
-        return flask.jsonify({"task_id": task.id}), 202
+            task = run_analysis_task.delay(
+                our_file_path, competitor_file_paths, onsite_file_path, options, temp_dir
+            )
+            return flask.jsonify({"task_id": task.id}), 202
     except Exception as e:
         return flask.jsonify({"error": f"Failed to start task: {e}"}), 400
 

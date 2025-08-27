@@ -1407,39 +1407,55 @@
     }
 
     async function handleAnalysis() {
-        // If we have a current project, save files to it first
-        if (currentProject) {
-            try {
-                const fileFormData = new FormData();
-                fileFormData.append('ourFile', document.getElementById('our-file').files[0]);
-                Array.from(document.getElementById('competitor-files').files).forEach(file => { 
-                    fileFormData.append('competitorFiles', file); 
-                });
-                const onsiteFile = document.getElementById('onsite-file').files[0];
-                if (onsiteFile) fileFormData.append('onsiteFile', onsiteFile);
+        // Check if we have restored project files
+        const hasRestoredFiles = window.projectFileMetadata && Object.keys(window.projectFileMetadata).length > 0;
+        
+        if (hasRestoredFiles) {
+            // Use restored files from project
+            showNotification('Using restored project files for analysis', 'info');
+        } else {
+            // If we have a current project, save files to it first
+            if (currentProject) {
+                try {
+                    const fileFormData = new FormData();
+                    fileFormData.append('ourFile', document.getElementById('our-file').files[0]);
+                    Array.from(document.getElementById('competitor-files').files).forEach(file => { 
+                        fileFormData.append('competitorFiles', file); 
+                    });
+                    const onsiteFile = document.getElementById('onsite-file').files[0];
+                    if (onsiteFile) fileFormData.append('onsiteFile', onsiteFile);
 
-                const response = await fetch(`/api/projects/${currentProject.id}/files`, {
-                    method: 'POST',
-                    headers: { 'X-API-KEY': API_KEY },
-                    body: fileFormData
-                });
+                    const response = await fetch(`/api/projects/${currentProject.id}/files`, {
+                        method: 'POST',
+                        headers: { 'X-API-KEY': API_KEY },
+                        body: fileFormData
+                    });
 
-                if (!response.ok) {
-                    throw new Error('Failed to save files to project');
+                    if (!response.ok) {
+                        throw new Error('Failed to save files to project');
+                    }
+
+                    showNotification('Files saved to project', 'success');
+                } catch (error) {
+                    console.error('Error saving files to project:', error);
+                    showNotification('Warning: Could not save files to project', 'error');
                 }
-
-                showNotification('Files saved to project', 'success');
-            } catch (error) {
-                console.error('Error saving files to project:', error);
-                showNotification('Warning: Could not save files to project', 'error');
             }
         }
 
         const formData = new FormData();
-        formData.append('ourFile', document.getElementById('our-file').files[0]);
-        Array.from(document.getElementById('competitor-files').files).forEach(file => { formData.append('competitorFiles', file); });
-        const onsiteFile = document.getElementById('onsite-file').files[0];
-        if (onsiteFile) formData.append('onsiteFile', onsiteFile);
+        
+        if (hasRestoredFiles) {
+            // Use restored files - we'll need to create a special endpoint for this
+            formData.append('useProjectFiles', 'true');
+            formData.append('projectId', currentProject.id);
+        } else {
+            // Use uploaded files
+            formData.append('ourFile', document.getElementById('our-file').files[0]);
+            Array.from(document.getElementById('competitor-files').files).forEach(file => { formData.append('competitorFiles', file); });
+            const onsiteFile = document.getElementById('onsite-file').files[0];
+            if (onsiteFile) formData.append('onsiteFile', onsiteFile);
+        }
 
         const onsiteDateRange = document.getElementById('onsite-date-range').value;
         const columnMap = {};
@@ -1548,9 +1564,26 @@
             </div>
         ` : '';
 
+        // Check if we have restored file metadata
+        const hasRestoredFiles = window.projectFileMetadata && Object.keys(window.projectFileMetadata).length > 0;
+        const fileStatus = hasRestoredFiles ? `
+            <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h4 class="font-semibold text-blue-800">📁 Files Restored from Project</h4>
+                        <p class="text-sm text-blue-600">Your previously uploaded files are ready for analysis</p>
+                    </div>
+                    <button onclick="restoreProjectFiles()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                        Restore Files
+                    </button>
+                </div>
+            </div>
+        ` : '';
+
         ui.controlsContainer.innerHTML = `
             <div class="bg-white p-8 rounded-xl shadow-lg max-w-4xl mx-auto">
                 ${projectStatus}
+                ${fileStatus}
                 <div class="space-y-8">
                     <div>
                         <h2 class="text-2xl font-bold">1. Upload Your & Competitor Exports</h2>
@@ -2381,9 +2414,18 @@
             const projectData = await response.json();
             currentProject = projectData.project;
             
+            // Store file metadata for restoration
+            if (projectData.file_metadata) {
+                window.projectFileMetadata = projectData.file_metadata;
+            }
+            
             // Load project state if available
             if (projectData.state) {
                 loadProjectState(projectData.state);
+            } else {
+                // If no state, just show initial controls
+                renderInitialControlsView();
+                showNotification('Project loaded (no analysis results found)', 'info');
             }
             
             projectManager.modal.classList.add('hidden');
@@ -2398,20 +2440,84 @@
     }
 
     function loadProjectState(state) {
+        // Load analysis options if available
+        if (state.analysisOptions) {
+            restoreAnalysisOptions(state.analysisOptions);
+        }
+        
         // Load analysis results if available
         if (state.analysisResults) {
             analysisResults = state.analysisResults;
-            renderResults();
+            
+            // Load table state if available
+            if (state.tableState) {
+                tableState = { ...tableState, ...state.tableState };
+            }
+            
+            // Load override rules if available
+            if (state.overrideRules) {
+                overrideRules = state.overrideRules;
+            }
+            
+            // Jump directly to the results view
+            ui.controlsContainer.classList.add('hidden');
+            ui.progressContainer.classList.add('hidden');
+            ui.resultsContainer.classList.remove('hidden');
+            
+            // Render the lens selection view with the loaded results
+            renderLensSelectionView();
+            
+            showNotification('Analysis results restored from project!', 'success');
+        } else {
+            // If no analysis results, just show the initial controls
+            renderInitialControlsView();
+            showNotification('Project loaded (no analysis results found)', 'info');
+        }
+    }
+
+    function restoreAnalysisOptions(options) {
+        // Restore analysis checkboxes
+        if (options.lensesToRun) {
+            const checkboxes = {
+                'run_content_gaps': options.lensesToRun.content_gaps,
+                'run_competitive_opportunities': options.lensesToRun.competitive_opportunities,
+                'run_market_share': options.lensesToRun.market_share,
+                'run_taxonomy_analysis': options.lensesToRun.taxonomy_analysis
+            };
+            
+            Object.entries(checkboxes).forEach(([id, checked]) => {
+                const element = document.getElementById(id);
+                if (element) element.checked = checked;
+            });
         }
         
-        // Load table state if available
-        if (state.tableState) {
-            tableState = { ...tableState, ...state.tableState };
+        // Restore rank filters
+        if (options.rankFrom) {
+            const rankFromEl = document.getElementById('rank-from');
+            if (rankFromEl) rankFromEl.value = options.rankFrom;
         }
         
-        // Load override rules if available
-        if (state.overrideRules) {
-            overrideRules = state.overrideRules;
+        if (options.rankTo) {
+            const rankToEl = document.getElementById('rank-to');
+            if (rankToEl) rankToEl.value = options.rankTo;
+        }
+        
+        // Restore onsite date range
+        if (options.onsiteDateRange) {
+            const onsiteDateEl = document.getElementById('onsite-date-range');
+            if (onsiteDateEl) onsiteDateEl.value = options.onsiteDateRange;
+        }
+        
+        // Restore branded exclusions
+        if (options.brandedExclusions) {
+            const exclusionsEl = document.getElementById('branded-exclusions');
+            if (exclusionsEl) exclusionsEl.value = options.brandedExclusions;
+        }
+        
+        // Restore column mappings (this will be handled when files are loaded)
+        if (options.columnMap) {
+            // Store column mappings to be applied when files are loaded
+            window.restoredColumnMap = options.columnMap;
         }
     }
 
@@ -2421,10 +2527,36 @@
             return;
         }
 
+        // Capture current analysis options and settings
+        const analysisOptions = {
+            columnMap: {},
+            excludedKeywords: [],
+            lensesToRun: {
+                content_gaps: document.getElementById('run_content_gaps')?.checked || false,
+                competitive_opportunities: document.getElementById('run_competitive_opportunities')?.checked || false,
+                market_share: document.getElementById('run_market_share')?.checked || false,
+                taxonomy_analysis: document.getElementById('run_taxonomy_analysis')?.checked || false,
+            },
+            rankFrom: document.getElementById('rank-from')?.value || '',
+            rankTo: document.getElementById('rank-to')?.value || '',
+            onsiteDateRange: document.getElementById('onsite-date-range')?.value || '',
+            brandedExclusions: document.getElementById('branded-exclusions')?.value || ''
+        };
+
+        // Capture column mappings if they exist
+        document.querySelectorAll('#column-mappers select').forEach(s => { 
+            if(s.value) analysisOptions.columnMap[s.id] = s.value; 
+        });
+
+        // Capture excluded keywords
+        const excludedKeywordsRaw = document.getElementById('branded-exclusions')?.value || '';
+        analysisOptions.excludedKeywords = excludedKeywordsRaw.split('\n').map(kw => kw.trim()).filter(kw => kw);
+
         const stateData = {
             analysisResults: analysisResults,
             tableState: tableState,
             overrideRules: overrideRules,
+            analysisOptions: analysisOptions,
             savedAt: new Date().toISOString()
         };
 
@@ -2518,5 +2650,56 @@
     window.loadProject = loadProject;
     window.deleteProject = deleteProject;
     window.saveProjectState = saveProjectState;
+    window.restoreProjectFiles = restoreProjectFiles;
+
+    function restoreProjectFiles() {
+        if (!window.projectFileMetadata) {
+            showNotification('No project files to restore', 'error');
+            return;
+        }
+
+        // Update file input labels to show restored files
+        const metadata = window.projectFileMetadata;
+        
+        if (metadata.our_file) {
+            const ourFileLabel = document.querySelector('label[for="our-file"]');
+            if (ourFileLabel) {
+                ourFileLabel.innerHTML = `<span class="text-green-600">✅ ${metadata.our_file.original_name}</span>`;
+            }
+        }
+        
+        if (metadata.competitor_files && metadata.competitor_files.length > 0) {
+            const compFileLabel = document.querySelector('label[for="competitor-files"]');
+            if (compFileLabel) {
+                const fileNames = metadata.competitor_files.map(f => f.original_name).join(', ');
+                compFileLabel.innerHTML = `<span class="text-green-600">✅ ${fileNames}</span>`;
+            }
+        }
+        
+        if (metadata.onsite_file) {
+            const onsiteFileLabel = document.querySelector('label[for="onsite-file"]');
+            if (onsiteFileLabel) {
+                onsiteFileLabel.innerHTML = `<span class="text-green-600">✅ ${metadata.onsite_file.original_name}</span>`;
+            }
+        }
+
+        // Apply restored column mappings if available
+        if (window.restoredColumnMap) {
+            Object.entries(window.restoredColumnMap).forEach(([elementId, value]) => {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.value = value;
+                }
+            });
+        }
+
+        showNotification('Project files restored successfully!', 'success');
+        
+        // Enable the analyze button since we have files
+        const analyzeBtn = document.getElementById('analyse-btn');
+        if (analyzeBtn) {
+            analyzeBtn.disabled = false;
+        }
+    }
 
 })();
