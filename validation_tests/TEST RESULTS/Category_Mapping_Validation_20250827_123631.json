@@ -1,0 +1,625 @@
+{
+  "validation_timestamp": "2025-08-27T12:36:31.392419",
+  "analysis_timestamp": "2025-08-27T12:36:31.387607",
+  "total_rows_validated": 29,
+  "summary": {
+    "total_rows": 29,
+    "correct_mappings": 0,
+    "incorrect_mappings": 29,
+    "accuracy_percentage": 0.0,
+    "common_issues": {
+      "No category could be extracted from URL": 29
+    }
+  },
+  "validation_results": [
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "concrete-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "plasterboard-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "decking-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "woodscrews",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "self-tapping-drilling-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "electrical-socket-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "stainless-steel-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "security-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "screw-caps-cups",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "roofing-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "screws-trade-packs",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "timber-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "hinge-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "flooring-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "diy580655.cat",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "self-drill-roofing",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "speciality-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "twinthread-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "self-tapping-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "decking-roofing-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "drywall",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "machine-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "masonry-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "electrical-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "brass-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "wood-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "fire-rated-screws",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "screw-trade-packs",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    }
+  ]
+}

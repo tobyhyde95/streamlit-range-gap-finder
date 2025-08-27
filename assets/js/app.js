@@ -392,7 +392,17 @@
     function createReportContainer(title, subtitle, customContent = '', extraDescription = '') {
         const regexTipHtml = `<div class="tooltip-container"><svg class="tooltip-icon h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg><span class="tooltip-text"><b>Regex Search Tips:</b><br><code>^word</code> &ndash; Starts with 'word'<br><code>word$</code> &ndash; Ends with 'word'<br><code>word1|word2</code> &ndash; Has 'word1' or 'word2'<br><code>\\bword\\b</code> &ndash; Matches whole word</span></div>`;
         const timeframeToggle = `<div class="flex items-center"><span class="text-sm font-semibold mr-2">Timeframe:</span><button data-timeframe="monthly" class="scope-toggle-btn text-xs font-semibold py-1 px-3 rounded-l-md ${tableState.timeframe === 'monthly' ? 'active' : ''}">Monthly</button><button data-timeframe="annual" class="scope-toggle-btn text-xs font-semibold py-1 px-3 rounded-r-md ${tableState.timeframe === 'annual' ? 'active' : ''}">Annual</button></div>`;
-        const saveButton = currentProject ? `<button onclick="saveProjectState()" class="save-project-btn text-xs font-semibold py-1 px-3 rounded border border-green-300 hover:bg-green-100 text-green-700">💾 Save Project</button>` : '';
+        
+        // Debug logging for save button creation
+        console.log('Creating report container for:', title);
+        console.log('Current project:', currentProject);
+        console.log('Analysis results available:', analysisResults && Object.keys(analysisResults).length > 0);
+        console.log('Has valid analysis data:', hasValidAnalysisData(analysisResults));
+        
+        const hasAnalysisResults = analysisResults && Object.keys(analysisResults).length > 0 && hasValidAnalysisData(analysisResults);
+        const saveButton = currentProject && hasAnalysisResults ? `<button onclick="saveProjectState()" class="save-project-btn text-xs font-semibold py-1 px-3 rounded border border-green-300 hover:bg-green-100 text-green-700">💾 Save Project</button>` : '';
+        
+        console.log('Save button will be created:', !!saveButton);
         return `<div class="bg-white p-6 rounded-xl shadow-lg" data-report-title="${title}"><div class="flex flex-wrap justify-between items-center mb-6 border-b pb-4 gap-4"><div><h2 class="text-2xl font-bold">${title}</h2><p class="text-sm text-gray-600 mt-1">${subtitle}</p></div><div class="flex items-center space-x-2">${saveButton}<button data-export-type="excel" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export Excel</button><button data-export-type="json" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export JSON</button><button data-export-type="pdf" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export PDF</button><button class="back-to-lenses-btn text-sm font-semibold text-blue-600 hover:underline">&larr; Back to Lenses</button></div></div>${extraDescription ? `<div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 p-3 rounded-md mb-4">${extraDescription}</div>` : ''}<div id="manual-overrides-container" class="mb-6"></div><div class="flex flex-wrap justify-between items-center mb-4 gap-4"><div class="flex items-center gap-2"><input type="text" id="table-search-input" placeholder="Filter with text or regex..." class="w-full md:w-auto p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500">${regexTipHtml}</div><div class="flex items-center gap-4">${customContent}${timeframeToggle}</div></div><div id="interactive-table-wrapper"></div><div id="pagination-controls-wrapper" class="flex flex-wrap justify-between items-center mt-4 gap-4"></div></div>`;
     }
 
@@ -1410,6 +1420,40 @@
         // Check if we have restored project files
         const hasRestoredFiles = window.projectFileMetadata && Object.keys(window.projectFileMetadata).length > 0;
         
+        // If no current project exists, create one automatically
+        if (!currentProject) {
+            try {
+                const projectName = `Analysis ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
+                const projectData = {
+                    name: projectName,
+                    description: 'Auto-created project for analysis',
+                    analysis_type: 'taxonomy_architecture'
+                };
+
+                const response = await fetch('/api/projects', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-KEY': API_KEY
+                    },
+                    body: JSON.stringify(projectData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to create project');
+                }
+
+                const newProject = await response.json();
+                currentProject = newProject;
+                updateProjectUI();
+                showNotification(`Created project: ${projectName}`, 'success');
+            } catch (error) {
+                console.error('Error creating project:', error);
+                showNotification('Error creating project', 'error');
+                return;
+            }
+        }
+        
         if (hasRestoredFiles) {
             // Use restored files from project
             showNotification('Using restored project files for analysis', 'info');
@@ -1451,10 +1495,10 @@
             formData.append('projectId', currentProject.id);
         } else {
             // Use uploaded files
-            formData.append('ourFile', document.getElementById('our-file').files[0]);
-            Array.from(document.getElementById('competitor-files').files).forEach(file => { formData.append('competitorFiles', file); });
-            const onsiteFile = document.getElementById('onsite-file').files[0];
-            if (onsiteFile) formData.append('onsiteFile', onsiteFile);
+        formData.append('ourFile', document.getElementById('our-file').files[0]);
+        Array.from(document.getElementById('competitor-files').files).forEach(file => { formData.append('competitorFiles', file); });
+        const onsiteFile = document.getElementById('onsite-file').files[0];
+        if (onsiteFile) formData.append('onsiteFile', onsiteFile);
         }
 
         const onsiteDateRange = document.getElementById('onsite-date-range').value;
@@ -1537,6 +1581,7 @@
     }
 
     function onAnalysisComplete() {
+        console.log('Analysis completed! Current project:', currentProject);
         ui.progressContainer.classList.add('hidden');
         ui.resultsContainer.classList.remove('hidden');
         renderLensSelectionView();
@@ -1672,16 +1717,43 @@
     }
 
     function renderLensSelectionView() {
+        console.log('Rendering lens selection view. Current project:', currentProject);
+        
+        // Ensure analysisResults exists and has the expected structure
+        if (!analysisResults || typeof analysisResults !== 'object') {
+            console.error('No analysis results available for rendering');
+            ui.resultsContainer.innerHTML = `
+                <div class="bg-white p-8 rounded-xl shadow-lg max-w-2xl mx-auto text-center">
+                    <h2 class="text-2xl font-bold text-red-600 mb-4">No Analysis Results Found</h2>
+                    <p class="text-gray-600 mb-4">The project doesn't contain any analysis results.</p>
+                    <button onclick="renderInitialControlsView()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                        Start New Analysis
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
         const { 
             keywordGapReport, topicGapReport, keywordThreatsReport, topicThreatsReport, 
             keywordMarketShareReport, groupMarketShareReport, categoryOverhaulMatrixReport,
             facetPotentialReport
         } = analysisResults;
 
+        // Debug logging to see what data we have
+        console.log('Analysis results structure:', Object.keys(analysisResults));
+        console.log('Category overhaul data:', categoryOverhaulMatrixReport);
+        console.log('Facet potential data:', facetPotentialReport);
+
         const hasGaps = (keywordGapReport || []).length > 0 || (topicGapReport || []).length > 0;
         const hasThreats = (keywordThreatsReport || []).length > 0 || (topicThreatsReport || []).length > 0;
         const hasMarketShare = (keywordMarketShareReport || []).length > 0 || (groupMarketShareReport || []).length > 0;
         const hasOverhaulData = (categoryOverhaulMatrixReport || []).length > 0 || (facetPotentialReport || []).length > 0;
+        
+        // Fallback: if we have any analysis results but the specific checks failed, 
+        // assume we have taxonomy data (since that's what we're focusing on)
+        const hasAnyData = hasGaps || hasThreats || hasMarketShare || hasOverhaulData;
+        const fallbackHasOverhaulData = !hasAnyData && Object.keys(analysisResults).length > 0;
 
         let html = `<div class="text-center mb-8">
             <div class="relative">
@@ -1727,7 +1799,7 @@
             </div>`;
         }
 
-        if (hasOverhaulData) {
+        if (hasOverhaulData || fallbackHasOverhaulData) {
             html += `
             <div class="lens-section">
                 <h3 class="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">Taxonomy & Architecture Analysis</h3>
@@ -2255,8 +2327,10 @@
     let projectManager = {
         modal: document.getElementById('project-manager-modal'),
         newProjectModal: document.getElementById('new-project-modal'),
+        editProjectModal: document.getElementById('edit-project-modal'),
         projectList: document.getElementById('project-list'),
-        newProjectForm: document.getElementById('new-project-form')
+        newProjectForm: document.getElementById('new-project-form'),
+        editProjectForm: document.getElementById('edit-project-form')
     };
 
     function initializeProjectManager() {
@@ -2287,6 +2361,18 @@
         // New project form
         projectManager.newProjectForm.addEventListener('submit', handleCreateProject);
 
+        // Edit project form
+        projectManager.editProjectForm.addEventListener('submit', handleEditProject);
+
+        // Edit project modal close buttons
+        document.getElementById('edit-project-modal-close-btn').addEventListener('click', () => {
+            projectManager.editProjectModal.classList.add('hidden');
+        });
+
+        document.getElementById('cancel-edit-project-btn').addEventListener('click', () => {
+            projectManager.editProjectModal.classList.add('hidden');
+        });
+
         // Close modals when clicking outside
         projectManager.modal.addEventListener('click', (e) => {
             if (e.target === projectManager.modal) {
@@ -2297,6 +2383,12 @@
         projectManager.newProjectModal.addEventListener('click', (e) => {
             if (e.target === projectManager.newProjectModal) {
                 projectManager.newProjectModal.classList.add('hidden');
+            }
+        });
+
+        projectManager.editProjectModal.addEventListener('click', (e) => {
+            if (e.target === projectManager.editProjectModal) {
+                projectManager.editProjectModal.classList.add('hidden');
             }
         });
     }
@@ -2339,6 +2431,10 @@
                         <p class="text-sm text-gray-600">${project.description || 'No description'}</p>
                     </div>
                     <div class="flex gap-2">
+                        <button onclick="editProject(${project.id}, '${project.name.replace(/'/g, "\\'")}', '${(project.description || '').replace(/'/g, "\\'")}')" 
+                                class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                            Edit
+                        </button>
                         <button onclick="loadProject(${project.id})" 
                                 class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors">
                             Load
@@ -2399,6 +2495,58 @@
         }
     }
 
+    function editProject(projectId, currentName, currentDescription) {
+        // Populate the edit form with current values
+        document.getElementById('edit-project-id').value = projectId;
+        document.getElementById('edit-project-name').value = currentName;
+        document.getElementById('edit-project-description').value = currentDescription;
+        
+        // Show the edit modal
+        projectManager.editProjectModal.classList.remove('hidden');
+    }
+
+    async function handleEditProject(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const projectId = formData.get('id');
+        const projectData = {
+            name: formData.get('name'),
+            description: formData.get('description')
+        };
+
+        try {
+            const response = await fetch(`/api/projects/${projectId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-KEY': API_KEY
+                },
+                body: JSON.stringify(projectData)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update project');
+            }
+
+            projectManager.editProjectModal.classList.add('hidden');
+            projectManager.editProjectForm.reset();
+            
+            showNotification('Project updated successfully!', 'success');
+            loadProjects();
+            
+            // Update UI if this is the current project
+            if (currentProject && currentProject.id == projectId) {
+                currentProject.name = projectData.name;
+                currentProject.description = projectData.description;
+                updateProjectUI();
+            }
+        } catch (error) {
+            console.error('Error updating project:', error);
+            showNotification('Error updating project', 'error');
+        }
+    }
+
     async function loadProject(projectId) {
         try {
             const response = await fetch(`/api/projects/${projectId}/load`, {
@@ -2413,6 +2561,17 @@
 
             const projectData = await response.json();
             currentProject = projectData.project;
+            
+            // Debug logging
+            console.log('Project data loaded:', projectData);
+            console.log('Project state available:', !!projectData.state);
+            if (projectData.state) {
+                console.log('State keys:', Object.keys(projectData.state));
+                console.log('Analysis results available:', !!projectData.state.analysisResults);
+                if (projectData.state.analysisResults) {
+                    console.log('Analysis results keys:', Object.keys(projectData.state.analysisResults));
+                }
+            }
             
             // Store file metadata for restoration
             if (projectData.file_metadata) {
@@ -2429,7 +2588,6 @@
             }
             
             projectManager.modal.classList.add('hidden');
-            showNotification('Project loaded successfully!', 'success');
             
             // Update UI to show current project
             updateProjectUI();
@@ -2445,34 +2603,81 @@
             restoreAnalysisOptions(state.analysisOptions);
         }
         
+        // Load table state if available
+        if (state.tableState) {
+            tableState = { ...tableState, ...state.tableState };
+        }
+        
+        // Load override rules if available
+        if (state.overrideRules) {
+            overrideRules = state.overrideRules;
+        }
+        
         // Load analysis results if available
-        if (state.analysisResults) {
+        if (state.analysisResults && Object.keys(state.analysisResults).length > 0) {
             analysisResults = state.analysisResults;
             
-            // Load table state if available
-            if (state.tableState) {
-                tableState = { ...tableState, ...state.tableState };
+            // Debug logging
+            console.log('Loaded analysis results:', Object.keys(analysisResults));
+            console.log('Analysis results content:', analysisResults);
+            
+            // Check if we have any meaningful analysis data
+            const hasValidData = hasValidAnalysisData(analysisResults);
+            
+            if (hasValidData) {
+                // Jump directly to the results view
+                ui.controlsContainer.classList.add('hidden');
+                ui.progressContainer.classList.add('hidden');
+                ui.resultsContainer.classList.remove('hidden');
+                
+                // Render the lens selection view with the loaded results
+                renderLensSelectionView();
+                
+                showNotification('Analysis results restored from project!', 'success');
+            } else {
+                // If no valid analysis data, show initial controls but indicate files are available
+                renderInitialControlsView();
+                showNotification('Project loaded - files available for analysis', 'info');
             }
-            
-            // Load override rules if available
-            if (state.overrideRules) {
-                overrideRules = state.overrideRules;
-            }
-            
-            // Jump directly to the results view
-            ui.controlsContainer.classList.add('hidden');
-            ui.progressContainer.classList.add('hidden');
-            ui.resultsContainer.classList.remove('hidden');
-            
-            // Render the lens selection view with the loaded results
-            renderLensSelectionView();
-            
-            showNotification('Analysis results restored from project!', 'success');
         } else {
-            // If no analysis results, just show the initial controls
+            // If no analysis results, show initial controls but indicate files are available
             renderInitialControlsView();
-            showNotification('Project loaded (no analysis results found)', 'info');
+            showNotification('Project loaded - files available for analysis', 'info');
         }
+    }
+
+    function hasValidAnalysisData(analysisResults) {
+        console.log('Checking for valid analysis data in:', analysisResults);
+        
+        // Check for various types of analysis data
+        const dataTypes = [
+            'categoryOverhaulMatrixReport',
+            'facetPotentialReport',
+            'keywordGapReport',
+            'topicGapReport',
+            'keywordThreatsReport',
+            'topicThreatsReport',
+            'keywordMarketShareReport',
+            'groupMarketShareReport'
+        ];
+        
+        for (const dataType of dataTypes) {
+            if (analysisResults[dataType] && Array.isArray(analysisResults[dataType]) && analysisResults[dataType].length > 0) {
+                console.log(`Found valid data in ${dataType}:`, analysisResults[dataType].length, 'items');
+                return true;
+            }
+        }
+        
+        // Also check if we have any non-empty arrays in the results
+        for (const key in analysisResults) {
+            if (Array.isArray(analysisResults[key]) && analysisResults[key].length > 0) {
+                console.log(`Found valid data in ${key}:`, analysisResults[key].length, 'items');
+                return true;
+            }
+        }
+        
+        console.log('No valid analysis data found');
+        return false;
     }
 
     function restoreAnalysisOptions(options) {
@@ -2527,6 +2732,12 @@
             return;
         }
 
+        // Debug logging
+        console.log('Saving project state...');
+        console.log('Current analysisResults:', analysisResults);
+        console.log('Current tableState:', tableState);
+        console.log('Current overrideRules:', overrideRules);
+
         // Capture current analysis options and settings
         const analysisOptions = {
             columnMap: {},
@@ -2559,6 +2770,8 @@
             analysisOptions: analysisOptions,
             savedAt: new Date().toISOString()
         };
+
+        console.log('State data to save:', stateData);
 
         try {
             const response = await fetch(`/api/projects/${currentProject.id}/save`, {
@@ -2649,6 +2862,7 @@
     // Make functions globally available
     window.loadProject = loadProject;
     window.deleteProject = deleteProject;
+    window.editProject = editProject;
     window.saveProjectState = saveProjectState;
     window.restoreProjectFiles = restoreProjectFiles;
 

@@ -357,12 +357,20 @@ def save_project_state(project_id):
         if not data:
             return flask.jsonify({"error": "No state data provided"}), 400
         
+        print(f"Saving project state for project {project_id}")
+        print(f"State data keys: {list(data.keys()) if data else 'None'}")
+        if data and 'analysisResults' in data:
+            print(f"Analysis results keys: {list(data['analysisResults'].keys()) if data['analysisResults'] else 'None'}")
+        
         success = project_manager.save_project_state(project_id, data)
         if success:
+            print(f"Successfully saved project state for project {project_id}")
             return flask.jsonify({"message": "Project state saved successfully"})
         else:
+            print(f"Failed to save project state for project {project_id}")
             return flask.jsonify({"error": "Failed to save project state"}), 400
     except Exception as e:
+        print(f"Exception saving project state for project {project_id}: {e}")
         return flask.jsonify({"error": f"Failed to save project state: {e}"}), 500
 
 @app.route("/api/projects/<int:project_id>/load", methods=["GET"])
@@ -370,11 +378,18 @@ def save_project_state(project_id):
 def load_project(project_id):
     """Load a project with all its files and state."""
     try:
+        print(f"Loading project {project_id}")
         project_data = project_manager.load_project_for_analysis(project_id)
+        print(f"Project data keys: {list(project_data.keys()) if project_data else 'None'}")
+        print(f"Project state available: {project_data.get('state') is not None}")
+        if project_data.get('state'):
+            print(f"State keys: {list(project_data['state'].keys()) if project_data['state'] else 'None'}")
         return flask.jsonify(project_data)
     except ValueError as e:
+        print(f"ValueError loading project {project_id}: {e}")
         return flask.jsonify({"error": str(e)}), 404
     except Exception as e:
+        print(f"Exception loading project {project_id}: {e}")
         return flask.jsonify({"error": f"Failed to load project: {e}"}), 500
 
 @app.route("/api/projects/<int:project_id>/files", methods=["POST"])
