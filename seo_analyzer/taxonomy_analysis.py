@@ -171,14 +171,14 @@ def _generate_category_overhaul_matrix(
         # Pre-compute spaCy docs for canonical categories to avoid repeated processing
         canonical_docs = {}
         if canonical_categories_set:
-            logger.info(f"Pre-computing spaCy docs for {len(canonical_categories_set)} canonical categories...")
+            print(f"Pre-computing spaCy docs for {len(canonical_categories_set)} canonical categories...")
             for canon_cat in canonical_categories_set:
                 canonical_docs[canon_cat] = nlp(canon_cat.lower())
 
-        logger.info(f"Processing {len(unique_original_cats)} unique categories for decompounding...")
+        print(f"Processing {len(unique_original_cats)} unique categories for decompounding...")
         for idx, cat_str in enumerate(unique_original_cats):
             if idx % 100 == 0 and idx > 0:
-                logger.info(f"Processed {idx}/{len(unique_original_cats)} categories...")
+                print(f"Processed {idx}/{len(unique_original_cats)} categories...")
             
             doc = nlp(cat_str.lower())
             root = next((token for token in doc if token.head == token), None)
