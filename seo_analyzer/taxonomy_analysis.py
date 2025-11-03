@@ -168,29 +168,52 @@ def _generate_category_overhaul_matrix(
         decompound_map = {}
         splittable_attributes = {'wheeled', 'rolling', 'storage', 'systems', 'cordless', 'electric'}
 
-        for cat_str in unique_original_cats:
+        # Pre-compute spaCy docs for canonical categories to avoid repeated processing
+        canonical_docs = {}
+        if canonical_categories_set:
+            logger.info(f"Pre-computing spaCy docs for {len(canonical_categories_set)} canonical categories...")
+            for canon_cat in canonical_categories_set:
+                canonical_docs[canon_cat] = nlp(canon_cat.lower())
+
+        logger.info(f"Processing {len(unique_original_cats)} unique categories for decompounding...")
+        for idx, cat_str in enumerate(unique_original_cats):
+            if idx % 100 == 0 and idx > 0:
+                logger.info(f"Processed {idx}/{len(unique_original_cats)} categories...")
+            
             doc = nlp(cat_str.lower())
             root = next((token for token in doc if token.head == token), None)
             potential_cat_word = root.lemma_ if root else None
             final_category = None
 
             if potential_cat_word and canonical_categories_set:
-                best_match, best_match_sim = None, 0.0
-                for canon_cat in canonical_categories_set:
-                    sim = nlp(potential_cat_word).similarity(nlp(canon_cat.lower()))
-                    if sim > best_match_sim:
-                        best_match, best_match_sim = canon_cat, sim
-                if best_match and best_match_sim > 0.7:
-                    final_category = best_match
-                    other_words = [token.text for token in doc if token.lemma_ != potential_cat_word and token.is_alpha]
-                    derived_facets_set = {word.title() for word in other_words if word in splittable_attributes}
-                    type_facet_words = [word for word in other_words if word not in splittable_attributes]
-                    type_facet = ' '.join(type_facet_words).title() if type_facet_words else None
-                    derived_facets = ', '.join(sorted(derived_facets_set)) if derived_facets_set else None
-                else:
+                # Pre-compute the potential category word doc once
+                potential_doc = nlp(potential_cat_word)
+                
+                # Skip if the doc has no vector (to avoid the empty vector warning)
+                if not potential_doc.has_vector:
                     final_category = cat_str
                     derived_facets = None
                     type_facet = None
+                else:
+                    best_match, best_match_sim = None, 0.0
+                    for canon_cat, canon_doc in canonical_docs.items():
+                        # Skip if canonical doc has no vector
+                        if not canon_doc.has_vector:
+                            continue
+                        sim = potential_doc.similarity(canon_doc)
+                        if sim > best_match_sim:
+                            best_match, best_match_sim = canon_cat, sim
+                    if best_match and best_match_sim > 0.7:
+                        final_category = best_match
+                        other_words = [token.text for token in doc if token.lemma_ != potential_cat_word and token.is_alpha]
+                        derived_facets_set = {word.title() for word in other_words if word in splittable_attributes}
+                        type_facet_words = [word for word in other_words if word not in splittable_attributes]
+                        type_facet = ' '.join(type_facet_words).title() if type_facet_words else None
+                        derived_facets = ', '.join(sorted(derived_facets_set)) if derived_facets_set else None
+                    else:
+                        final_category = cat_str
+                        derived_facets = None
+                        type_facet = None
             else:
                 final_category = cat_str
                 derived_facets = None
