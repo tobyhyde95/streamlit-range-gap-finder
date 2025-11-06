@@ -75,11 +75,18 @@
 
                         if (rule.action === 'move') {
                             const existingTargetValue = modifiedFacets[rule.targetColumn];
-                            const existingTargetValues = (!existingTargetValue || String(existingTargetValue).trim() === '') ? [] : String(existingTargetValue).split(' | ').map(v => v.trim());
-                            if (!existingTargetValues.includes(ruleValue)) {
-                                existingTargetValues.push(ruleValue);
+                            
+                            if (rule.moveMode === 'replace') {
+                                // MOVE AND REPLACE: Replace the entire target column value
+                                modifiedFacets[rule.targetColumn] = ruleValue;
+                            } else {
+                                // MOVE AND APPEND (default): Append to existing values with pipe separator
+                                const existingTargetValues = (!existingTargetValue || String(existingTargetValue).trim() === '') ? [] : String(existingTargetValue).split(' | ').map(v => v.trim());
+                                if (!existingTargetValues.includes(ruleValue)) {
+                                    existingTargetValues.push(ruleValue);
+                                }
+                                modifiedFacets[rule.targetColumn] = existingTargetValues.sort().join(' | ');
                             }
-                            modifiedFacets[rule.targetColumn] = existingTargetValues.sort().join(' | ');
                         }
                     }
                 }
@@ -882,7 +889,8 @@
                 ruleText += `delete & merge value "<b>${rule.value}</b>"`;
             } else if (rule.action === 'move') {
                 const targetDisplay = rule.isNew ? `new column "<b>${rule.targetColumn}</b>"` : `<b>${rule.targetColumn}</b>`;
-                ruleText += `move value "<b>${rule.value}</b>" to ${targetDisplay}`;
+                const modeDisplay = rule.moveMode === 'replace' ? ' <span class="text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded">(replace)</span>' : ' <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">(append)</span>';
+                ruleText += `move value "<b>${rule.value}</b>" to ${targetDisplay}${modeDisplay}`;
             } else if (rule.action === 'change') {
                 const valueDisplay = rule.value === '' ? '<em>(Blank)</em>' : `"${rule.value}"`;
                 ruleText += `change value ${valueDisplay} to "<b>${rule.newValue}</b>"`;
@@ -935,6 +943,19 @@
                                             <div>
                                                 <input type="checkbox" id="create-new-column-toggle" class="h-4 w-4 rounded border-gray-300">
                                                 <label for="create-new-column-toggle" class="ml-2 text-sm">Create new column</label>
+                                            </div>
+                                            <div class="mt-2 pt-2 border-t border-gray-200">
+                                                <label class="block text-sm font-medium mb-2">Move Mode</label>
+                                                <div class="space-y-1">
+                                                    <div>
+                                                        <input type="radio" id="move-mode-append" name="move-mode" value="append" class="h-4 w-4" checked>
+                                                        <label for="move-mode-append" class="ml-2 text-sm">Append (keep existing & add)</label>
+                                                    </div>
+                                                    <div>
+                                                        <input type="radio" id="move-mode-replace" name="move-mode" value="replace" class="h-4 w-4">
+                                                        <label for="move-mode-replace" class="ml-2 text-sm">Replace (overwrite existing)</label>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                         <div id="rule-new-value-container">
@@ -1048,7 +1069,7 @@
                 return;
             }
             
-            let targetColumn, newValue, isNew = false;
+            let targetColumn, newValue, isNew = false, moveMode = 'append';
 
             if (action === 'change') {
                 newValue = document.getElementById('rule-new-value').value;
@@ -1075,12 +1096,16 @@
                 } else {
                     targetColumn = document.getElementById('rule-target-column').value;
                 }
+                
+                // Capture the move mode (append or replace)
+                const moveModeRadio = document.querySelector('input[name="move-mode"]:checked');
+                moveMode = moveModeRadio ? moveModeRadio.value : 'append';
             }
 
             selectedItems.forEach(item => {
                 const value = item.dataset.value;
                 if (value === '' && (action === 'move' || action === 'delete')) return;
-                overrideRules.push({ id: Date.now() + Math.random(), sourceColumn, value, action, targetColumn, newValue, isNew });
+                overrideRules.push({ id: Date.now() + Math.random(), sourceColumn, value, action, targetColumn, newValue, isNew, moveMode });
             });
 
             handleRuleChange();
