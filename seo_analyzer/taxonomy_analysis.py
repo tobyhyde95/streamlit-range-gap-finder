@@ -232,43 +232,24 @@ def _generate_category_overhaul_matrix(
         df['Decompounded Type'] = refined_data['Decompounded Type']
         return df
 
-    all_canonical_categories = set(highest_ranking_df['Category Mapping'].dropna().unique())
-    highest_ranking_df = dynamic_decompound_and_refine(highest_ranking_df, 'Category Mapping', all_canonical_categories)
+    # REFACTORING: Task 1 - Disable semantic category overwrites
+    # This semantic clustering was causing incorrect merging of distinct categories
+    # (e.g., 'wood paint' incorrectly merging into 'cladding')
+    # all_canonical_categories = set(highest_ranking_df['Category Mapping'].dropna().unique())
+    # highest_ranking_df = dynamic_decompound_and_refine(highest_ranking_df, 'Category Mapping', all_canonical_categories)
+    
+    # Instead, preserve the URL-based category mapping and only extract supplementary features
+    highest_ranking_df['Derived Facets'] = None
+    highest_ranking_df['Decompounded Type'] = None
 
+    # REFACTORING: Task 2 - Remove traffic-based category reclassification
+    # This logic was forcing niche products into incorrect high-volume categories
+    # (e.g., "damp paint" being forced into "gloss" category)
+    # The URL-based category mapping should be the definitive source of truth
+    
+    # Ensure traffic column is numeric for downstream processing
     if not highest_ranking_df.empty and internal_traffic_col in highest_ranking_df.columns:
         highest_ranking_df[internal_traffic_col] = pd.to_numeric(highest_ranking_df[internal_traffic_col], errors='coerce').fillna(0)
-        category_traffic = highest_ranking_df.groupby('Category Mapping')[internal_traffic_col].sum()
-        total_traffic_sum = category_traffic.sum()
-        if total_traffic_sum > 0:
-            strong_categories_from_traffic = set(category_traffic[category_traffic / total_traffic_sum > 0.005].index)
-            strong_categories_from_traffic -= {'Tools', 'Hand Tools', 'Power Tools'}
-
-            generic_categories_to_reclassify = {'Tools', 'Hand Tools', 'Power Tools'}
-
-            def reclassify_row(row):
-                current_cat = row['Category Mapping']
-                if current_cat in generic_categories_to_reclassify:
-                    try:
-                        if enable_enhanced_parsing and url_parser:
-                            # Use enhanced URL parser for category extraction
-                            extracted_cat = url_parser.extract_category_from_url(row[internal_url_col_name])
-                            if extracted_cat and extracted_cat != current_cat:
-                                return extracted_cat
-                        else:
-                            # Legacy URL parsing
-                            url_path = urlparse(str(row[internal_url_col_name])).path.lower().strip('/')
-                            if url_path == current_cat.lower().replace(' ', '-'):
-                                return current_cat
-                    except Exception:
-                        pass
-                    kw_tokens = set(str(row[internal_keyword_col]).lower().split())
-                    for strong_cat in strong_categories_from_traffic:
-                        strong_cat_forms = get_word_forms(strong_cat.lower())
-                        if not kw_tokens.isdisjoint(strong_cat_forms):
-                            return strong_cat
-                return current_cat
-
-            highest_ranking_df['Category Mapping'] = highest_ranking_df.swifter.apply(reclassify_row, axis=1)
 
     def clean_facet_value(value):
         if pd.isnull(value):
@@ -354,35 +335,63 @@ def _generate_category_overhaul_matrix(
 
     highest_ranking_df.replace('', np.nan, inplace=True)
 
-    print("Performing granular facet consolidation...")
+    # REFACTORING: Task 3 - Implement strict non-destructive facet merging
+    # OLD LOGIC: Merged columns if >50% data overlap (could merge distinct facets like 'Finish' and 'Material')
+    # NEW LOGIC: Only merge columns with highly similar names (e.g., 'Colour_Group' vs 'ColourGroup')
+    
+    def normalize_column_name(col_name):
+        """Normalize column name for comparison by removing spaces, underscores, hyphens, and converting to lowercase."""
+        return re.sub(r'[_\s-]', '', str(col_name).lower())
+    
+    def are_column_names_similar(col_a, col_b):
+        """Check if two column names are similar enough to merge."""
+        norm_a = normalize_column_name(col_a)
+        norm_b = normalize_column_name(col_b)
+        
+        # Exact match after normalization
+        if norm_a == norm_b:
+            return True
+        
+        # Check if one is a substring of the other (e.g., 'Color' and 'Colour')
+        if norm_a in norm_b or norm_b in norm_a:
+            # Only merge if the difference is small (not arbitrary substrings)
+            if abs(len(norm_a) - len(norm_b)) <= 2:
+                return True
+        
+        return False
+    
+    print("Performing strict non-destructive facet consolidation based on column name similarity...")
     cols_to_process = [col for col in potential_facet_cols if col in highest_ranking_df.columns and highest_ranking_df[col].count() > 0]
     processed_pairs = set()
+    
     for i in range(len(cols_to_process)):
         for j in range(i + 1, len(cols_to_process)):
             col_A_name = cols_to_process[i]
             col_B_name = cols_to_process[j]
+            
             if (col_B_name, col_A_name) in processed_pairs:
                 continue
             processed_pairs.add((col_A_name, col_B_name))
-            values_A = set(highest_ranking_df[col_A_name].dropna().unique())
-            values_B = set(highest_ranking_df[col_B_name].dropna().unique())
-            common_values = values_A.intersection(values_B)
-            if not common_values:
+            
+            # Only merge if column names are similar
+            if not are_column_names_similar(col_A_name, col_B_name):
                 continue
+            
+            # Determine primary and secondary columns based on data count
             count_A = highest_ranking_df[col_A_name].count()
             count_B = highest_ranking_df[col_B_name].count()
+            
             if count_A >= count_B:
                 primary_col_name, secondary_col_name = col_A_name, col_B_name
-                values_secondary = values_B
             else:
                 primary_col_name, secondary_col_name = col_B_name, col_A_name
-                values_secondary = values_A
-            duplication_rate = len(common_values) / len(values_secondary) if len(values_secondary) > 0 else 0
-            DUPLICATION_THRESHOLD = 0.5
-            if duplication_rate > DUPLICATION_THRESHOLD:
-                mask = highest_ranking_df[secondary_col_name].isin(common_values)
-                highest_ranking_df.loc[mask, primary_col_name] = highest_ranking_df.loc[mask, primary_col_name].fillna(highest_ranking_df.loc[mask, secondary_col_name])
-                highest_ranking_df.loc[mask, secondary_col_name] = np.nan
+            
+            # CRITICAL: Only fill NaN values in primary column, NEVER overwrite existing values
+            mask = highest_ranking_df[primary_col_name].isna() & highest_ranking_df[secondary_col_name].notna()
+            highest_ranking_df.loc[mask, primary_col_name] = highest_ranking_df.loc[mask, secondary_col_name]
+            
+            # Clear the secondary column only where we transferred values
+            highest_ranking_df.loc[mask, secondary_col_name] = np.nan
 
     if nlp:
         ATTRIBUTE_SEEDS = nlp("material color size power type feature brand style finish")
@@ -403,15 +412,34 @@ def _generate_category_overhaul_matrix(
             if (count / num_topics) > noise_threshold:
                 dynamic_noise_set.add(word)
 
+    # REFACTORING: Task 4 - Restrict semantic analysis to supplementary columns only
+    # This function discovers ADDITIONAL facets from keywords using NLP
+    # CRITICAL: It must NOT overwrite URL-based facets (Brand, Colour, Size, etc.)
+    # It only outputs to 'Discovered Facets' which is later organized into supplementary columns
+    
     def discover_remaining_facets(row, learned_noise_tokens):
+        """
+        Discover additional facets from keywords using NLP.
+        This function ONLY creates supplementary data and does NOT overwrite URL-based facets.
+        
+        Returns:
+            String of discovered facet values (comma-separated) or None
+        """
         if nlp is None:
             return None
+        
+        # Build ignore list from noise tokens, stop words, category terms, and existing facets
         ignore_tokens = learned_noise_tokens.copy()
         for token in nlp.Defaults.stop_words:
             ignore_tokens.add(token)
+        
+        # Ignore category mapping terms (already captured)
         if pd.notnull(row['Category Mapping']):
             for cat_word in str(row['Category Mapping']).lower().split():
                 ignore_tokens.update(get_word_forms(cat_word))
+        
+        # CRITICAL: Ignore all already-assigned facet values from URL-based columns
+        # This ensures we don't duplicate or overwrite URL-extracted data
         assigned_facet_values = set()
         facet_cols_in_row = [c for c in potential_facet_cols if c in row and pd.notnull(row[c])]
         facet_cols_in_row.append('Derived Facets')
@@ -421,23 +449,31 @@ def _generate_category_overhaul_matrix(
                 for val in values:
                     assigned_facet_values.update(val.strip().lower().split())
         ignore_tokens.update(assigned_facet_values)
+        
+        # Extract potential facets from keyword text
         kw_text = str(row[internal_keyword_col]).lower()
         doc = nlp(kw_text)
         discovered = set()
+        
+        # Special case: 'heavy duty' is a common compound attribute
         if 'heavy duty' in kw_text:
             discovered.add('Heavy Duty')
             kw_text = kw_text.replace('heavy duty', '')
+        
         doc = nlp(kw_text)
         potential_tokens = [
             token for token in doc
             if token.pos_ in ['NOUN', 'PROPN', 'ADJ'] and not token.is_stop and token.is_alpha and len(token.lemma_) > 2 and token.lemma_ not in ignore_tokens
         ]
+        
+        # Filter tokens based on semantic similarity to attributes (not noise)
         for token in potential_tokens:
             attribute_similarity = token.similarity(ATTRIBUTE_SEEDS)
             noise_similarity = token.similarity(NOISE_SEEDS)
             is_location = any(ent.label_ == 'GPE' for ent in nlp(token.text).ents)
             if attribute_similarity > (noise_similarity * 1.1) and not is_location:
                 discovered.add(token.lemma_.title())
+        
         return ', '.join(sorted(list(discovered))) if discovered else None
 
     highest_ranking_df['Discovered Facets'] = highest_ranking_df.swifter.apply(

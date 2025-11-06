@@ -167,37 +167,24 @@ def _generate_enhanced_category_overhaul_matrix(
         df['Decompounded Type'] = refined_data['Decompounded Type']
         return df
 
-    all_canonical_categories = set(highest_ranking_df['Category Mapping'].dropna().unique())
-    highest_ranking_df = dynamic_decompound_and_refine(highest_ranking_df, 'Category Mapping', all_canonical_categories)
+    # REFACTORING: Task 1 - Disable semantic category overwrites
+    # This semantic clustering was causing incorrect merging of distinct categories
+    # (e.g., 'wood paint' incorrectly merging into 'cladding')
+    # all_canonical_categories = set(highest_ranking_df['Category Mapping'].dropna().unique())
+    # highest_ranking_df = dynamic_decompound_and_refine(highest_ranking_df, 'Category Mapping', all_canonical_categories)
+    
+    # Instead, preserve the URL-based category mapping and only extract supplementary features
+    highest_ranking_df['Derived Facets'] = None
+    highest_ranking_df['Decompounded Type'] = None
 
+    # REFACTORING: Task 2 - Remove traffic-based category reclassification
+    # This logic was forcing niche products into incorrect high-volume categories
+    # (e.g., "damp paint" being forced into "gloss" category)
+    # The URL-based category mapping should be the definitive source of truth
+    
+    # Ensure traffic column is numeric for downstream processing
     if not highest_ranking_df.empty and internal_traffic_col in highest_ranking_df.columns:
         highest_ranking_df[internal_traffic_col] = pd.to_numeric(highest_ranking_df[internal_traffic_col], errors='coerce').fillna(0)
-        category_traffic = highest_ranking_df.groupby('Category Mapping')[internal_traffic_col].sum()
-        total_traffic_sum = category_traffic.sum()
-        if total_traffic_sum > 0:
-            strong_categories_from_traffic = set(category_traffic[category_traffic / total_traffic_sum > 0.005].index)
-            strong_categories_from_traffic -= {'Tools', 'Hand Tools', 'Power Tools'}
-
-            generic_categories_to_reclassify = {'Tools', 'Hand Tools', 'Power Tools'}
-
-            def reclassify_row(row):
-                current_cat = row['Category Mapping']
-                if current_cat in generic_categories_to_reclassify:
-                    try:
-                        # Use the enhanced URL parser for category extraction
-                        extracted_cat = url_parser.extract_category_from_url(row[internal_url_col_name])
-                        if extracted_cat and extracted_cat != current_cat:
-                            return extracted_cat
-                    except Exception:
-                        pass
-                    kw_tokens = set(str(row[internal_keyword_col]).lower().split())
-                    for strong_cat in strong_categories_from_traffic:
-                        strong_cat_forms = get_word_forms(strong_cat.lower())
-                        if not kw_tokens.isdisjoint(strong_cat_forms):
-                            return strong_cat
-                return current_cat
-
-            highest_ranking_df['Category Mapping'] = highest_ranking_df.swifter.apply(reclassify_row, axis=1)
 
     def clean_facet_value(value):
         if pd.isnull(value):

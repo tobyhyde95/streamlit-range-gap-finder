@@ -59,10 +59,13 @@ class URLParser:
                     # Apply stemming and synonym lookup
                     processed = self._post_process_category(cleaned)
                     if processed and processed != cleaned:
-                        human_readable_categories.append(processed)
+                        # Normalize: remove hyphens/underscores and convert to title case
+                        normalized = processed.replace('-', ' ').replace('_', ' ').title()
+                        human_readable_categories.append(normalized)
                     else:
-                        # Return the original segment format (with hyphens) instead of title case
-                        human_readable_categories.append(segment.lower())
+                        # Normalize: remove hyphens/underscores and convert to title case
+                        normalized = cleaned.title()
+                        human_readable_categories.append(normalized)
             
             # If we found human-readable categories, return the most specific one (first in reversed order)
             if human_readable_categories:
@@ -198,7 +201,7 @@ class URLParser:
             raw_segment: The raw segment from the URL
             
         Returns:
-            The processed category
+            The processed category (with spaces, not hyphens - will be normalized by caller)
         """
         # Clean the segment
         cleaned = raw_segment.replace('-', ' ').replace('_', ' ').lower().strip()
@@ -214,8 +217,8 @@ class URLParser:
         if stemmed in category_synonyms:
             return category_synonyms[stemmed]
         
-        # Return the original cleaned segment if no synonym found
-        return cleaned.replace(' ', '-')
+        # Return the original cleaned segment with spaces (normalized by caller)
+        return cleaned
     
     def normalize_facet_key(self, raw_facet_key: str) -> str:
         """
