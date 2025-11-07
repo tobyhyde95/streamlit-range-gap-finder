@@ -51,7 +51,7 @@ def _generate_category_overhaul_matrix(df, internal_keyword_col, internal_positi
 def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, options_str, progress_reporter=None):
     
     COLS_TO_EXCLUDE_AT_SOURCE = {
-        'countrycode', 'location', 'serpfeatures', 'kd', 'cpc', 'paidtraffic',
+        'countrycode', 'location', 'entities', 'serpfeatures', 'kd', 'cpc', 'paidtraffic',
         'currenturlinside', 'updated', 'branded', 'local', 'navigational',
         'informational', 'commercial', 'transactional'
     }

@@ -8,7 +8,7 @@ from . import utils
 
 # Columns from raw exports that we consistently exclude at source
 COLS_TO_EXCLUDE_AT_SOURCE = {
-    'countrycode', 'location', 'serpfeatures', 'kd', 'cpc', 'paidtraffic',
+    'countrycode', 'location', 'entities', 'serpfeatures', 'kd', 'cpc', 'paidtraffic',
     'currenturlinside', 'updated', 'branded', 'local', 'navigational',
     'informational', 'commercial', 'transactional'
 }

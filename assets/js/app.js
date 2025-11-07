@@ -7,7 +7,6 @@
         fullData: [], headers: [], sortKey: null, sortDir: 'desc',
         searchTerm: '', searchKey: null, currentPage: 1, rowsPerPage: 25,
         timeframe: 'monthly',
-        hideEntities: false,
         hideFeatures: false
     };
     let overrideRules = [];
@@ -2125,10 +2124,8 @@
         const baseHeaders = Object.keys(categoryOverhaulMatrixReport[0] || {});
         
         // Build list of columns to exclude from aggregation (hidden columns)
+        // Note: Entities column no longer exists (excluded at data load), only Features
         const excludeFromAggregation = [];
-        if (tableState.hideEntities) {
-            excludeFromAggregation.push('Entities', 'Discovered Entities');
-        }
         if (tableState.hideFeatures) {
             excludeFromAggregation.push('Features', 'Discovered Features');
         }
@@ -2167,10 +2164,6 @@
                     <label for="hide-zero-traffic-toggle" class="ml-2 block text-sm text-gray-900">Hide rows with 0 traffic</label>
                 </div>
                 <div class="flex items-center">
-                    <input type="checkbox" id="hide-entities-column" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" ${tableState.hideEntities ? 'checked' : ''}>
-                    <label for="hide-entities-column" class="ml-2 block text-sm text-gray-900">Hide Entities column</label>
-                </div>
-                <div class="flex items-center">
                     <input type="checkbox" id="hide-features-column" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" ${tableState.hideFeatures ? 'checked' : ''}>
                     <label for="hide-features-column" class="ml-2 block text-sm text-gray-900">Hide Features column</label>
                 </div>
@@ -2180,10 +2173,6 @@
         
         // Filter headers based on column visibility state
         let displayHeaders = [...finalHeaders];
-        
-        if (tableState.hideEntities) {
-            displayHeaders = displayHeaders.filter(h => h !== 'Entities' && h !== 'Discovered Entities');
-        }
         if (tableState.hideFeatures) {
             displayHeaders = displayHeaders.filter(h => h !== 'Features' && h !== 'Discovered Features');
         }
@@ -2191,11 +2180,7 @@
         const defaultSortKey = displayHeaders.find(h => h.includes('Organic Traffic'));
         initializeTable(transformedData, displayHeaders, defaultSortKey, 'Category Mapping');
         
-        // Add event listeners for column visibility toggles
-        document.getElementById('hide-entities-column')?.addEventListener('change', (e) => {
-            tableState.hideEntities = e.target.checked;
-            renderCategoryOverhaulMatrixView();
-        });
+        // Add event listener for column visibility toggle
         document.getElementById('hide-features-column')?.addEventListener('change', (e) => {
             tableState.hideFeatures = e.target.checked;
             renderCategoryOverhaulMatrixView();

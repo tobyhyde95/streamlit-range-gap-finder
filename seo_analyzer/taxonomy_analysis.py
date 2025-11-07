@@ -483,7 +483,20 @@ def _generate_category_overhaul_matrix(
     )
 
     def _organize_facets(df, explicit_cols_df):
-        print("Organizing and classifying discovered facets...")
+        """
+        Organize NLP-discovered facets into appropriate columns.
+        
+        CRITICAL PRIORITY ORDER:
+        1. URL-based facets → Proper facet columns (Brand, Colour, Size, etc.) - NEVER overwritten
+        2. Keyword NLP → Features column (supplementary only)
+        
+        NOTE: No "Entities" column is created. All NLP-derived terms go to:
+        - Brand column (if recognized as brand)
+        - Voltage column (if voltage pattern)
+        - Power Source column (if power-related)
+        - Features column (everything else)
+        """
+        print("Organizing and classifying discovered facets into Features column...")
         known_brands = set()
         if not explicit_cols_df.empty:
             for col in explicit_cols_df.columns:
