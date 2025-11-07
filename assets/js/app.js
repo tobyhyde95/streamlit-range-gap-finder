@@ -6,7 +6,9 @@
     let tableState = {
         fullData: [], headers: [], sortKey: null, sortDir: 'desc',
         searchTerm: '', searchKey: null, currentPage: 1, rowsPerPage: 25,
-        timeframe: 'monthly'
+        timeframe: 'monthly',
+        hideEntities: false,
+        hideFeatures: false
     };
     let overrideRules = [];
     let inProductNameFacets = new Set(); // To store state of "In Product Name" checkboxes
@@ -31,14 +33,17 @@
         }
     }
 
-    function applyOverridesAndMerge(data, headers, hasOnsite) {
-        if (!overrideRules || overrideRules.length === 0) {
+    function applyOverridesAndMerge(data, headers, hasOnsite, excludeFromAggregation = []) {
+        // If no rules AND no columns to exclude, just return a copy
+        if ((!overrideRules || overrideRules.length === 0) && excludeFromAggregation.length === 0) {
             return JSON.parse(JSON.stringify(data));
         }
 
         const aggregationMap = new Map();
+        // Filter out columns that should be excluded from aggregation (e.g., hidden columns)
         const facetHeaders = headers.filter(h => 
-            h !== 'Category Mapping' && !h.includes('Traffic') && !h.includes('Searches') && h !== 'KeywordDetails'
+            h !== 'Category Mapping' && !h.includes('Traffic') && !h.includes('Searches') && h !== 'KeywordDetails' &&
+            !excludeFromAggregation.includes(h)
         );
 
         const metricCols = [
@@ -51,6 +56,9 @@
         originalData.forEach(originalRow => {
             let modifiedFacets = { 'Category Mapping': originalRow['Category Mapping'] };
             facetHeaders.forEach(h => { modifiedFacets[h] = originalRow[h]; });
+            
+            // Track if this row should be completely removed
+            let shouldRemoveRow = false;
 
             overrideRules.forEach(rule => {
                 const cellValue = modifiedFacets[rule.sourceColumn];
@@ -68,6 +76,11 @@
                         } else { // This rule changes a specific, existing value
                             const newValues = cellValues.map(v => (v === ruleValue ? rule.newValue.trim() : v));
                             modifiedFacets[rule.sourceColumn] = newValues.join(' | ');
+                        }
+                    } else if (rule.action === 'remove') {
+                        // DELETE AND REMOVE: Mark row for complete removal from dataset
+                        if (ruleValue !== '' && !isCellBlank && cellValues.includes(ruleValue)) {
+                            shouldRemoveRow = true;
                         }
                     } else if (ruleValue !== '') { // MOVE and DELETE only make sense for non-blank values
                         const newSourceValues = cellValues.filter(v => v !== ruleValue);
@@ -91,6 +104,11 @@
                     }
                 }
             });
+            
+            // Skip adding this row if it's marked for removal
+            if (shouldRemoveRow) {
+                return;
+            }
             
             const key = [modifiedFacets['Category Mapping'] || '', ...facetHeaders.map(h => modifiedFacets[h] || '')].join('||');
             
@@ -887,6 +905,8 @@
             let ruleText = `From <b>${rule.sourceColumn}</b>, `;
             if (rule.action === 'delete') {
                 ruleText += `delete & merge value "<b>${rule.value}</b>"`;
+            } else if (rule.action === 'remove') {
+                ruleText += `delete & remove rows with value "<b>${rule.value}</b>" <span class="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">(removes rows)</span>`;
             } else if (rule.action === 'move') {
                 const targetDisplay = rule.isNew ? `new column "<b>${rule.targetColumn}</b>"` : `<b>${rule.targetColumn}</b>`;
                 const modeDisplay = rule.moveMode === 'replace' ? ' <span class="text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded">(replace)</span>' : ' <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">(append)</span>';
@@ -932,6 +952,7 @@
                                         <select id="rule-action" class="mt-1 block w-full p-2 border-gray-300 rounded-md">
                                             <option value="change">Change Value</option>
                                             <option value="delete">Delete & Merge</option>
+                                            <option value="remove">Delete & Remove</option>
                                             <option value="move">Move Value</option>
                                         </select>
                                     </div>
@@ -1104,7 +1125,7 @@
 
             selectedItems.forEach(item => {
                 const value = item.dataset.value;
-                if (value === '' && (action === 'move' || action === 'delete')) return;
+                if (value === '' && (action === 'move' || action === 'delete' || action === 'remove')) return;
                 overrideRules.push({ id: Date.now() + Math.random(), sourceColumn, value, action, targetColumn, newValue, isNew, moveMode });
             });
 
@@ -2103,7 +2124,17 @@
 
         const baseHeaders = Object.keys(categoryOverhaulMatrixReport[0] || {});
         
-        const modifiedData = applyOverridesAndMerge(categoryOverhaulMatrixReport, baseHeaders, hasOnsiteData);
+        // Build list of columns to exclude from aggregation (hidden columns)
+        const excludeFromAggregation = [];
+        if (tableState.hideEntities) {
+            excludeFromAggregation.push('Entities', 'Discovered Entities');
+        }
+        if (tableState.hideFeatures) {
+            excludeFromAggregation.push('Features', 'Discovered Features');
+        }
+        
+        // Re-aggregate data excluding hidden columns (rows differing only in hidden columns will merge)
+        const modifiedData = applyOverridesAndMerge(categoryOverhaulMatrixReport, baseHeaders, hasOnsiteData, excludeFromAggregation);
         const transformedData = transformDataForTimeframe(modifiedData, tableState.timeframe);
 
         const allKeys = new Set();
@@ -2129,11 +2160,46 @@
                 </ul>
             </div>`;
         
-        const customContent = `<div class="flex items-center"><input type="checkbox" id="hide-zero-traffic-toggle" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"><label for="hide-zero-traffic-toggle" class="ml-2 block text-sm text-gray-900">Hide rows with 0 traffic</label></div>`;
+        const customContent = `
+            <div class="flex flex-wrap gap-4 items-center">
+                <div class="flex items-center">
+                    <input type="checkbox" id="hide-zero-traffic-toggle" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <label for="hide-zero-traffic-toggle" class="ml-2 block text-sm text-gray-900">Hide rows with 0 traffic</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="hide-entities-column" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" ${tableState.hideEntities ? 'checked' : ''}>
+                    <label for="hide-entities-column" class="ml-2 block text-sm text-gray-900">Hide Entities column</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="hide-features-column" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" ${tableState.hideFeatures ? 'checked' : ''}>
+                    <label for="hide-features-column" class="ml-2 block text-sm text-gray-900">Hide Features column</label>
+                </div>
+            </div>`;
         
         ui.resultsContainer.innerHTML = createReportContainer('Category Overhaul Matrix', subtitle, customContent, explainer);
-        const defaultSortKey = finalHeaders.find(h => h.includes('Organic Traffic'));
-        initializeTable(transformedData, finalHeaders, defaultSortKey, 'Category Mapping');
+        
+        // Filter headers based on column visibility state
+        let displayHeaders = [...finalHeaders];
+        
+        if (tableState.hideEntities) {
+            displayHeaders = displayHeaders.filter(h => h !== 'Entities' && h !== 'Discovered Entities');
+        }
+        if (tableState.hideFeatures) {
+            displayHeaders = displayHeaders.filter(h => h !== 'Features' && h !== 'Discovered Features');
+        }
+        
+        const defaultSortKey = displayHeaders.find(h => h.includes('Organic Traffic'));
+        initializeTable(transformedData, displayHeaders, defaultSortKey, 'Category Mapping');
+        
+        // Add event listeners for column visibility toggles
+        document.getElementById('hide-entities-column')?.addEventListener('change', (e) => {
+            tableState.hideEntities = e.target.checked;
+            renderCategoryOverhaulMatrixView();
+        });
+        document.getElementById('hide-features-column')?.addEventListener('change', (e) => {
+            tableState.hideFeatures = e.target.checked;
+            renderCategoryOverhaulMatrixView();
+        });
         tableState.hideZeroTraffic = false; 
         renderOverridesUI(baseHeaders.filter(h => h !== 'KeywordDetails'));
     }
