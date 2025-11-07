@@ -1,0 +1,2137 @@
+{
+  "validation_timestamp": "2025-11-07T12:04:16.729351",
+  "analysis_timestamp": "2025-11-07T12:04:16.715937",
+  "total_rows_validated": 101,
+  "summary": {
+    "total_rows": 101,
+    "correct_mappings": 0,
+    "incorrect_mappings": 101,
+    "accuracy_percentage": 0.0,
+    "common_issues": {
+      "No category could be extracted from URL": 101
+    }
+  },
+  "validation_results": [
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Paint.Cat",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Primers Undercoat.Cat",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Colour Matching Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Primer Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Spray Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Damp Proof Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Exterior Paint Woodcare",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Upvc Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Garden Furniture Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Fence Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Interior Wood Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Exterior Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Masonry",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Floor Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Radiator Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Exterior Wood",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Paint Offers",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Multi Surface Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Emulsion Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Low Voc Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wood Stain",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wood Preservatives+Treatment",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Metal Paints Primers",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Heat Resistant Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Trade Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Bathroom Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Custom Spray Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Dulux",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Metal Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Masonry Paints",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Interior Wood",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Dulux Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Mdf Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Colour Match Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wall+Ceiling Emulsion Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Interior Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Decking Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Kitchen Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Varnishes",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Warm White Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Garage Door Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Contract Matt",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Satinwood",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Kitchen Cupboard Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Emulsion",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Anthracite Grey Ral7016 Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Oil Based Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Front Door Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Primer Undercoat",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Garage Floor Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Paint Mixing",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Shed+Fence Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Cladding",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Upvc Door Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Dulux Oil Based Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "White Emulsion",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Grey Fence Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Durable",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Undercoats Primers",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Furniture",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Specialist Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Anti Mould Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Concrete",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Eggshell",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Primers Undercoats",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Metal",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Garden Furniture Paint+Stain",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Floor",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Stain Block Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Silk",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Eco Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Concrete Floor Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Exterior Metal Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Furniture Paint+Cupboard Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Satin",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Gloss",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Paint Tester Pots",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Exterior Decorating Accessories",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Tile+Brick Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Designer Paints",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Patio Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Interior Paint Surface Preparation",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Claypaint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Eggshell Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Green Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Nursery Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Trim Paints",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Fire Protection",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Flame Retardant",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Water Based Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Tile Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Special Finishes",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Marine",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Grey Masonry Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Orange Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Gloss Paints",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Furniture Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Interior Emulsions",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Satin Finish Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Exterior Gloss+Satin Paint",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    }
+  ]
+}

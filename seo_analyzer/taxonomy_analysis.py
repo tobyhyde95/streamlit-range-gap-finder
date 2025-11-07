@@ -279,6 +279,14 @@ def _generate_category_overhaul_matrix(
 
     url_facets_list = highest_ranking_df[internal_url_col_name].apply(extract_url_facets).tolist()
     explicit_facets_df = pd.DataFrame(url_facets_list, index=highest_ranking_df.index)
+    
+    # DEBUG: Log initial facet extraction
+    if not explicit_facets_df.empty:
+        print(f"🔍 DEBUG: Extracted {len(explicit_facets_df.columns)} facet columns from URLs: {list(explicit_facets_df.columns)}")
+        for col in explicit_facets_df.columns:
+            unique_vals = explicit_facets_df[col].dropna().unique()
+            if len(unique_vals) > 0:
+                print(f"   - {col}: {len(unique_vals)} unique values, sample: {list(unique_vals[:3])}")
 
     noise_cols = [
         'gclid', 'gclsrc', 'msclkid', 'mkwid', 'pkw', 'pcrid', 'pmt', 'fi', 'page',
@@ -286,17 +294,46 @@ def _generate_category_overhaul_matrix(
         'utm_term', 'utm_content'
     ]
     cols_to_drop = [col for col in explicit_facets_df.columns if col.lower().replace(' ', '_') in noise_cols or col.lower().startswith('utm')]
+    if cols_to_drop:
+        print(f"🔍 DEBUG: Dropping {len(cols_to_drop)} noise columns: {cols_to_drop}")
     explicit_facets_df.drop(columns=cols_to_drop, inplace=True)
 
     knowledge_base = {col: set(explicit_facets_df[col].dropna().unique()) for col in explicit_facets_df.columns}
     facet_col_map = {key: key.title() for key in explicit_facets_df.columns}
+    print(f"🔍 DEBUG: Renaming facet columns to title case: {facet_col_map}")
     explicit_facets_df = explicit_facets_df.rename(columns=facet_col_map)
 
     if explicit_facets_df.columns.has_duplicates:
         explicit_facets_df = explicit_facets_df.groupby(level=0, axis=1).apply(lambda group: group.ffill(axis=1).bfill(axis=1).iloc[:, 0])
 
+    # CRITICAL FIX: Check for column name collisions with existing DataFrame columns
+    # If a facet column name already exists in the main DataFrame, rename the facet column
+    # to avoid losing facet data during concatenation
+    print(f"🔍 DEBUG: Checking for column collisions...")
+    print(f"   Existing columns in main DataFrame: {list(highest_ranking_df.columns)}")
+    print(f"   Facet columns to add: {list(explicit_facets_df.columns)}")
+    
+    existing_cols = set(highest_ranking_df.columns)
+    facet_rename_map = {}
+    for col in explicit_facets_df.columns:
+        if col in existing_cols:
+            # Rename facet column to avoid collision
+            # Example: "Volume" -> "Product Volume" if "Volume" already exists (search volume from Semrush)
+            new_col_name = f"Product {col}" if col in ['Volume', 'Size', 'Weight', 'Capacity'] else f"{col} Facet"
+            print(f"⚠️  Column collision detected: '{col}' already exists in data. Renaming facet column to '{new_col_name}'")
+            facet_rename_map[col] = new_col_name
+    
+    if facet_rename_map:
+        explicit_facets_df = explicit_facets_df.rename(columns=facet_rename_map)
+        print(f"🔍 DEBUG: After collision fix, facet columns are now: {list(explicit_facets_df.columns)}")
+    else:
+        print(f"🔍 DEBUG: No column collisions detected")
+
     highest_ranking_df = pd.concat([highest_ranking_df, explicit_facets_df], axis=1)
+    print(f"🔍 DEBUG: After concatenation, DataFrame has {len(highest_ranking_df.columns)} columns")
+    
     if highest_ranking_df.columns.has_duplicates:
+        print(f"⚠️  Warning: Duplicate columns detected after concatenation: {highest_ranking_df.columns[highest_ranking_df.columns.duplicated()].tolist()}")
         highest_ranking_df = highest_ranking_df.groupby(level=0, axis=1).apply(lambda group: group.ffill(axis=1).bfill(axis=1).iloc[:, 0])
 
     potential_facet_cols = [
@@ -307,6 +344,7 @@ def _generate_category_overhaul_matrix(
             'Keyword Group'
         ]
     ]
+    print(f"🔍 DEBUG: potential_facet_cols ({len(potential_facet_cols)}): {potential_facet_cols}")
 
     all_values = highest_ranking_df[potential_facet_cols].unstack().dropna().astype(str).str.title().value_counts()
     key_values = all_values[(all_values > 1) & (all_values.index.str.len() > 3) & (all_values.index.str.isalpha())].index
@@ -563,6 +601,7 @@ def _generate_category_overhaul_matrix(
     newly_organized_cols = {col for col in [brand_col_name, 'Voltage', 'Power Source', 'Features'] if col in highest_ranking_df.columns and col is not None}
     all_facet_cols.update(newly_organized_cols)
     all_facet_cols.discard('Discovered Facets')
+    print(f"🔍 DEBUG: all_facet_cols ({len(all_facet_cols)}): {sorted(all_facet_cols)}")
 
     def is_redundant(category, facet_val):
         if nlp is None or pd.isnull(category) or pd.isnull(facet_val):
@@ -579,10 +618,17 @@ def _generate_category_overhaul_matrix(
                 lambda row: None if is_redundant(row['Category Mapping'], row[col]) else row[col],
                 axis=1
             )
-
+    
+    print(f"🔍 DEBUG: Before dropna, DataFrame has {len(highest_ranking_df.columns)} columns")
+    cols_before_dropna = set(highest_ranking_df.columns)
     highest_ranking_df.dropna(axis=1, how='all', inplace=True)
+    cols_after_dropna = set(highest_ranking_df.columns)
+    dropped_cols = cols_before_dropna - cols_after_dropna
+    if dropped_cols:
+        print(f"🔍 DEBUG: Dropped {len(dropped_cols)} all-NA columns: {dropped_cols}")
 
     grouping_cols = ['Category Mapping'] + sorted([col for col in all_facet_cols if col in highest_ranking_df.columns])
+    print(f"🔍 DEBUG: grouping_cols ({len(grouping_cols)}): {grouping_cols}")
     for col in grouping_cols:
         if col not in highest_ranking_df.columns:
             highest_ranking_df[col] = None
@@ -598,6 +644,7 @@ def _generate_category_overhaul_matrix(
 
     filtered_agg_dict = {k: v for k, v in agg_dict.items() if k not in grouping_cols}
     matrix_df = highest_ranking_df.groupby(grouping_cols, as_index=False).agg(filtered_agg_dict)
+    print(f"🔍 DEBUG: Final matrix_df created with {len(matrix_df.columns)} columns: {list(matrix_df.columns)}")
 
     def aggregate_keyword_details(group):
         sorted_group = group.sort_values(by=internal_traffic_col, ascending=False)

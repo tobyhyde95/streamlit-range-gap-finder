@@ -226,8 +226,25 @@ def _generate_enhanced_category_overhaul_matrix(
     if explicit_facets_df.columns.has_duplicates:
         explicit_facets_df = explicit_facets_df.groupby(level=0, axis=1).apply(lambda group: group.ffill(axis=1).bfill(axis=1).iloc[:, 0])
 
+    # CRITICAL FIX: Check for column name collisions with existing DataFrame columns
+    # If a facet column name already exists in the main DataFrame, rename the facet column
+    # to avoid losing facet data during concatenation
+    existing_cols = set(highest_ranking_df.columns)
+    facet_rename_map = {}
+    for col in explicit_facets_df.columns:
+        if col in existing_cols:
+            # Rename facet column to avoid collision
+            # Example: "Volume" -> "Product Volume" if "Volume" already exists (search volume from Semrush)
+            new_col_name = f"Product {col}" if col in ['Volume', 'Size', 'Weight', 'Capacity'] else f"{col} Facet"
+            print(f"⚠️  Column collision detected: '{col}' already exists in data. Renaming facet column to '{new_col_name}'")
+            facet_rename_map[col] = new_col_name
+    
+    if facet_rename_map:
+        explicit_facets_df = explicit_facets_df.rename(columns=facet_rename_map)
+
     highest_ranking_df = pd.concat([highest_ranking_df, explicit_facets_df], axis=1)
     if highest_ranking_df.columns.has_duplicates:
+        print(f"⚠️  Warning: Duplicate columns detected after concatenation: {highest_ranking_df.columns[highest_ranking_df.columns.duplicated()].tolist()}")
         highest_ranking_df = highest_ranking_df.groupby(level=0, axis=1).apply(lambda group: group.ffill(axis=1).bfill(axis=1).iloc[:, 0])
 
     # Continue with the rest of the analysis...
