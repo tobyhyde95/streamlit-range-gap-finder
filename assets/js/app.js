@@ -540,7 +540,165 @@
             console.log('No keyword breakdown data to export');
         }
 
+        // Third sheet: Category Consolidation View
+        console.log('Creating Category Consolidation view...');
+        const categoryConsolidationData = createCategoryConsolidationView(data, headers);
+        if (categoryConsolidationData.length > 0) {
+            const ws3 = XLSX.utils.json_to_sheet(categoryConsolidationData);
+            
+            // Set column widths for readability
+            const consolidationHeaders = Object.keys(categoryConsolidationData[0] || {});
+            const consolidationColWidths = consolidationHeaders.map(header => {
+                if (header === 'Category Mapping') {
+                    return { wch: 25 };
+                } else if (header.includes('Traffic') || header.includes('Searches')) {
+                    return { wch: 20 }; // Metric columns
+                } else {
+                    return { wch: 40 }; // Wider for facet value lists
+                }
+            });
+            ws3['!cols'] = consolidationColWidths;
+            
+            XLSX.utils.book_append_sheet(wb, ws3, "Category Consolidation");
+            console.log('Category Consolidation sheet added successfully');
+        } else {
+            console.log('No category consolidation data to export');
+        }
+
         XLSX.writeFile(wb, `${fileName}.xlsx`);
+    }
+
+    function createCategoryConsolidationView(data, headers) {
+        /**
+         * Creates a consolidated view where each category mapping appears once,
+         * with all unique facet values aggregated across all facet columns.
+         * This helps users understand what values need to be collected for each category.
+         */
+        
+        // Identify facet columns (exclude metrics, special columns, and KeywordDetails)
+        const excludedColumns = [
+            'Category Mapping',
+            'Monthly Organic Traffic',
+            'Annual Organic Traffic',
+            'Total Monthly Google Searches',
+            'Total Annual Google Searches',
+            'Total On-Site Searches',
+            'Keyword Count',
+            'KeywordDetails',
+            'Derived Facets',
+            'Category & Facet Key'
+        ];
+        
+        const facetColumns = headers.filter(h => 
+            h && h.trim() !== '' && 
+            !excludedColumns.includes(h) &&
+            !h.includes('Traffic') &&
+            !h.includes('Searches') &&
+            !h.includes('Score') &&
+            !h.includes('Count')
+        );
+        
+        // Identify metric columns to aggregate
+        const metricColumns = [
+            'Monthly Organic Traffic',
+            'Annual Organic Traffic',
+            'Total Monthly Google Searches',
+            'Total Annual Google Searches',
+            'Total On-Site Searches'
+        ].filter(col => headers.includes(col));
+        
+        // Group data by Category Mapping
+        const categoryGroups = {};
+        
+        data.forEach(row => {
+            const categoryMapping = row['Category Mapping'];
+            if (!categoryMapping) return;
+            
+            if (!categoryGroups[categoryMapping]) {
+                categoryGroups[categoryMapping] = {
+                    categoryMapping: categoryMapping,
+                    facetValues: {},
+                    metrics: {}
+                };
+                
+                // Initialize sets for each facet column
+                facetColumns.forEach(col => {
+                    categoryGroups[categoryMapping].facetValues[col] = new Set();
+                });
+                
+                // Initialize metric totals
+                metricColumns.forEach(col => {
+                    categoryGroups[categoryMapping].metrics[col] = 0;
+                });
+            }
+            
+            // Collect all unique facet values for this category
+            facetColumns.forEach(col => {
+                const value = row[col];
+                if (value && String(value).trim() !== '') {
+                    // Remove HTML tags if present
+                    const cleanValue = typeof value === 'string' ? 
+                        String(value).replace(/<[^>]*>?/gm, '').trim() : 
+                        String(value).trim();
+                    
+                    if (cleanValue) {
+                        categoryGroups[categoryMapping].facetValues[col].add(cleanValue);
+                    }
+                }
+            });
+            
+            // Aggregate metrics
+            metricColumns.forEach(col => {
+                const value = row[col];
+                if (value && !isNaN(value)) {
+                    categoryGroups[categoryMapping].metrics[col] += Number(value);
+                }
+            });
+        });
+        
+        // Convert to array format for Excel
+        const consolidatedData = Object.values(categoryGroups).map(group => {
+            const row = {
+                'Category Mapping': group.categoryMapping
+            };
+            
+            // Add aggregated metrics first (before facets for better visibility)
+            metricColumns.forEach(col => {
+                row[col] = group.metrics[col];
+            });
+            
+            // Add each facet column with its unique values (comma-separated)
+            facetColumns.forEach(col => {
+                const values = Array.from(group.facetValues[col]).sort();
+                row[col] = values.length > 0 ? values.join(', ') : '';
+            });
+            
+            return row;
+        });
+        
+        // Sort by traffic/searches (highest first), then alphabetically by category
+        consolidatedData.sort((a, b) => {
+            // Try to sort by traffic metrics (highest first)
+            const trafficColA = metricColumns.find(col => col.includes('Traffic'));
+            if (trafficColA) {
+                const trafficDiff = (b[trafficColA] || 0) - (a[trafficColA] || 0);
+                if (trafficDiff !== 0) return trafficDiff;
+            }
+            
+            // If traffic is equal or not available, sort by searches
+            const searchesColA = metricColumns.find(col => col.includes('Searches'));
+            if (searchesColA) {
+                const searchesDiff = (b[searchesColA] || 0) - (a[searchesColA] || 0);
+                if (searchesDiff !== 0) return searchesDiff;
+            }
+            
+            // Fall back to alphabetical sorting
+            const catA = String(a['Category Mapping']).toLowerCase();
+            const catB = String(b['Category Mapping']).toLowerCase();
+            return catA.localeCompare(catB);
+        });
+        
+        return consolidatedData;
     }
 
     function exportFacetPotentialToExcel(data, headers, fileName) {
