@@ -11,6 +11,7 @@
     };
     let overrideRules = [];
     let inProductNameFacets = new Set(); // To store state of "In Product Name" checkboxes
+    let isActiveRulesCollapsed = false; // Track collapsed/expanded state of Active Rules section
     const API_KEY = "my-secret-dev-key"; 
     const ui = {
         controlsContainer: document.getElementById('controls-container'),
@@ -430,8 +431,20 @@
         return `<div class="bg-white p-6 rounded-xl shadow-lg" data-report-title="${title}"><div class="flex flex-wrap justify-between items-center mb-6 border-b pb-4 gap-4"><div><h2 class="text-2xl font-bold">${title}</h2><p class="text-sm text-gray-600 mt-1">${subtitle}</p></div><div class="flex items-center space-x-2">${saveButton}<button data-export-type="excel" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export Excel</button><button data-export-type="json" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export JSON</button><button data-export-type="pdf" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export PDF</button><button class="back-to-lenses-btn text-sm font-semibold text-blue-600 hover:underline">&larr; Back to Lenses</button></div></div>${extraDescription ? `<div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 p-3 rounded-md mb-4">${extraDescription}</div>` : ''}<div id="manual-overrides-container" class="mb-6"></div><div class="flex flex-wrap justify-between items-center mb-4 gap-4"><div class="flex items-center gap-2"><input type="text" id="table-search-input" placeholder="Filter with text or regex..." class="w-full md:w-auto p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500">${regexTipHtml}</div><div class="flex items-center gap-4">${customContent}${timeframeToggle}</div></div><div id="interactive-table-wrapper"></div><div id="pagination-controls-wrapper" class="flex flex-wrap justify-between items-center mt-4 gap-4"></div></div>`;
     }
 
-    function exportCategoryOverhaulToExcel(data, headers, fileName) {
-        const wb = XLSX.utils.book_new();
+    async function exportCategoryOverhaulToExcel(data, headers, fileName) {
+        if (typeof ExcelJS === 'undefined') {
+            console.error('ExcelJS not loaded, falling back to basic export');
+            // Fallback to basic XLSX export without colors
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, ws, "Category Matrix");
+            XLSX.writeFile(wb, `${fileName}.xlsx`);
+            return;
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'SEO Analyzer';
+        workbook.created = new Date();
 
         const createRowKey = (row, keyHeaders) => {
             const keyParts = [];
@@ -444,6 +457,8 @@
             return keyParts.join(' | ');
         };
 
+        // Sheet 1: Category Matrix
+        const worksheet1 = workbook.addWorksheet('Category Matrix');
         const topLevelHeaders = headers.filter(h => h !== ''); 
         const keyGenHeaders = topLevelHeaders.filter(h => !h.includes('Traffic') && !h.includes('Searches') && !h.includes('Score'));
         const topLevelData = data.map(row => {
@@ -455,26 +470,21 @@
             newRow['Category & Facet Key'] = createRowKey(row, keyGenHeaders);
             return newRow;
         });
-        const ws1 = XLSX.utils.json_to_sheet(topLevelData, { header: [...topLevelHeaders, 'Category & Facet Key'] });
-        XLSX.utils.book_append_sheet(wb, ws1, "Category Matrix");
-
-        const keywordBreakdownData = [];
-        const annualSuffix = tableState.timeframe === 'annual' ? 'Annual' : 'Monthly';
         
+        const allHeaders1 = [...topLevelHeaders, 'Category & Facet Key'];
+        worksheet1.columns = allHeaders1.map(h => ({ header: h, key: h, width: 15 }));
+        worksheet1.addRows(topLevelData);
+
+        // Sheet 2: Keyword Breakdown
+        const keywordBreakdownData = [];
         data.forEach(parentRow => {
             const rowKey = createRowKey(parentRow, keyGenHeaders);
             if (parentRow.KeywordDetails && parentRow.KeywordDetails.length > 0) {
-                // Debug: Log the first keyword detail to see its structure
-                if (keywordBreakdownData.length === 0) {
-                    console.log('Sample KeywordDetail structure:', parentRow.KeywordDetails[0]);
-                    console.log('Sample Keyword value:', parentRow.KeywordDetails[0]['Keyword']);
-                }
                 parentRow.KeywordDetails.forEach(keywordRow => {
                     const newBreakdownRow = {};
                     keyGenHeaders.forEach(pHeader => {
                         newBreakdownRow[pHeader] = parentRow[pHeader];
                     });
-                    // Use the static field names that Python creates
                     newBreakdownRow['Keyword'] = keywordRow['Keyword'] || '';
                     newBreakdownRow['Monthly Google Searches'] = keywordRow['Monthly Google Searches'] || 0;
                     newBreakdownRow['On-Site Searches'] = keywordRow['On-Site Searches'] || 0;
@@ -488,22 +498,12 @@
             }
         });
 
-        console.log('Created keywordBreakdownData with', keywordBreakdownData.length, 'rows');
         if (keywordBreakdownData.length > 0) {
-            console.log('Sample breakdown row structure:', Object.keys(keywordBreakdownData[0]));
-            console.log('Sample breakdown row Keyword value:', keywordBreakdownData[0]['Keyword']);
-        }
-        if (keywordBreakdownData.length > 0) {
-            console.log('Creating Excel sheet for Keyword Breakdown...');
-            
-            // Reorder columns to put Keyword in Column B
+            const worksheet2 = workbook.addWorksheet('Keyword Breakdown');
             const reorderedData = keywordBreakdownData.map(row => {
                 const reorderedRow = {};
-                // First column: Category & Facet Key
                 reorderedRow['Category & Facet Key'] = row['Category & Facet Key'];
-                // Second column: Keyword
                 reorderedRow['Keyword'] = row['Keyword'];
-                // Add all other columns in their original order
                 Object.keys(row).forEach(key => {
                     if (key !== 'Category & Facet Key' && key !== 'Keyword') {
                         reorderedRow[key] = row[key];
@@ -512,60 +512,139 @@
                 return reorderedRow;
             });
             
-            const ws2 = XLSX.utils.json_to_sheet(reorderedData);
-            
-            // Set column widths to ensure all columns are visible
-            const colWidths = [];
-            const headers = Object.keys(reorderedData[0] || {});
-            headers.forEach(header => {
-                // Set reasonable column widths based on content
-                if (header === 'Keyword') {
-                    colWidths.push({ wch: 30 }); // Wider for keywords
-                } else if (header === 'URL') {
-                    colWidths.push({ wch: 50 }); // Wider for URLs
-                } else if (header === 'Category & Facet Key') {
-                    colWidths.push({ wch: 25 }); // Wider for category keys
-                } else if (header.includes('Traffic') || header.includes('Searches')) {
-                    colWidths.push({ wch: 15 }); // Medium for numbers
-                } else {
-                    colWidths.push({ wch: 12 }); // Default width
-                }
+            const allHeaders2 = Object.keys(reorderedData[0] || {});
+            worksheet2.columns = allHeaders2.map(h => {
+                let width = 12;
+                if (h === 'Keyword') width = 30;
+                else if (h === 'URL') width = 50;
+                else if (h === 'Category & Facet Key') width = 25;
+                else if (h.includes('Traffic') || h.includes('Searches')) width = 15;
+                return { header: h, key: h, width };
             });
-            ws2['!cols'] = colWidths;
-            
-            console.log('Excel sheet created, appending to workbook...');
-            XLSX.utils.book_append_sheet(wb, ws2, "Keyword Breakdown");
-            console.log('Sheet appended successfully');
-        } else {
-            console.log('No keyword breakdown data to export');
+            worksheet2.addRows(reorderedData);
         }
 
-        // Third sheet: Category Consolidation View
-        console.log('Creating Category Consolidation view...');
+        // Sheet 3: Category Consolidation with colors
+        console.log('Creating Category Consolidation view with colors...');
         const categoryConsolidationData = createCategoryConsolidationView(data, headers);
         if (categoryConsolidationData.length > 0) {
-            const ws3 = XLSX.utils.json_to_sheet(categoryConsolidationData);
-            
-            // Set column widths for readability
-            const consolidationHeaders = Object.keys(categoryConsolidationData[0] || {});
-            const consolidationColWidths = consolidationHeaders.map(header => {
-                if (header === 'Category Mapping') {
-                    return { wch: 25 };
-                } else if (header.includes('Traffic') || header.includes('Searches')) {
-                    return { wch: 20 }; // Metric columns
-                } else {
-                    return { wch: 40 }; // Wider for facet value lists
-                }
-            });
-            ws3['!cols'] = consolidationColWidths;
-            
-            XLSX.utils.book_append_sheet(wb, ws3, "Category Consolidation");
-            console.log('Category Consolidation sheet added successfully');
-        } else {
-            console.log('No category consolidation data to export');
+            await addColoredConsolidationSheetToWorkbook(workbook, categoryConsolidationData);
         }
 
-        XLSX.writeFile(wb, `${fileName}.xlsx`);
+        // Write file
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${fileName}.xlsx`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+    }
+
+    async function addColoredConsolidationSheetToWorkbook(workbook, categoryConsolidationData) {
+        const worksheet = workbook.addWorksheet('Category Consolidation');
+        
+        // Remove _facetPercentages from display data
+        const cleanData = categoryConsolidationData.map(row => {
+            const { _facetPercentages, ...cleanRow } = row;
+            return cleanRow;
+        });
+        
+        const allHeaders = Object.keys(cleanData[0] || {});
+        const facetStartIndex = allHeaders.findIndex(h => 
+            !h.includes('Category Mapping') && 
+            !h.includes('Traffic') && 
+            !h.includes('Searches')
+        );
+        
+        // Helper function to get color based on percentage
+        const getColorForPercentage = (percentage) => {
+            if (percentage >= 75) return { argb: 'FF27AE60' }; // Green (75-100%) - Highest priority
+            if (percentage >= 50) return { argb: 'FF82E0AA' }; // Light Green (50-75%) - High priority
+            if (percentage >= 25) return { argb: 'FFFFD93D' }; // Yellow (25-50%) - Medium priority
+            if (percentage >= 10) return { argb: 'FFFFA07A' }; // Light Coral (10-25%) - Low priority
+            return { argb: 'FFFF6B6B' }; // Red (<10%) - Lowest priority
+        };
+        
+        // Set up columns first (without adding header row yet)
+        worksheet.columns = allHeaders.map(h => {
+            let width = 15;
+            if (h === 'Category Mapping') width = 25;
+            else if (h.includes('Traffic') || h.includes('Searches')) width = 20;
+            else width = 40;
+            return { header: '', key: h, width }; // Empty header - we'll add it manually
+        });
+        
+        // Add legend row at position 1
+        const legendRow = worksheet.getRow(1);
+        legendRow.values = ['LEGEND: Facet columns color-coded by traffic contribution % - 🟢 Green: 75-100% (Highest) | 🟢 Light Green: 50-75% | 🟡 Yellow: 25-50% | 🟠 Coral: 10-25% | 🔴 Red: <10% (Lowest)'];
+        legendRow.height = 30;
+        legendRow.font = { bold: true, size: 11 };
+        legendRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFE8F5E9' }
+        };
+        legendRow.alignment = { wrapText: true, vertical: 'middle', horizontal: 'left' };
+        worksheet.mergeCells(1, 1, 1, allHeaders.length);
+        
+        // Add empty row at position 2
+        worksheet.getRow(2).values = [];
+        
+        // Add header row at position 3
+        const headerRow = worksheet.getRow(3);
+        headerRow.values = allHeaders;
+        headerRow.font = { bold: true };
+        headerRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFD3D3D3' }
+        };
+        
+        // Add data rows starting from row 4 with coloring
+        cleanData.forEach((dataRow, rowIndex) => {
+            const rowNumber = rowIndex + 4; // Start at row 4
+            const excelRow = worksheet.getRow(rowNumber);
+            
+            // Set values for this row
+            const rowValues = [];
+            allHeaders.forEach(header => {
+                rowValues.push(dataRow[header] || '');
+            });
+            excelRow.values = rowValues;
+            
+            const originalRow = categoryConsolidationData[rowIndex];
+            
+            // Apply coloring to facet columns
+            if (facetStartIndex >= 0 && originalRow._facetPercentages) {
+                allHeaders.forEach((header, colIndex) => {
+                    if (colIndex >= facetStartIndex && originalRow._facetPercentages[header] !== undefined) {
+                        const cell = excelRow.getCell(colIndex + 1);
+                        const cellValue = dataRow[header];
+
+                        if (cellValue === null || cellValue === undefined || String(cellValue).trim() === '') {
+                            cell.fill = {
+                                type: 'pattern',
+                                pattern: 'solid',
+                                fgColor: { argb: 'FF000000' }
+                            };
+                            cell.font = { color: { argb: 'FFFFFFFF' } };
+                        } else {
+                            const percentage = originalRow._facetPercentages[header];
+                            const bgColor = getColorForPercentage(percentage);
+                            cell.fill = {
+                                type: 'pattern',
+                                pattern: 'solid',
+                                fgColor: bgColor
+                            };
+                            cell.font = { color: { argb: 'FF000000' } };
+                        }
+                        cell.alignment = { wrapText: true, vertical: 'top' };
+                    }
+                });
+            }
+        });
     }
 
     function createCategoryConsolidationView(data, headers) {
@@ -607,6 +686,9 @@
             'Total On-Site Searches'
         ].filter(col => headers.includes(col));
         
+        // Determine primary traffic column for percentage calculations
+        const primaryTrafficCol = metricColumns.find(col => col.includes('Traffic')) || metricColumns[0];
+        
         // Group data by Category Mapping
         const categoryGroups = {};
         
@@ -618,12 +700,14 @@
                 categoryGroups[categoryMapping] = {
                     categoryMapping: categoryMapping,
                     facetValues: {},
-                    metrics: {}
+                    metrics: {},
+                    facetTraffic: {} // Track traffic contribution per facet
                 };
                 
                 // Initialize sets for each facet column
                 facetColumns.forEach(col => {
                     categoryGroups[categoryMapping].facetValues[col] = new Set();
+                    categoryGroups[categoryMapping].facetTraffic[col] = 0;
                 });
                 
                 // Initialize metric totals
@@ -643,6 +727,12 @@
                     
                     if (cleanValue) {
                         categoryGroups[categoryMapping].facetValues[col].add(cleanValue);
+                        
+                        // Track traffic for rows that have this facet populated
+                        const trafficValue = row[primaryTrafficCol];
+                        if (trafficValue && !isNaN(trafficValue)) {
+                            categoryGroups[categoryMapping].facetTraffic[col] += Number(trafficValue);
+                        }
                     }
                 }
             });
@@ -659,7 +749,8 @@
         // Convert to array format for Excel
         const consolidatedData = Object.values(categoryGroups).map(group => {
             const row = {
-                'Category Mapping': group.categoryMapping
+                'Category Mapping': group.categoryMapping,
+                _facetPercentages: {} // Store percentages for formatting (not displayed as column)
             };
             
             // Add aggregated metrics first (before facets for better visibility)
@@ -667,10 +758,20 @@
                 row[col] = group.metrics[col];
             });
             
+            // Calculate traffic percentages for each facet
+            const totalTraffic = group.metrics[primaryTrafficCol] || 0;
+            
             // Add each facet column with its unique values (comma-separated)
             facetColumns.forEach(col => {
                 const values = Array.from(group.facetValues[col]).sort();
                 row[col] = values.length > 0 ? values.join(', ') : '';
+                
+                // Calculate percentage of traffic associated with this facet
+                if (totalTraffic > 0) {
+                    row._facetPercentages[col] = (group.facetTraffic[col] / totalTraffic) * 100;
+                } else {
+                    row._facetPercentages[col] = 0;
+                }
             });
             
             return row;
@@ -1146,8 +1247,14 @@
                                     </div>
                                 </div>
                                 <div class="mt-4">
-                                    <div class="flex justify-between items-center mb-2"><h4 class="font-semibold">Active Rules</h4>${overrideRules.length > 0 ? '<button id="clear-all-rules-btn" class="text-xs text-red-600 hover:underline">Clear All Rules</button>' : ''}</div>
-                                    <ul id="active-rules-list" class="bg-white rounded-md border">${overrideRules.length > 0 ? activeRulesHtml : '<li class="p-3 text-gray-500 text-center">No active rules.</li>'}</ul>
+                                    <div class="flex justify-between items-center mb-2">
+                                        <div class="flex items-center gap-2">
+                                            <h4 class="font-semibold">Active Rules</h4>
+                                            ${overrideRules.length > 0 ? `<button id="toggle-active-rules-btn" class="text-xs text-blue-600 hover:underline" title="${isActiveRulesCollapsed ? 'Expand' : 'Collapse'}">${isActiveRulesCollapsed ? '▶' : '▼'}</button>` : ''}
+                                        </div>
+                                        ${overrideRules.length > 0 ? '<button id="clear-all-rules-btn" class="text-xs text-red-600 hover:underline">Clear All Rules</button>' : ''}
+                                    </div>
+                                    <ul id="active-rules-list" class="bg-white rounded-md border ${isActiveRulesCollapsed ? 'hidden' : ''}">${overrideRules.length > 0 ? activeRulesHtml : '<li class="p-3 text-gray-500 text-center">No active rules.</li>'}</ul>
                                 </div>
                             </div>
                             <div id="column-ops-panel" class="tab-panel hidden">
@@ -1187,6 +1294,27 @@
                 document.getElementById(button.dataset.tab + '-panel')?.classList.remove('hidden');
             });
         });
+
+        // Toggle Active Rules expand/collapse
+        const toggleActiveRulesBtn = document.getElementById('toggle-active-rules-btn');
+        if (toggleActiveRulesBtn) {
+            toggleActiveRulesBtn.addEventListener('click', () => {
+                // Toggle the state variable
+                isActiveRulesCollapsed = !isActiveRulesCollapsed;
+                
+                // Update the DOM immediately
+                const activeRulesList = document.getElementById('active-rules-list');
+                if (isActiveRulesCollapsed) {
+                    activeRulesList.classList.add('hidden');
+                    toggleActiveRulesBtn.textContent = '▶';
+                    toggleActiveRulesBtn.title = 'Expand';
+                } else {
+                    activeRulesList.classList.remove('hidden');
+                    toggleActiveRulesBtn.textContent = '▼';
+                    toggleActiveRulesBtn.title = 'Collapse';
+                }
+            });
+        }
 
         const populateValueListbox = () => {
             const sourceColumnSelect = document.getElementById('rule-source-column');
@@ -1299,6 +1427,7 @@
         
         document.getElementById('clear-all-rules-btn')?.addEventListener('click', () => {
             overrideRules = [];
+            isActiveRulesCollapsed = false; // Reset to expanded state when rules are cleared
             handleRuleChange();
         });
 
@@ -1505,7 +1634,10 @@
                 const transformedData = transformDataForTimeframe(processedData, tableState.timeframe);
                 
                 if (exportType === 'excel') {
-                    exportCategoryOverhaulToExcel(transformedData, headersToExport, fileName);
+                    exportCategoryOverhaulToExcel(transformedData, headersToExport, fileName).catch(err => {
+                        console.error('Error exporting to Excel:', err);
+                        alert('There was an error exporting to Excel. Please try again.');
+                    });
                 } else if (exportType === 'json') {
                     exportCategoryOverhaulToJson(transformedData, headersToExport, fileName);
                 }

@@ -1,0 +1,982 @@
+{
+  "validation_timestamp": "2025-11-13T13:58:36.488953",
+  "analysis_timestamp": "2025-11-13T13:58:36.484056",
+  "total_rows_validated": 46,
+  "summary": {
+    "total_rows": 46,
+    "correct_mappings": 0,
+    "incorrect_mappings": 46,
+    "accuracy_percentage": 0.0,
+    "common_issues": {
+      "No category could be extracted from URL": 46
+    }
+  },
+  "validation_results": [
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wood Fillers",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Decking Paint Stain",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Woodcare.Cat",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wood Stain.Cat",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wood Glues",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wood Varnish.Cat",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wood Oil.Cat",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Decking Oil",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wood Preservatives Treatments.Cat",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Woodworm Treatment",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Knotting Solution",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wood Wax.Cat",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Teak Oil",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Decking Treatment",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Exterior Woodcare",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Yacht Varnish",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Varnish",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wood Polish.Cat",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wood Stain",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Decking Sealer Protector",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Stains",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Dyes",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Oils",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wood Wax",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Floor Wax",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wood Treatment",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wood Oil",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Danish Oil",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Tung Oil",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Interior Varnish",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Woodcare",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Preservers",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wood Dye",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Floor Varnish",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Cleaners",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Exterior Wood Varnish",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wood Preservatives+Treatment",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Interior Woodcare",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wax Oil",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Polishes",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Waxes",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Floor",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Lacquers",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Polishes Waxes",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "French Polish",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Interior Wood Finishes",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    }
+  ]
+}
