@@ -578,8 +578,8 @@
         
         // Add legend row at position 1
         const legendRow = worksheet.getRow(1);
-        legendRow.values = ['LEGEND: Facet columns color-coded by traffic contribution % - 🟢 Green: 75-100% (Highest) | 🟢 Light Green: 50-75% | 🟡 Yellow: 25-50% | 🟠 Coral: 10-25% | 🔴 Red: <10% (Lowest)'];
-        legendRow.height = 30;
+        legendRow.values = ['LEGEND: Facet columns color-coded by traffic contribution % - 🟢 Green: 75-100% (Highest) | 🟢 Light Green: 50-75% | 🟡 Yellow: 25-50% | 🟠 Coral: 10-25% | 🔴 Red: <10% (Lowest). Facet values within each cell are ordered by traffic (highest first).'];
+        legendRow.height = 40;
         legendRow.font = { bold: true, size: 11 };
         legendRow.fill = {
             type: 'pattern',
@@ -701,13 +701,15 @@
                     categoryMapping: categoryMapping,
                     facetValues: {},
                     metrics: {},
-                    facetTraffic: {} // Track traffic contribution per facet
+                    facetTraffic: {}, // Track traffic contribution per facet column
+                    facetValueTraffic: {} // Track traffic per individual facet value
                 };
                 
-                // Initialize sets for each facet column
+                // Initialize sets and maps for each facet column
                 facetColumns.forEach(col => {
                     categoryGroups[categoryMapping].facetValues[col] = new Set();
                     categoryGroups[categoryMapping].facetTraffic[col] = 0;
+                    categoryGroups[categoryMapping].facetValueTraffic[col] = {}; // Map of value -> traffic
                 });
                 
                 // Initialize metric totals
@@ -731,7 +733,14 @@
                         // Track traffic for rows that have this facet populated
                         const trafficValue = row[primaryTrafficCol];
                         if (trafficValue && !isNaN(trafficValue)) {
-                            categoryGroups[categoryMapping].facetTraffic[col] += Number(trafficValue);
+                            const traffic = Number(trafficValue);
+                            categoryGroups[categoryMapping].facetTraffic[col] += traffic;
+                            
+                            // Track traffic per individual facet value
+                            if (!categoryGroups[categoryMapping].facetValueTraffic[col][cleanValue]) {
+                                categoryGroups[categoryMapping].facetValueTraffic[col][cleanValue] = 0;
+                            }
+                            categoryGroups[categoryMapping].facetValueTraffic[col][cleanValue] += traffic;
                         }
                     }
                 }
@@ -761,10 +770,21 @@
             // Calculate traffic percentages for each facet
             const totalTraffic = group.metrics[primaryTrafficCol] || 0;
             
-            // Add each facet column with its unique values (comma-separated)
+            // Add each facet column with its unique values (comma-separated, sorted by traffic)
             facetColumns.forEach(col => {
-                const values = Array.from(group.facetValues[col]).sort();
-                row[col] = values.length > 0 ? values.join(', ') : '';
+                const values = Array.from(group.facetValues[col]);
+                
+                // Sort values by traffic (highest first), then alphabetically as tiebreaker
+                const sortedValues = values.sort((a, b) => {
+                    const trafficA = group.facetValueTraffic[col][a] || 0;
+                    const trafficB = group.facetValueTraffic[col][b] || 0;
+                    if (trafficB !== trafficA) {
+                        return trafficB - trafficA; // Descending by traffic
+                    }
+                    return a.localeCompare(b); // Alphabetical tiebreaker
+                });
+                
+                row[col] = sortedValues.length > 0 ? sortedValues.join(', ') : '';
                 
                 // Calculate percentage of traffic associated with this facet
                 if (totalTraffic > 0) {
