@@ -1,0 +1,3250 @@
+{
+  "validation_timestamp": "2025-11-17T15:07:08.751978",
+  "analysis_timestamp": "2025-11-17T15:07:08.741321",
+  "total_rows_validated": 154,
+  "summary": {
+    "total_rows": 154,
+    "correct_mappings": 0,
+    "incorrect_mappings": 154,
+    "accuracy_percentage": 0.0,
+    "common_issues": {
+      "No category could be extracted from URL": 154
+    }
+  },
+  "validation_results": [
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wood Fillers",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Expanding Foams",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Decorators Caulk",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sealants",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Tile Adhesives",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Duct Tape",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Diy1625690.Cat",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Masking Tape",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Grab Adhesives",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Double Sided Tape",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wood Glues",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Expanding Foam Guns",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Multi Purpose Fillers",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Siliconing Tools",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Contact Adhesives",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Flashing Tape",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Plasterboard Adhesives",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wallpaper Paste",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Packing Tape",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Caulking Guns",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Tile Trims",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Silicone Remover",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Grout",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Grout Pens",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Plasterboard Jointing Tape",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Tile Floor Sealer",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sealants.Cat",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Adhesives Glues",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Safety Hazard Tapes",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "General Adhesives Glue",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Cleaners",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Tapes",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Super Glue",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wall Floor Tile Adhesive Grout",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Hybrid Sealants Adhesives",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Mirror Adhesives",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "High Strength Adhesives",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Tile Adhesive Grout",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Pvccleaner Pvc Frame Non Abrasive Solvent Based Cleaner 1L Bottle",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Ral Colour Silicones",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Hook Loop Tape",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Plaster Board Tape",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Fire Heat Sealants",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Gapfiller Soudal Upvc Gap Filler",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Building Roofing Sealants",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Fillers Foams Putty",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sili2Oak Silirub 2 Silicone Sealant Oak",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Flooring Adhesives+Sealants",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sclean1 High Performance Upvc Solvent Cleaner 1L",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Soudafoamwdsws Soudafoam Window Door Expanding Foam Gap Filler Gun Grade 750Ml",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sililmnbw Brilliant White Silirub Lmn Silicone 300Ml",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Kitchen Bathroom Silicone Sealants",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sililmnagy Agate Grey Silirub Lmn Silicone Sealant 300Ml",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Foil Insulation Tape",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sealants Adhesives",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Roof+Gutter Sealants",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Fixallhitack3Promo White Fix All High Tack Sealant Adhesive 3 X 290Ml Saver Bundle",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Ultrawipepower Ultragrime Pro Power Scrub Xxl Wipes 80 Pack",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Pfredgun Soudal Pro Pu Foam Applicator Gun",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Glassmirror Soudal Specialist Glass Mirror Spray Cleaner 1L",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sili2Ro Silirub 2 Silicone Sealant Rosewood",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "21025Bdsx Tn563 Pvc Tape Black Length 25 M",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sdact200 Soudal Superglue Activator",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Fixing Repair Tape",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Tikimt25 Masking Tape",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sanitary Sealants",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Repair Tape",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Adhesives",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sililmnca Caramel Silirub Lmn Silicone Sealant 300Ml",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Carpet Tape",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Pvccreamcl Pvc Specialist Cream Cleaner 1L",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sika Sealants Adhesives",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "High Temperature Fire Rated Silicone",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Caulks",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "General Sealants",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Silicone",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Repexcementgy Soudal Repair Express Cement Grey",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Ws Selfex 33546 10 Walther Strong Self Expanding 10Mm Foam Tape 4 6M",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Anti Pick Sealants Adhesives",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Marine",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Silspray Soudal Silicone Sealant Spray",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sleadpb Soudalead Pb Lead Sealant",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Guttersealbk Black Gutter Roof Trade Sealant 290Ml",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sili2Angy Silirub 2 Silicone Sealant Anthracite Grey",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Soudafoamxtra Soudafoam Professional Quality Expanding Hand Held Foam 750Ml",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Glasmirspray Glass And Mirror Spray Cleaner 750Ml",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Soudafil900 Soudal Repair Express Plaster",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Pva Glues+Adhesives",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Silirubncl Clear Silirub N Silicone 300Ml",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Gclean1 High Performance Glass Cleaner Spray 1L",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Ga 5 Pro Grp Acetone 5 Litre",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sili2Bf Silirub 2 Silicone Sealant Buff",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sgf750 Soudal Trade B2 Expanding Foam Gun Grade",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Cloth Duct Tape",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Fixallturbo3Promo White Fix All Turbo Sealant Adhesive 3 X 290Ml Saver Bundle",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Ws Act 30X25Pr Walther Strong Iso Acoustic Tape Length 25M X Width 30Mm",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Silirubcolorgy2 Silirub Colour Silicone Sealant Slate Grey",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Stayfreshicyw Soudal Stay Fresh Anti Mould Silicone Sealant Ice White",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Shower Waterproofing Kits",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wall Tile Adhesive Grout",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Repexrcementbe Soudal Repair Express Cement Beige",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Building Tape",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sdsg20Thick Soudal Superglue High Viscosity 20 Gram",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Fixallturbo Fix All Turbo Adhesive White",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Fixallcrystal3Prom Fix All Crystal Clear Sealant Adhesive Tripple Pack",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Silirubnbk Black Silirub Low Modulus Neutral Cure Silicone Sealant 300Ml Tube",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sililmncr Cream Silirub Lmn Silicone Sealant 300Ml",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Silicones Sealants",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sacryrub Acryrub Sealant Filler Extra White",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sealant Foam Tools",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Silirubpccl Silirub Lmn Polycarbonate Sealant 300Ml",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wallpaper Adhesive",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Fixallturboblk Fix All Turbo Adhesive Black",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Flooring Adhesives",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "11050Bdsx Tn573 Pvc Tape Black",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Resin Accessories",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Pvcfoilspraycln Foil Safe Spray Cleaner 750Ml",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sdc300Wh Decorators Caulk",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Fixallwh Classic Fix All Flexi Sealant Adhesive",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Gh 5 Pro Grp Hardener Catalyst 5 Kilogram",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Ws Selfex 33546 Walther Strong Self Expanding 25Mm Foam Tape 4 6M",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Kitchen+Bathroom Sealants",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Silirubngy Anthracite Grey Silirub Low Modulus Neutral Cure Silicone Sealant 300Ml Tube",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Wood Glues+Adhesives",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Silicone Sealants",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sealants Silicone Tools",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Silicones Adhesives And Cleaners",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Ws Act 50X25Pr Walther Strong Iso Acoustic Tape Length 25M X Width 50Mm",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sgfc500 Soudafoam Gun Foam Cleaner",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Silicone Sealant Removal",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sili2Wh Silirub 2 Silicone Sealant Brilliant White",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Silirubnbn Silirub N Silicone Sealant Brown",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Soudasealswsag Soudaseal Sealant Anthracite Grey",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Ultragrime Ultragrime Pro Multiuse Xxl Wipes 100 Pack",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Door+Window Sealants",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Expfoam600 Soudafoam Gap Filler Genius Gun",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Fixallcrystal Fix All Crystal Clear Sealant Adhesive",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Floor Adhesives",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Fixallinvhitack Fix All High Tack Adhesive Sealant Clear",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Alu Foil 75X45 Walther Strong Premium Aluminium 75Mm Foil Tape 45M",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Adhesives+Glues",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Adhesives Sealants",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "51012Bdsx Tn563 Pvc Tape Black Length 12 M",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "21025Wdsx Tn563 Pvc Tape White Length 25 M",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sealant Remover",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Sealant Accessories",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Ril Smoo Walther Strong Rilicone Smoothing Spray 500Ml",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Rcwba10F Rubbercover Water Based Adhesive 10 Litre",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Putty",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Ppcox400 Cox 400Ml Steel Silicone Cartridge Gun With Orange Handle",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Pms273Bk Soudal Smx 506 Glazing Sealant Black",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Foam+Sealant Guns",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Gh 1 Pro Grp Hardener Catalyst 1 Kilogram",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    },
+    {
+      "row_data": {
+        "keyword": "",
+        "url": "",
+        "category_mapping": "Gp 14Pro38X50 1 Walther Strong Premium Masking Tape 38Mm X 50M",
+        "expected_category": null
+      },
+      "validation": {
+        "is_correct": false,
+        "issue": "No category could be extracted from URL"
+      },
+      "url_analysis": {
+        "domain": "",
+        "path_parts": [
+          ""
+        ],
+        "category_hierarchy": [],
+        "category_ids": [],
+        "query_parameters": {}
+      }
+    }
+  ]
+}

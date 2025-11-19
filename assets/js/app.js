@@ -7,7 +7,8 @@
         fullData: [], headers: [], sortKey: null, sortDir: 'desc',
         searchTerm: '', searchKey: null, currentPage: 1, rowsPerPage: 25,
         timeframe: 'monthly',
-        hideFeatures: false
+        hideFeatures: false,
+        hideZeroValueColumns: false
     };
     let overrideRules = [];
     let inProductNameFacets = new Set(); // To store state of "In Product Name" checkboxes
@@ -2477,6 +2478,10 @@
                     <input type="checkbox" id="hide-features-column" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" ${tableState.hideFeatures ? 'checked' : ''}>
                     <label for="hide-features-column" class="ml-2 block text-sm text-gray-900">Hide Features column</label>
                 </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="hide-zero-value-columns" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" ${tableState.hideZeroValueColumns ? 'checked' : ''}>
+                    <label for="hide-zero-value-columns" class="ml-2 block text-sm text-gray-900">Hide Columns With 0 Values</label>
+                </div>
             </div>`;
         
         ui.resultsContainer.innerHTML = createReportContainer('Category Overhaul Matrix', subtitle, customContent, explainer);
@@ -2487,12 +2492,38 @@
             displayHeaders = displayHeaders.filter(h => h !== 'Features' && h !== 'Discovered Features');
         }
         
+        // Filter out columns with all blank/0 values if the option is enabled
+        if (tableState.hideZeroValueColumns && transformedData.length > 0) {
+            displayHeaders = displayHeaders.filter(header => {
+                // Always keep certain important columns
+                const keepColumns = ['Category Mapping', 'Derived Facets', 'Sub Type', 'KeywordDetails'];
+                if (keepColumns.includes(header) || header.includes('Traffic') || header.includes('Searches')) {
+                    return true;
+                }
+                
+                // Check if all values in this column are blank/0
+                const hasNonBlankValue = transformedData.some(row => {
+                    const value = row[header];
+                    // Consider a value as non-blank if it's not null, undefined, empty string, or 0
+                    return value !== null && value !== undefined && value !== '' && value !== 0;
+                });
+                
+                return hasNonBlankValue;
+            });
+        }
+        
         const defaultSortKey = displayHeaders.find(h => h.includes('Organic Traffic'));
         initializeTable(transformedData, displayHeaders, defaultSortKey, 'Category Mapping');
         
         // Add event listener for column visibility toggle
         document.getElementById('hide-features-column')?.addEventListener('change', (e) => {
             tableState.hideFeatures = e.target.checked;
+            renderCategoryOverhaulMatrixView();
+        });
+        
+        // Add event listener for hide zero value columns toggle
+        document.getElementById('hide-zero-value-columns')?.addEventListener('change', (e) => {
+            tableState.hideZeroValueColumns = e.target.checked;
             renderCategoryOverhaulMatrixView();
         });
         tableState.hideZeroTraffic = false; 
