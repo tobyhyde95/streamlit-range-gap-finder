@@ -545,6 +545,16 @@
             worksheet2.addRows(reorderedData);
         }
 
+        const categoryFacetPairs = buildCategoryFacetPairs(data, headers);
+        if (categoryFacetPairs.length > 0) {
+            const worksheetPairs = workbook.addWorksheet('Category-Facet Map');
+            worksheetPairs.columns = [
+                { header: 'Category Mapping', key: 'Category Mapping', width: 30 },
+                { header: 'Facet Value', key: 'Facet Value', width: 40 }
+            ];
+            worksheetPairs.addRows(categoryFacetPairs);
+        }
+
         // Sheet 3: Category Consolidation with colors
         console.log('Creating Category Consolidation view with colors...');
         const categoryConsolidationData = createCategoryConsolidationView(data, headers);
@@ -561,6 +571,53 @@
         link.download = `${fileName}.xlsx`;
         link.click();
         window.URL.revokeObjectURL(url);
+    }
+
+    function buildCategoryFacetPairs(data = [], headers = []) {
+        if (!Array.isArray(data) || data.length === 0) return [];
+        const facetColumns = getFacetHeaders(headers);
+        if (facetColumns.length === 0) return [];
+
+        const pairsSet = new Set();
+        const sanitize = value => {
+            if (value === null || value === undefined) return '(Blank)';
+            const cleaned = String(value).replace(/<[^>]*>?/gm, '').trim();
+            return cleaned === '' ? '(Blank)' : cleaned;
+        };
+
+        data.forEach(row => {
+            if (!row) return;
+            const categoryValue = sanitize(row['Category Mapping']);
+            facetColumns.forEach(column => {
+                const cellValue = row[column];
+                if (cellValue === null || cellValue === undefined) return;
+                const values = String(cellValue).split('|').map(v => v.trim()).filter(Boolean);
+                values.forEach(value => {
+                    if (!value) return;
+                    const cleanValue = sanitize(value);
+                    const key = JSON.stringify([categoryValue, cleanValue]);
+                    if (!pairsSet.has(key)) {
+                        pairsSet.add(key);
+                    }
+                });
+            });
+        });
+
+        const pairs = Array.from(pairsSet).map(key => {
+            const [category, facet] = JSON.parse(key);
+            return {
+                'Category Mapping': category,
+                'Facet Value': facet
+            };
+        });
+
+        pairs.sort((a, b) => {
+            const categoryCompare = a['Category Mapping'].localeCompare(b['Category Mapping']);
+            if (categoryCompare !== 0) return categoryCompare;
+            return a['Facet Value'].localeCompare(b['Facet Value']);
+        });
+
+        return pairs;
     }
 
     async function addColoredConsolidationSheetToWorkbook(workbook, categoryConsolidationData) {
@@ -2334,6 +2391,7 @@
         if (!Array.isArray(headers)) return [];
         return headers.filter(h => 
             h &&
+            h !== 'Category Mapping' &&
             h !== 'KeywordDetails' &&
             h !== 'FacetValueDetails' &&
             !h.includes('Traffic') &&
