@@ -11,6 +11,8 @@
         hideZeroValueColumns: false
     };
     let overrideRules = [];
+    let smartRecommendations = [];
+    let smartRecommendationSelections = new Set();
     let inProductNameFacets = new Set(); // To store state of "In Product Name" checkboxes
     let isActiveRulesCollapsed = false; // Track collapsed/expanded state of Active Rules section
     const API_KEY = "my-secret-dev-key"; 
@@ -1640,6 +1642,30 @@
             return;
         }
 
+        if (target.id === 'apply-selected-recommendations') {
+            applySelectedSmartRecommendations();
+            return;
+        }
+
+        if (target.id === 'refresh-smart-recommendations') {
+            smartRecommendationSelections.clear();
+            renderSmartRecommendationsView();
+            showNotification('Recommendations refreshed from the latest data.', 'info');
+            return;
+        }
+
+        const applyRecBtn = target.closest('.apply-recommendation-btn');
+        if (applyRecBtn) {
+            const recId = applyRecBtn.dataset.recId;
+            if (applyRecommendationById(recId)) {
+                showNotification('Recommendation applied via Manual Overrides.', 'success');
+                renderSmartRecommendationsView();
+            } else {
+                showNotification('This recommendation was already applied.', 'info');
+            }
+            return;
+        }
+
         const exportBtn = target.closest('.export-btn');
         if (exportBtn) {
             const exportType = exportBtn.dataset.exportType;
@@ -1697,6 +1723,7 @@
             else if (lensType === 'market-share-group') renderGroupMarketShareView('core');
             else if (lensType === 'category-overhaul') renderCategoryOverhaulMatrixView();
             else if (lensType === 'facet-potential') renderFacetPotentialAnalysisView();
+            else if (lensType === 'smart-recommendations') renderSmartRecommendationsView();
             return;
         } 
         const scopeBtn = target.closest('.scope-toggle-btn');
@@ -1946,6 +1973,8 @@
     function renderInitialControlsView() {
         if (pollingInterval) clearInterval(pollingInterval);
         overrideRules = [];
+        smartRecommendations = [];
+        smartRecommendationSelections = new Set();
         inProductNameFacets = new Set(); // Reset for new analysis
         ui.resultsContainer.classList.add('hidden');
         ui.progressContainer.classList.add('hidden');
@@ -2160,7 +2189,7 @@
             <div class="lens-section">
                 <h3 class="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">Taxonomy & Architecture Analysis</h3>
                 <p class="text-sm text-gray-600 mb-4">This analysis automates a category overhaul by reviewing competitor URLs to extract their category, sub-type, and facet structures, then aggregates organic traffic for each combination. Use this to find high-value taxonomy gaps and inform changes to your site architecture.</p>
-                <div class="grid md:grid-cols-2 gap-6">
+                <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
                     <div data-lens="category-overhaul" class="lens-card p-6 border rounded-lg">
                         <h3 class="font-bold text-xl">Category Overhaul Matrix</h3>
                         <p>Analyse competitor category and facet structures to identify high-traffic taxonomy opportunities and inform site architecture changes.</p>
@@ -2168,6 +2197,10 @@
                     <div data-lens="facet-potential" class="lens-card p-6 border rounded-lg">
                         <h3 class="font-bold text-xl">Facet Potential Analysis</h3>
                         <p>Get a high-level view of which facet <em>types</em> (e.g., Brand, Color) drive the most traffic for each product category.</p>
+                    </div>
+                    <div data-lens="smart-recommendations" class="lens-card p-6 border rounded-lg">
+                        <h3 class="font-bold text-xl">Smart Recommendations</h3>
+                        <p>Approve AI-generated taxonomy clean-up rules to normalise labels, remove SKU noise, and instantly update the Category Overhaul Matrix.</p>
                     </div>
                 </div>
             </div>`;
@@ -2223,6 +2256,335 @@
         };
 
         return dataToAnnualize.map(processObject);
+    }
+
+    function escapeHtml(value) {
+        if (value === null || value === undefined) return '';
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function normalizeValueForGrouping(value) {
+        if (value === null || value === undefined) return '';
+        return String(value)
+            .toLowerCase()
+            .replace(/&/g, ' and ')
+            .replace(/\+/g, ' ')
+            .replace(/[^a-z0-9]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function isFeatureColumn(columnName) {
+        if (!columnName) return false;
+        const normalized = columnName.toLowerCase();
+        return normalized === 'features' || normalized === 'discovered features';
+    }
+
+    function getFacetHeaders(headers = []) {
+        if (!Array.isArray(headers)) return [];
+        return headers.filter(h => 
+            h &&
+            h !== 'KeywordDetails' &&
+            h !== 'FacetValueDetails' &&
+            !h.includes('Traffic') &&
+            !h.includes('Searches') &&
+            !isFeatureColumn(h)
+        );
+    }
+
+    function hasMatchingOverride({ action, sourceColumn, value, newValue = null, targetColumn = null, moveMode = null }) {
+        const trimmedValue = value === null || value === undefined ? '' : String(value).trim();
+        return overrideRules.some(rule => {
+            if (rule.action !== action) return false;
+            if (rule.sourceColumn !== sourceColumn) return false;
+            const ruleValue = rule.value === null || rule.value === undefined ? '' : String(rule.value).trim();
+            if (ruleValue !== trimmedValue) return false;
+            if (action === 'change') {
+                return (rule.newValue || '').trim() === (newValue || '').trim();
+            }
+            if (action === 'move') {
+                return rule.targetColumn === targetColumn && rule.moveMode === moveMode;
+            }
+            return true;
+        });
+    }
+
+    function buildSmartRecommendations(matrixData = [], headers = []) {
+        if (!Array.isArray(matrixData) || matrixData.length === 0) return [];
+        const facetHeaders = getFacetHeaders(headers);
+        if (facetHeaders.length === 0) return [];
+
+        const normalizedGroups = new Map();
+        const columnValueStats = {};
+        const crossColumnValueMap = new Map();
+
+        matrixData.forEach((row, rowIndex) => {
+            facetHeaders.forEach(column => {
+                const rawValue = row[column];
+                if (rawValue === null || rawValue === undefined) return;
+                const values = String(rawValue).split('|').map(v => v.trim()).filter(Boolean);
+                values.forEach(value => {
+                    const normalized = normalizeValueForGrouping(value);
+                    if (!normalized) return;
+                    const groupKey = `${column}||${normalized}`;
+                    let groupEntry = normalizedGroups.get(groupKey);
+                    if (!groupEntry) {
+                        groupEntry = { column, normalized, rows: new Set(), values: new Map() };
+                        normalizedGroups.set(groupKey, groupEntry);
+                    }
+                    groupEntry.rows.add(rowIndex);
+                    let valueEntry = groupEntry.values.get(value);
+                    if (!valueEntry) {
+                        valueEntry = { count: 0, rows: new Set() };
+                        groupEntry.values.set(value, valueEntry);
+                    }
+                    valueEntry.count += 1;
+                    valueEntry.rows.add(rowIndex);
+
+                    if (!crossColumnValueMap.has(normalized)) {
+                        crossColumnValueMap.set(normalized, new Map());
+                    }
+                    const columnMap = crossColumnValueMap.get(normalized);
+                    let columnEntry = columnMap.get(column);
+                    if (!columnEntry) {
+                        columnEntry = { count: 0, rows: new Set(), rawValues: new Map() };
+                        columnMap.set(column, columnEntry);
+                    }
+                    columnEntry.count += 1;
+                    columnEntry.rows.add(rowIndex);
+                    columnEntry.rawValues.set(value, (columnEntry.rawValues.get(value) || 0) + 1);
+
+                    if (column === 'Category Mapping') {
+                        if (!columnValueStats[value]) {
+                            columnValueStats[value] = { count: 0, rows: new Set() };
+                        }
+                        columnValueStats[value].count += 1;
+                        columnValueStats[value].rows.add(rowIndex);
+                    }
+                });
+            });
+        });
+
+        const MAX_RECOMMENDATIONS = 200;
+        const recommendations = [];
+        const addedIds = new Set();
+
+        const createRecommendationId = (...parts) => parts.join('-').replace(/[^a-zA-Z0-9-]+/g, '_');
+
+        normalizedGroups.forEach(groupEntry => {
+            if (recommendations.length >= MAX_RECOMMENDATIONS) return;
+            if (!groupEntry || groupEntry.values.size < 2) return;
+            const sortedValues = [...groupEntry.values.entries()].sort((a, b) => b[1].count - a[1].count);
+            const canonicalValue = sortedValues[0][0];
+
+            sortedValues.slice(1).forEach(([value, meta]) => {
+                if (recommendations.length >= MAX_RECOMMENDATIONS) return;
+                if (value === canonicalValue) return;
+
+                if (hasMatchingOverride({ action: 'change', sourceColumn: groupEntry.column, value, newValue: canonicalValue })) {
+                    return;
+                }
+
+                const recommendationId = createRecommendationId('normalize', groupEntry.column, normalizeValueForGrouping(value), normalizeValueForGrouping(canonicalValue));
+                if (addedIds.has(recommendationId)) return;
+
+                const affectedRows = meta.rows ? meta.rows.size : meta.count;
+                const totalRows = groupEntry.rows ? groupEntry.rows.size : affectedRows;
+                const confidence = Math.min(95, Math.round((affectedRows / Math.max(totalRows, 1)) * 100));
+
+                recommendations.push({
+                    id: recommendationId,
+                    action: 'change',
+                    sourceColumn: groupEntry.column,
+                    value,
+                    newValue: canonicalValue,
+                    affectedRows,
+                    confidence,
+                    recommendationType: 'normalise',
+                    reason: `Standardise "${value}" to match the most common value "${canonicalValue}" seen in ${totalRows} rows.`,
+                });
+                addedIds.add(recommendationId);
+            });
+        });
+
+        Object.entries(columnValueStats).forEach(([value, stats]) => {
+            if (recommendations.length >= MAX_RECOMMENDATIONS) return;
+            if (!value || !stats) return;
+            const trimmedValue = value.trim();
+            if (!trimmedValue) return;
+
+            const appearsProductLike = trimmedValue.length > 40 || /[0-9]/.test(trimmedValue);
+            if (stats.count <= 2 && appearsProductLike) {
+                if (hasMatchingOverride({ action: 'remove', sourceColumn: 'Category Mapping', value: trimmedValue })) {
+                    return;
+                }
+                const recommendationId = createRecommendationId('remove', 'CategoryMapping', normalizeValueForGrouping(trimmedValue));
+                if (addedIds.has(recommendationId)) return;
+
+                recommendations.push({
+                    id: recommendationId,
+                    action: 'remove',
+                    sourceColumn: 'Category Mapping',
+                    value: trimmedValue,
+                    affectedRows: stats.rows ? stats.rows.size : stats.count,
+                    confidence: 65,
+                    recommendationType: 'cleanup',
+                    reason: `This value only appears ${stats.count} time(s) and looks like a specific product/SKU. Removing it keeps the taxonomy focused on categories.`,
+                });
+                addedIds.add(recommendationId);
+            }
+        });
+
+        recommendations.sort((a, b) => b.affectedRows - a.affectedRows);
+
+        crossColumnValueMap.forEach((columnMap, normalized) => {
+            if (recommendations.length >= MAX_RECOMMENDATIONS) return;
+            if (!columnMap || columnMap.size < 2) return;
+
+            const sortedColumns = [...columnMap.entries()].sort((a, b) => b[1].count - a[1].count);
+            const [dominantColumn, dominantData] = sortedColumns[0];
+            if (!dominantData || dominantData.count < 4) return;
+
+            sortedColumns.slice(1).forEach(([sourceColumn, sourceData]) => {
+                if (recommendations.length >= MAX_RECOMMENDATIONS) return;
+                if (!sourceData || sourceColumn === dominantColumn) return;
+                if (sourceData.count < 2) return;
+
+                const dominanceRatio = dominantData.count / sourceData.count;
+                if (dominanceRatio < 1.5 && dominantData.count - sourceData.count < 5) return;
+
+                const sourceTopValue = [...sourceData.rawValues.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+                const targetTopValue = [...dominantData.rawValues.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+                if (!sourceTopValue) return;
+
+                if (hasMatchingOverride({
+                    action: 'move',
+                    sourceColumn,
+                    value: sourceTopValue,
+                    targetColumn: dominantColumn,
+                    moveMode: 'replace'
+                })) {
+                    return;
+                }
+
+                const recommendationId = createRecommendationId('move', sourceColumn, normalizeValueForGrouping(sourceTopValue), dominantColumn);
+                if (addedIds.has(recommendationId)) return;
+
+                const affectedRows = sourceData.rows ? sourceData.rows.size : sourceData.count;
+                const confidence = Math.min(92, Math.round((dominantData.count / (dominantData.count + sourceData.count)) * 100));
+
+                recommendations.push({
+                    id: recommendationId,
+                    action: 'move',
+                    sourceColumn,
+                    targetColumn: dominantColumn,
+                    value: sourceTopValue,
+                    moveMode: 'replace',
+                    targetValueHint: targetTopValue,
+                    affectedRows,
+                    confidence,
+                    recommendationType: 'relocate',
+                    reason: `Appears ${dominantData.count}× in "${dominantColumn}" but only ${sourceData.count}× in "${sourceColumn}". Move it to keep similar values together.`,
+                });
+                addedIds.add(recommendationId);
+            });
+        });
+
+        return recommendations.slice(0, MAX_RECOMMENDATIONS);
+    }
+
+    function updateSmartRecommendationSelectionCount() {
+        const selectionCountEl = document.getElementById('selected-recommendations-count');
+        if (selectionCountEl) {
+            selectionCountEl.textContent = `${smartRecommendationSelections.size} selected`;
+        }
+        const applyBtn = document.getElementById('apply-selected-recommendations');
+        if (applyBtn) {
+            applyBtn.disabled = smartRecommendationSelections.size === 0;
+        }
+    }
+
+    function applyRecommendationById(recId) {
+        if (!recId) return false;
+        const recommendation = smartRecommendations.find(rec => rec.id === recId);
+        if (!recommendation) return false;
+        const wasApplied = addOverrideRuleFromRecommendation(recommendation);
+        if (wasApplied) {
+            smartRecommendationSelections.delete(recId);
+        }
+        return wasApplied;
+    }
+
+    function applySelectedSmartRecommendations() {
+        if (smartRecommendationSelections.size === 0) {
+            alert('Select at least one recommendation to apply.');
+            return;
+        }
+        let appliedCount = 0;
+        [...smartRecommendationSelections].forEach(recId => {
+            if (applyRecommendationById(recId)) {
+                appliedCount += 1;
+            }
+        });
+        if (appliedCount > 0) {
+            showNotification(`Applied ${appliedCount} recommendation${appliedCount === 1 ? '' : 's'}.`, 'success');
+        } else {
+            showNotification('No new rules were added. They may already exist.', 'info');
+        }
+        renderSmartRecommendationsView();
+    }
+
+    function addOverrideRuleFromRecommendation(recommendation) {
+        if (!recommendation) return false;
+        let newRule = null;
+        if (recommendation.action === 'change') {
+            if (hasMatchingOverride({ action: 'change', sourceColumn: recommendation.sourceColumn, value: recommendation.value, newValue: recommendation.newValue })) {
+                return false;
+            }
+            newRule = {
+                action: 'change',
+                sourceColumn: recommendation.sourceColumn,
+                value: recommendation.value,
+                newValue: recommendation.newValue
+            };
+        } else if (recommendation.action === 'remove') {
+            if (hasMatchingOverride({ action: 'remove', sourceColumn: recommendation.sourceColumn, value: recommendation.value })) {
+                return false;
+            }
+            newRule = {
+                action: 'remove',
+                sourceColumn: recommendation.sourceColumn,
+                value: recommendation.value
+            };
+        } else if (recommendation.action === 'move') {
+            if (hasMatchingOverride({
+                action: 'move',
+                sourceColumn: recommendation.sourceColumn,
+                value: recommendation.value,
+                targetColumn: recommendation.targetColumn,
+                moveMode: recommendation.moveMode || 'replace'
+            })) {
+                return false;
+            }
+            newRule = {
+                action: 'move',
+                sourceColumn: recommendation.sourceColumn,
+                targetColumn: recommendation.targetColumn,
+                value: recommendation.value,
+                moveMode: recommendation.moveMode || 'replace',
+                isNew: false
+            };
+        }
+
+        if (!newRule) return false;
+
+        overrideRules.push({ id: Date.now() + Math.random(), ...newRule });
+        return true;
     }
 
     function renderKeywordGapAnalysisView() {
@@ -2563,6 +2925,118 @@
         renderOverridesUI(matrixBaseHeaders.filter(h => h !== 'KeywordDetails' && h !== 'FacetValueDetails'));
     }
 
+    function renderSmartRecommendationsView() {
+        const { categoryOverhaulMatrixReport } = analysisResults;
+        
+        if (!categoryOverhaulMatrixReport || categoryOverhaulMatrixReport.length === 0) {
+            ui.resultsContainer.innerHTML = createReportContainer(
+                'Taxonomy Smart Recommendations',
+                'No Category Overhaul Matrix data available.',
+                '',
+                'Run the Taxonomy & Architecture analysis to generate recommendations.'
+            );
+            const wrapper = document.getElementById('interactive-table-wrapper');
+            if (wrapper) {
+                wrapper.innerHTML = '<div class="p-8 text-center text-gray-500 border rounded-lg bg-gray-50">No recommendations yet.</div>';
+            }
+            return;
+        }
+
+        const baseHeaders = Object.keys(categoryOverhaulMatrixReport[0] || {});
+        // Recommendations are generated from the raw matrix data (before overrides are applied)
+        smartRecommendations = buildSmartRecommendations(categoryOverhaulMatrixReport, baseHeaders);
+        smartRecommendationSelections = new Set(
+            [...smartRecommendationSelections].filter(id => smartRecommendations.some(rec => rec.id === id))
+        );
+
+        const subtitle = 'AI-assisted taxonomy clean-up suggestions derived from your Category Overhaul Matrix.';
+        const customContent = `
+            <div class="flex flex-wrap items-center gap-3">
+                <span class="text-sm font-semibold text-gray-700">${smartRecommendations.length} suggestions</span>
+                <span id="selected-recommendations-count" class="text-xs text-gray-500">${smartRecommendationSelections.size} selected</span>
+                <button id="refresh-smart-recommendations" class="text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Refresh</button>
+                <button id="apply-selected-recommendations" class="text-xs font-semibold py-1 px-3 rounded border border-blue-300 text-blue-700 hover:bg-blue-50 ${smartRecommendationSelections.size === 0 ? 'opacity-50 cursor-not-allowed' : ''}" ${smartRecommendationSelections.size === 0 ? 'disabled' : ''}>Apply Selected</button>
+            </div>`;
+        const explainer = `
+            <div>
+                <p class="mb-2">These Smart Recommendations flag inconsistent Category Mapping labels, SKU-level noise, and other anomalies that can be fixed via the Manual Overrides engine.</p>
+                <ul class="list-disc list-inside text-sm text-gray-600 space-y-1">
+                    <li><strong>Normalise</strong> aligns near-duplicate values (e.g., "Sealants.Cat" → "Sealants").</li>
+                    <li><strong>Cleanup</strong> suggests removing SKU-level values that only appear once or twice.</li>
+                    <li><strong>Relocate</strong> spots values living in the wrong column and recommends moving them to the dominant column.</li>
+                    <li>Approving a recommendation instantly adds the matching rule to Manual Overrides and updates all dependent views.</li>
+                </ul>
+            </div>`;
+
+        ui.resultsContainer.innerHTML = createReportContainer('Taxonomy Smart Recommendations', subtitle, customContent, explainer);
+
+        const manualOverrideHeaders = baseHeaders.filter(h => h !== 'KeywordDetails' && h !== 'FacetValueDetails');
+        renderOverridesUI(manualOverrideHeaders);
+
+        const searchContainer = document.getElementById('table-search-input')?.closest('.flex');
+        if (searchContainer) searchContainer.classList.add('hidden');
+        const timeframeContainer = ui.resultsContainer.querySelector('.scope-toggle-btn')?.parentElement;
+        if (timeframeContainer) timeframeContainer.classList.add('hidden');
+        const paginationWrapper = document.getElementById('pagination-controls-wrapper');
+        if (paginationWrapper) {
+            paginationWrapper.innerHTML = '';
+            paginationWrapper.classList.add('hidden');
+        }
+
+        const recommendationCards = smartRecommendations.length > 0
+            ? smartRecommendations.map(rec => {
+                let actionLabel = 'Normalise';
+                let actionClasses = 'bg-indigo-100 text-indigo-800';
+                if (rec.action === 'remove') {
+                    actionLabel = 'Cleanup';
+                    actionClasses = 'bg-red-100 text-red-800';
+                } else if (rec.action === 'move') {
+                    actionLabel = 'Relocate';
+                    actionClasses = 'bg-blue-100 text-blue-800';
+                }
+
+                let changeSummary = '';
+                if (rec.action === 'change') {
+                    changeSummary = `Change "<b>${escapeHtml(rec.value)}</b>" → "<b>${escapeHtml(rec.newValue)}</b>"`;
+                } else if (rec.action === 'remove') {
+                    changeSummary = `Delete rows where value = "<b>${escapeHtml(rec.value)}</b>"`;
+                } else if (rec.action === 'move') {
+                    const modeLabel = rec.moveMode === 'replace' ? 'replace' : 'append';
+                    changeSummary = `Move "<b>${escapeHtml(rec.value)}</b>" to <b>${escapeHtml(rec.targetColumn)}</b> (${modeLabel})`;
+                    if (rec.targetValueHint && rec.targetValueHint !== rec.value) {
+                        changeSummary += `<span class="block text-xs text-gray-500">Canonical in ${escapeHtml(rec.targetColumn)}: "${escapeHtml(rec.targetValueHint)}"</span>`;
+                    }
+                }
+                return `
+                    <div class="border rounded-lg p-4 bg-white shadow-sm">
+                        <div class="flex flex-col gap-3">
+                            <div class="flex items-start gap-3">
+                                <input type="checkbox" class="smart-rec-select mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded" data-rec-id="${rec.id}" ${smartRecommendationSelections.has(rec.id) ? 'checked' : ''}>
+                                <div class="flex-1 space-y-1">
+                                    <div class="flex flex-wrap items-center gap-2 text-xs">
+                                        <span class="uppercase tracking-wide text-gray-500">${escapeHtml(rec.sourceColumn)}</span>
+                                        <span class="px-2 py-0.5 rounded-full ${actionClasses}">${actionLabel}</span>
+                                        <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">Confidence ${rec.confidence}%</span>
+                                        <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">${rec.affectedRows} affected row${rec.affectedRows === 1 ? '' : 's'}</span>
+                                    </div>
+                                    <p class="font-semibold text-gray-900">${changeSummary}</p>
+                                    <p class="text-sm text-gray-600">${escapeHtml(rec.reason)}</p>
+                                </div>
+                                <button class="apply-recommendation-btn text-xs font-semibold py-1 px-3 rounded border border-green-300 text-green-700 hover:bg-green-50" data-rec-id="${rec.id}">Apply</button>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('')
+            : '<div class="p-10 text-center text-gray-500 border rounded-lg bg-gray-50">All caught up! No obvious inconsistencies detected right now.</div>';
+
+        const wrapper = document.getElementById('interactive-table-wrapper');
+        if (wrapper) {
+            wrapper.innerHTML = `<div class="space-y-4">${recommendationCards}</div>`;
+        }
+
+        updateSmartRecommendationSelectionCount();
+    }
+
     function initializeTable(data, headers, defaultSortKey, defaultSearchKey, competitorDomains = []) {
         tableState.fullData = data;
         tableState.headers = headers;
@@ -2625,6 +3099,15 @@
                 tableState.rowsPerPage = parseInt(target.value, 10);
                 tableState.currentPage = 1;
                 renderTableAndControls();
+            } else if (target.classList.contains('smart-rec-select')) {
+                const recId = target.dataset.recId;
+                if (!recId) return;
+                if (target.checked) {
+                    smartRecommendationSelections.add(recId);
+                } else {
+                    smartRecommendationSelections.delete(recId);
+                }
+                updateSmartRecommendationSelectionCount();
             }
         });
         
