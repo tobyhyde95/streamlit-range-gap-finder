@@ -8,7 +8,10 @@
         searchTerm: '', searchKey: null, currentPage: 1, rowsPerPage: 25,
         timeframe: 'monthly',
         hideFeatures: false,
-        hideZeroValueColumns: false
+        hideZeroValueColumns: false,
+        activeLens: null,
+        rowEditState: null,
+        interactiveHeaders: []
     };
     let overrideRules = [];
     let smartRecommendations = [];
@@ -64,6 +67,9 @@
             let shouldRemoveRow = false;
 
             overrideRules.forEach(rule => {
+                if (!matchesRuleConditions(rule, modifiedFacets)) {
+                    return;
+                }
                 const cellValue = modifiedFacets[rule.sourceColumn];
                 const isCellBlank = cellValue === null || cellValue === undefined || String(cellValue).trim() === '';
                 const ruleValue = String(rule.value).trim();
@@ -305,6 +311,7 @@
         
         const isNestableReport = data[0] && (data[0].hasOwnProperty('KeywordDetails') || data[0].hasOwnProperty('FacetValueDetails'));
         const isFacetPotentialReport = data[0] && data[0].hasOwnProperty('FacetValueDetails');
+        const showRowActions = tableState.activeLens === 'interactive-matrix';
         
         const baseFacetHeaders = ['Category Mapping', 'Facet Type', 'Monthly Organic Traffic', 'Total Monthly Google Searches', 'Total On-Site Searches', 'Facet Value Score'];
         
@@ -328,6 +335,9 @@
         
         if (isFacetPotentialReport) {
             headerHtml += `<th class="p-3 text-left text-xs font-bold uppercase">In Product Name</th>`;
+        }
+        if (showRowActions) {
+            headerHtml += `<th class="p-3 text-left text-xs font-bold uppercase">Actions</th>`;
         }
 
         let bodyHtml = '';
@@ -382,6 +392,12 @@
                     <input type="checkbox" class="in-product-name-toggle h-4 w-4" data-facet-key="${facetKey}" ${isChecked ? 'checked' : ''}>
                 </td>`;
             }
+            if (showRowActions) {
+                const rowId = typeof row.__rowId === 'number' ? row.__rowId : '';
+                cells += `<td class="p-3 border-t text-sm">
+                    <button class="row-edit-btn inline-flex items-center px-3 py-1 border border-blue-300 text-blue-700 rounded hover:bg-blue-50 text-xs font-semibold" data-row-id="${rowId}">Edit Row</button>
+                </td>`;
+            }
 
             bodyHtml += `<tr class="hover:bg-gray-50">${cells}</tr>`;
 
@@ -392,7 +408,8 @@
                 } else if (row.FacetValueDetails) {
                     nestedHtml = createNestedFacetValueTable(row.FacetValueDetails);
                 }
-                bodyHtml += `<tr class="keyword-details-row"><td colspan="${headers.length + (isNestableReport ? 1 : 0) + (isFacetPotentialReport ? 1 : 0)}" class="keyword-details-cell">${nestedHtml}</td></tr>`;
+                const extraCols = (isNestableReport ? 1 : 0) + (isFacetPotentialReport ? 1 : 0) + (showRowActions ? 1 : 0);
+                bodyHtml += `<tr class="keyword-details-row"><td colspan="${headers.length + extraCols}" class="keyword-details-cell">${nestedHtml}</td></tr>`;
             }
         });
         
@@ -403,6 +420,7 @@
             if(isNestableReport) footerCells += '<td></td>';
             footerCells += headers.map(h => `<td class="p-3 text-sm">${totalRowData[h]}</td>`).join('');
             if(isFacetPotentialReport) footerCells += '<td></td>';
+             if (showRowActions) footerCells += '<td></td>';
             footerHtml = `<tfoot><tr>${footerCells}</tr></tfoot>`;
         }
 
@@ -1196,6 +1214,13 @@
                 const valueDisplay = rule.value === '' ? '<em>(Blank)</em>' : `"${rule.value}"`;
                 ruleText += `change value ${valueDisplay} to "<b>${rule.newValue}</b>"`;
             }
+            if (rule.conditions && Object.keys(rule.conditions).length > 0) {
+                const conditionsText = Object.entries(rule.conditions).map(([col, val]) => {
+                    const displayVal = val === '' ? '<em>(Blank)</em>' : `"${val}"`;
+                    return `${col} = ${displayVal}`;
+                }).join(' AND ');
+                ruleText += `<div class="text-xs text-gray-500 mt-1">Only when ${conditionsText}</div>`;
+            }
             return `<li class="flex justify-between items-center p-2 border-b"><span>${ruleText}</span><button class="remove-rule-btn text-red-500 hover:text-red-700 font-bold" data-rule-id="${rule.id}">&times;</button></li>`;
         }).join('');
 
@@ -1642,6 +1667,18 @@
             return;
         }
 
+        const rowEditBtn = target.closest('.row-edit-btn');
+        if (rowEditBtn && tableState.activeLens === 'interactive-matrix') {
+            const rowId = rowEditBtn.dataset.rowId;
+            renderInteractiveRowEditor(rowId);
+            return;
+        }
+
+        if (target.id === 'close-row-editor') {
+            clearRowEditor();
+            return;
+        }
+
         if (target.id === 'apply-selected-recommendations') {
             applySelectedSmartRecommendations();
             return;
@@ -1723,6 +1760,7 @@
             else if (lensType === 'market-share-group') renderGroupMarketShareView('core');
             else if (lensType === 'category-overhaul') renderCategoryOverhaulMatrixView();
             else if (lensType === 'facet-potential') renderFacetPotentialAnalysisView();
+            else if (lensType === 'interactive-matrix') renderInteractiveCategoryMatrixView();
             else if (lensType === 'smart-recommendations') renderSmartRecommendationsView();
             return;
         } 
@@ -2125,6 +2163,9 @@
             facetPotentialReport
         } = analysisResults;
 
+        tableState.activeLens = null;
+        tableState.rowEditState = null;
+
         // Debug logging to see what data we have
         console.log('Analysis results structure:', Object.keys(analysisResults));
         console.log('Category overhaul data:', categoryOverhaulMatrixReport);
@@ -2189,7 +2230,7 @@
             <div class="lens-section">
                 <h3 class="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">Taxonomy & Architecture Analysis</h3>
                 <p class="text-sm text-gray-600 mb-4">This analysis automates a category overhaul by reviewing competitor URLs to extract their category, sub-type, and facet structures, then aggregates organic traffic for each combination. Use this to find high-value taxonomy gaps and inform changes to your site architecture.</p>
-                <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
                     <div data-lens="category-overhaul" class="lens-card p-6 border rounded-lg">
                         <h3 class="font-bold text-xl">Category Overhaul Matrix</h3>
                         <p>Analyse competitor category and facet structures to identify high-traffic taxonomy opportunities and inform site architecture changes.</p>
@@ -2201,6 +2242,10 @@
                     <div data-lens="smart-recommendations" class="lens-card p-6 border rounded-lg">
                         <h3 class="font-bold text-xl">Smart Recommendations</h3>
                         <p>Approve AI-generated taxonomy clean-up rules to normalise labels, remove SKU noise, and instantly update the Category Overhaul Matrix.</p>
+                    </div>
+                    <div data-lens="interactive-matrix" class="lens-card p-6 border rounded-lg">
+                        <h3 class="font-bold text-xl">Interactive Matrix Editor</h3>
+                        <p>Edit individual matrix rows with conditional overrides so you can adjust values only when they appear with specific category/context combinations.</p>
                     </div>
                 </div>
             </div>`;
@@ -2297,13 +2342,35 @@
         );
     }
 
-    function hasMatchingOverride({ action, sourceColumn, value, newValue = null, targetColumn = null, moveMode = null }) {
+    function normalizeConditions(conditions = {}) {
+        const entries = Object.entries(conditions || {}).map(([col, val]) => [col, val === undefined || val === null ? '' : String(val).trim()]);
+        entries.sort((a, b) => a[0].localeCompare(b[0]));
+        return JSON.stringify(entries);
+    }
+
+    function matchesRuleConditions(rule, rowFacets = {}) {
+        if (!rule || !rule.conditions || Object.keys(rule.conditions).length === 0) return true;
+        return Object.entries(rule.conditions).every(([column, expectedValue]) => {
+            const required = expectedValue === undefined || expectedValue === null ? '' : String(expectedValue).trim();
+            const cellValue = rowFacets[column];
+            if (cellValue === null || cellValue === undefined || String(cellValue).trim() === '') {
+                return required === '';
+            }
+            const cellValues = String(cellValue).split('|').map(v => v.trim()).filter(Boolean);
+            return required === '' ? cellValues.length === 0 : cellValues.includes(required);
+        });
+    }
+
+    function hasMatchingOverride({ action, sourceColumn, value, newValue = null, targetColumn = null, moveMode = null, conditions = null }) {
         const trimmedValue = value === null || value === undefined ? '' : String(value).trim();
+        const conditionsKey = normalizeConditions(conditions || {});
         return overrideRules.some(rule => {
             if (rule.action !== action) return false;
             if (rule.sourceColumn !== sourceColumn) return false;
             const ruleValue = rule.value === null || rule.value === undefined ? '' : String(rule.value).trim();
             if (ruleValue !== trimmedValue) return false;
+            const ruleConditionsKey = normalizeConditions(rule.conditions || {});
+            if (ruleConditionsKey !== conditionsKey) return false;
             if (action === 'change') {
                 return (rule.newValue || '').trim() === (newValue || '').trim();
             }
@@ -2793,7 +2860,8 @@
             ui.resultsContainer.innerHTML = createReportContainer('Category Overhaul Matrix', 'No data available for this report.');
             return;
         }
-
+        tableState.activeLens = 'category-overhaul';
+        tableState.rowEditState = null;
         const baseHeaders = Object.keys(categoryOverhaulMatrixReport[0] || {});
         
         // Build list of columns to exclude from aggregation (hidden columns)
@@ -2847,6 +2915,8 @@
             </div>`;
         
         ui.resultsContainer.innerHTML = createReportContainer('Category Overhaul Matrix', subtitle, customContent, explainer);
+        const zeroTrafficToggle = document.getElementById('hide-zero-traffic-toggle');
+        if (zeroTrafficToggle) zeroTrafficToggle.checked = tableState.hideZeroTraffic;
         
         // Filter headers based on column visibility state
         let displayHeaders = [...finalHeaders];
@@ -2892,6 +2962,361 @@
         renderOverridesUI(baseHeaders.filter(h => h !== 'KeywordDetails'));
     }
 
+    function renderInteractiveCategoryMatrixView() {
+        const { categoryOverhaulMatrixReport, hasOnsiteData } = analysisResults;
+
+        if (!categoryOverhaulMatrixReport || categoryOverhaulMatrixReport.length === 0) {
+            ui.resultsContainer.innerHTML = createReportContainer('Interactive Matrix Editor', 'No data available for this report.');
+            return;
+        }
+
+        tableState.activeLens = 'interactive-matrix';
+        tableState.rowEditState = null;
+        const baseHeaders = Object.keys(categoryOverhaulMatrixReport[0] || {});
+        const excludeFromAggregation = [];
+        if (tableState.hideFeatures) {
+            excludeFromAggregation.push('Features', 'Discovered Features');
+        }
+
+        const modifiedData = applyOverridesAndMerge(categoryOverhaulMatrixReport, baseHeaders, hasOnsiteData, excludeFromAggregation);
+        const transformedData = transformDataForTimeframe(modifiedData, tableState.timeframe);
+
+        const allKeys = new Set();
+        transformedData.forEach(row => { Object.keys(row).forEach(key => allKeys.add(key)); });
+
+        const preferredOrder = ['Category Mapping', 'Derived Facets', 'Sub Type'];
+        const endColumnsBases = ['Monthly Organic Traffic', 'Total Monthly Google Searches', 'Total On-Site Searches', 'KeywordDetails'];
+        const endColumns = updateHeadersForTimeframe(endColumnsBases, tableState.timeframe);
+
+        const finalHeaders = [
+            ...preferredOrder.filter(h => allKeys.has(h)),
+            ...Array.from(allKeys).filter(h => !preferredOrder.includes(h) && !endColumns.includes(h)).sort(),
+            ...endColumns.filter(h => allKeys.has(h))
+        ];
+
+        const subtitle = "Edit specific matrix rows and add conditional overrides without leaving the table.";
+        const customContent = `
+            <div class="flex flex-wrap gap-4 items-center">
+                <div class="flex items-center">
+                    <input type="checkbox" id="hide-zero-traffic-toggle" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <label for="hide-zero-traffic-toggle" class="ml-2 block text-sm text-gray-900">Hide rows with 0 traffic</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="hide-features-column" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" ${tableState.hideFeatures ? 'checked' : ''}>
+                    <label for="hide-features-column" class="ml-2 block text-sm text-gray-900">Hide Features column</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="hide-zero-value-columns" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" ${tableState.hideZeroValueColumns ? 'checked' : ''}>
+                    <label for="hide-zero-value-columns" class="ml-2 block text-sm text-gray-900">Hide Columns With 0 Values</label>
+                </div>
+            </div>`;
+        const explainer = `
+            <div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 p-3 rounded-md mb-4">
+                <b>Interactive Editing:</b> Select any row to create a targeted override. You can limit a change to the exact context (e.g., Category Mapping + Type combination) before applying it to the full dataset.
+            </div>`;
+
+        ui.resultsContainer.innerHTML = createReportContainer('Interactive Matrix Editor', subtitle, customContent, explainer);
+        const interactiveZeroToggle = document.getElementById('hide-zero-traffic-toggle');
+        if (interactiveZeroToggle) interactiveZeroToggle.checked = tableState.hideZeroTraffic;
+
+        let displayHeaders = [...finalHeaders];
+        if (tableState.hideFeatures) {
+            displayHeaders = displayHeaders.filter(h => h !== 'Features' && h !== 'Discovered Features');
+        }
+        if (tableState.hideZeroValueColumns && transformedData.length > 0) {
+            displayHeaders = displayHeaders.filter(header => {
+                const keepColumns = ['Category Mapping', 'Derived Facets', 'Sub Type', 'KeywordDetails'];
+                if (keepColumns.includes(header) || header.includes('Traffic') || header.includes('Searches')) {
+                    return true;
+                }
+                const hasNonBlankValue = transformedData.some(row => {
+                    const value = row[header];
+                    return value !== null && value !== undefined && value !== '' && value !== 0;
+                });
+                return hasNonBlankValue;
+            });
+        }
+
+        tableState.interactiveHeaders = displayHeaders;
+        const defaultSortKey = displayHeaders.find(h => h.includes('Organic Traffic'));
+        initializeTable(transformedData, displayHeaders, defaultSortKey, 'Category Mapping');
+
+        document.getElementById('hide-features-column')?.addEventListener('change', (e) => {
+            tableState.hideFeatures = e.target.checked;
+            renderInteractiveCategoryMatrixView();
+        });
+        document.getElementById('hide-zero-value-columns')?.addEventListener('change', (e) => {
+            tableState.hideZeroValueColumns = e.target.checked;
+            renderInteractiveCategoryMatrixView();
+        });
+
+        renderOverridesUI(baseHeaders.filter(h => h !== 'KeywordDetails'));
+        let editorContainer = document.getElementById('interactive-row-editor');
+        if (!editorContainer) {
+            const manualContainer = document.getElementById('manual-overrides-container');
+            if (manualContainer) {
+                manualContainer.insertAdjacentHTML('afterend', `<div id="interactive-row-editor" class="mb-6 border rounded-lg p-4 bg-white shadow-sm"><p class="text-sm text-gray-500">Select a row below to begin editing.</p></div>`);
+            }
+        } else {
+            editorContainer.innerHTML = `<p class="text-sm text-gray-500">Select a row below to begin editing.</p>`;
+        }
+    }
+
+    function getEditableColumns(headers = []) {
+        if (!Array.isArray(headers)) return [];
+        const excludedSubstrings = ['Traffic', 'Searches', 'KeywordDetails', 'FacetValueDetails', 'Keyword Count', 'Monthly Google'];
+        return headers.filter(h => {
+            if (!h) return false;
+            if (h === 'KeywordDetails' || h === 'FacetValueDetails') return false;
+            if (excludedSubstrings.some(sub => h.includes(sub))) return false;
+            if (isFeatureColumn(h)) return false;
+            return true;
+        });
+    }
+
+    function getRowById(rowId) {
+        if (rowId === undefined || rowId === null) return null;
+        return (tableState.fullData || []).find(row => row && row.__rowId === Number(rowId));
+    }
+
+    function splitCellValues(value) {
+        if (value === null || value === undefined || String(value).trim() === '') {
+            return [{ label: '(Blank)', value: '__ROW_BLANK__' }];
+        }
+        return String(value).split('|').map(v => v.trim()).filter(Boolean).map(v => ({ label: v, value: v }));
+    }
+
+    function renderInteractiveRowEditor(rowId) {
+        const row = getRowById(rowId);
+        const editorContainer = document.getElementById('interactive-row-editor');
+        if (!row || !editorContainer) return;
+
+        const editableColumns = getEditableColumns(tableState.interactiveHeaders);
+        if (editableColumns.length === 0) {
+            editorContainer.innerHTML = `<p class="text-sm text-gray-500">No editable columns available for this row.</p>`;
+            return;
+        }
+
+        if (!editableColumns.includes('Category Mapping') && row.hasOwnProperty('Category Mapping')) {
+            editableColumns.unshift('Category Mapping');
+        }
+
+        const defaultColumn = editableColumns.includes('Type') ? 'Type' : editableColumns[0];
+        const valueOptions = splitCellValues(row[defaultColumn]);
+        const targetColumns = editableColumns.filter(col => col !== defaultColumn);
+
+        const conditionColumns = editableColumns.filter(col => {
+            const cellVal = row[col];
+            return cellVal !== undefined && cellVal !== null && String(cellVal).trim() !== '';
+        });
+        if (!conditionColumns.includes('Category Mapping') && row['Category Mapping']) {
+            conditionColumns.unshift('Category Mapping');
+        }
+
+        tableState.rowEditState = { rowId, row, editableColumns };
+
+        const conditionHtml = conditionColumns.length === 0
+            ? '<p class="text-xs text-gray-500">No contextual columns available for conditions.</p>'
+            : conditionColumns.map(col => {
+                const rawVal = row[col];
+                const displayVal = (rawVal === null || rawVal === undefined || String(rawVal).trim() === '') ? '(Blank)' : rawVal;
+                const checkedAttr = col === 'Category Mapping' ? 'checked' : '';
+                const conditionValue = (rawVal === null || rawVal === undefined || String(rawVal).trim() === '') ? '' : String(rawVal).trim();
+                return `<label class="flex items-center text-sm text-gray-700 space-x-2">
+                    <input type="checkbox" class="row-edit-condition h-4 w-4 text-blue-600" value="${col}" data-condition-value="${escapeHtml(conditionValue)}" ${checkedAttr}>
+                    <span>${col}: <b>${escapeHtml(displayVal)}</b></span>
+                </label>`;
+            }).join('');
+
+        editorContainer.innerHTML = `
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h3 class="text-lg font-semibold">Editing Row</h3>
+                    <p class="text-xs text-gray-500">Category Mapping: <b>${escapeHtml(row['Category Mapping'] || '(Blank)')}</b></p>
+                </div>
+                <button id="close-row-editor" class="text-xs text-red-600 hover:text-red-800 font-semibold">Close</button>
+            </div>
+            <form id="row-edit-form" data-row-id="${rowId}" class="space-y-4">
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium">Column to edit</label>
+                        <select id="row-edit-column" class="mt-1 block w-full border rounded-md p-2">
+                            ${editableColumns.map(col => `<option value="${col}" ${col === defaultColumn ? 'selected' : ''}>${col}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">Action</label>
+                        <select id="row-edit-action" class="mt-1 block w-full border rounded-md p-2">
+                            <option value="change">Change value</option>
+                            <option value="move">Move to column</option>
+                            <option value="remove">Remove rows with this value</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">Select value</label>
+                    <select id="row-edit-value" class="mt-1 block w-full border rounded-md p-2">
+                        ${valueOptions.map(opt => `<option value="${opt.value}">${escapeHtml(opt.label)}</option>`).join('')}
+                    </select>
+                </div>
+                <div id="row-edit-new-value-group">
+                    <label class="block text-sm font-medium">New value</label>
+                    <input type="text" id="row-edit-new-value" class="mt-1 block w-full border rounded-md p-2" placeholder="Enter replacement value">
+                </div>
+                <div id="row-edit-target-column-group" class="hidden">
+                    <label class="block text-sm font-medium">Target column</label>
+                    <select id="row-edit-target-column" class="mt-1 block w-full border rounded-md p-2">
+                        <option value="">Select column</option>
+                        ${targetColumns.map(col => `<option value="${col}">${col}</option>`).join('')}
+                    </select>
+                </div>
+                <div id="row-edit-move-mode-group" class="hidden">
+                    <label class="block text-sm font-medium">Move mode</label>
+                    <select id="row-edit-move-mode" class="mt-1 block w-full border rounded-md p-2">
+                        <option value="replace">Replace target value</option>
+                        <option value="append">Append to target value</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Limit this rule to rows where:</label>
+                    <div class="space-y-2">${conditionHtml}</div>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold hover:bg-blue-700">Apply edit</button>
+                </div>
+            </form>
+        `;
+
+        updateRowEditorActionVisibility('change');
+    }
+
+    function updateRowEditorValueOptions(column) {
+        if (!tableState.rowEditState) return;
+        const row = tableState.rowEditState.row;
+        const valueSelect = document.getElementById('row-edit-value');
+        const targetColumnSelect = document.getElementById('row-edit-target-column');
+        if (!row || !valueSelect) return;
+        const options = splitCellValues(row[column]);
+        valueSelect.innerHTML = options.map(opt => `<option value="${opt.value}">${escapeHtml(opt.label)}</option>`).join('');
+        if (targetColumnSelect) {
+            const possibleTargets = tableState.rowEditState.editableColumns.filter(col => col !== column);
+            targetColumnSelect.innerHTML = `<option value="">Select column</option>${possibleTargets.map(col => `<option value="${col}">${col}</option>`).join('')}`;
+        }
+    }
+
+    function updateRowEditorActionVisibility(action) {
+        const newValueGroup = document.getElementById('row-edit-new-value-group');
+        const targetColumnGroup = document.getElementById('row-edit-target-column-group');
+        const moveModeGroup = document.getElementById('row-edit-move-mode-group');
+        if (!newValueGroup || !targetColumnGroup || !moveModeGroup) return;
+
+        if (action === 'change') {
+            newValueGroup.classList.remove('hidden');
+            targetColumnGroup.classList.add('hidden');
+            moveModeGroup.classList.add('hidden');
+        } else if (action === 'move') {
+            newValueGroup.classList.add('hidden');
+            targetColumnGroup.classList.remove('hidden');
+            moveModeGroup.classList.remove('hidden');
+        } else {
+            newValueGroup.classList.add('hidden');
+            targetColumnGroup.classList.add('hidden');
+            moveModeGroup.classList.add('hidden');
+        }
+    }
+
+    function clearRowEditor() {
+        const editorContainer = document.getElementById('interactive-row-editor');
+        if (editorContainer) {
+            editorContainer.innerHTML = `<p class="text-sm text-gray-500">Select a row below to begin editing.</p>`;
+        }
+        tableState.rowEditState = null;
+    }
+
+    function handleRowEditFormSubmit(form) {
+        const rowId = form.dataset.rowId;
+        const row = getRowById(rowId);
+        if (!row) {
+            showNotification('Could not locate the selected row.', 'error');
+            return;
+        }
+
+        const sourceColumn = form.querySelector('#row-edit-column')?.value;
+        const action = form.querySelector('#row-edit-action')?.value;
+        let selectedValue = form.querySelector('#row-edit-value')?.value;
+        if (!sourceColumn || !action) {
+            showNotification('Please select a column and action.', 'error');
+            return;
+        }
+        if (selectedValue === '__ROW_BLANK__') selectedValue = '';
+
+        const conditions = {};
+        form.querySelectorAll('.row-edit-condition:checked').forEach(cb => {
+            const col = cb.value;
+            const val = cb.dataset.conditionValue === undefined ? '' : cb.dataset.conditionValue;
+            conditions[col] = val;
+        });
+
+        let newRule = null;
+        if (action === 'change') {
+            const newValue = form.querySelector('#row-edit-new-value')?.value?.trim();
+            if (!newValue) {
+                showNotification('Enter a new value to apply.', 'error');
+                return;
+            }
+            if (hasMatchingOverride({ action: 'change', sourceColumn, value: selectedValue, newValue, conditions })) {
+                showNotification('An identical change rule already exists.', 'info');
+                return;
+            }
+            newRule = {
+                action: 'change',
+                sourceColumn,
+                value: selectedValue,
+                newValue,
+                conditions
+            };
+        } else if (action === 'move') {
+            const targetColumn = form.querySelector('#row-edit-target-column')?.value;
+            const moveMode = form.querySelector('#row-edit-move-mode')?.value || 'replace';
+            if (!targetColumn || targetColumn === sourceColumn) {
+                showNotification('Select a different target column.', 'error');
+                return;
+            }
+            if (hasMatchingOverride({ action: 'move', sourceColumn, value: selectedValue, targetColumn, moveMode, conditions })) {
+                showNotification('An identical move rule already exists.', 'info');
+                return;
+            }
+            newRule = {
+                action: 'move',
+                sourceColumn,
+                targetColumn,
+                value: selectedValue,
+                moveMode,
+                conditions
+            };
+        } else if (action === 'remove') {
+            if (hasMatchingOverride({ action: 'remove', sourceColumn, value: selectedValue, conditions })) {
+                showNotification('An identical removal rule already exists.', 'info');
+                return;
+            }
+            newRule = {
+                action: 'remove',
+                sourceColumn,
+                value: selectedValue,
+                conditions
+            };
+        }
+
+        if (!newRule) {
+            showNotification('Unable to build rule from the provided inputs.', 'error');
+            return;
+        }
+
+        overrideRules.push({ id: Date.now() + Math.random(), ...newRule });
+        showNotification('Interactive override added.', 'success');
+        renderInteractiveCategoryMatrixView();
+    }
+
     function renderFacetPotentialAnalysisView() {
         const { categoryOverhaulMatrixReport, hasOnsiteData } = analysisResults;
         
@@ -2899,6 +3324,8 @@
             ui.resultsContainer.innerHTML = createReportContainer('Facet Potential Analysis', 'No data available for this report.');
             return;
         }
+        tableState.activeLens = 'facet-potential';
+        tableState.rowEditState = null;
 
         const matrixBaseHeaders = Object.keys(categoryOverhaulMatrixReport[0] || {});
         const modifiedMatrixData = applyOverridesAndMerge(categoryOverhaulMatrixReport, matrixBaseHeaders, hasOnsiteData);
@@ -2942,6 +3369,8 @@
             return;
         }
 
+        tableState.activeLens = 'smart-recommendations';
+        tableState.rowEditState = null;
         const baseHeaders = Object.keys(categoryOverhaulMatrixReport[0] || {});
         // Recommendations are generated from the raw matrix data (before overrides are applied)
         smartRecommendations = buildSmartRecommendations(categoryOverhaulMatrixReport, baseHeaders);
@@ -3039,6 +3468,16 @@
 
     function initializeTable(data, headers, defaultSortKey, defaultSearchKey, competitorDomains = []) {
         tableState.fullData = data;
+        if (Array.isArray(tableState.fullData)) {
+            tableState.fullData.forEach((row, idx) => {
+                if (!row || typeof row !== 'object') return;
+                if (Object.prototype.hasOwnProperty.call(row, '__rowId')) {
+                    row.__rowId = idx;
+                } else {
+                    Object.defineProperty(row, '__rowId', { value: idx, enumerable: false, writable: true });
+                }
+            });
+        }
         tableState.headers = headers;
         tableState.sortKey = defaultSortKey;
         tableState.sortDir = 'desc';
@@ -3108,6 +3547,22 @@
                     smartRecommendationSelections.delete(recId);
                 }
                 updateSmartRecommendationSelectionCount();
+            }
+        });
+
+        ui.resultsContainer.addEventListener('change', e => {
+            const target = e.target;
+            if (target.id === 'row-edit-column') {
+                updateRowEditorValueOptions(target.value);
+            } else if (target.id === 'row-edit-action') {
+                updateRowEditorActionVisibility(target.value);
+            }
+        });
+
+        ui.resultsContainer.addEventListener('submit', e => {
+            if (e.target && e.target.id === 'row-edit-form') {
+                e.preventDefault();
+                handleRowEditFormSubmit(e.target);
             }
         });
         
