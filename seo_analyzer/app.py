@@ -2,16 +2,20 @@
 import os
 import argparse
 import flask
+from flask import make_response
 from flask_cors import CORS
 from functools import wraps
+import json
 try:
     from .tasks import run_analysis_task
     from .synonym_discovery import SynonymDiscovery
     from .project_manager import ProjectManager
+    from .pim_sku_analyzer import analyze_pim_skus
 except ImportError:
     from tasks import run_analysis_task
     from synonym_discovery import SynonymDiscovery
     from project_manager import ProjectManager
+    from pim_sku_analyzer import analyze_pim_skus
 import tempfile
 import uuid
 
@@ -29,6 +33,10 @@ project_manager = ProjectManager()
 def require_api_key(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # Allow unauthenticated preflight requests for CORS
+        if flask.request.method == 'OPTIONS':
+            response = make_response('', 204)
+            return response
         if flask.request.headers.get('X-API-KEY') != SECRET_API_KEY:
             return flask.jsonify({"error": "Invalid or missing API key"}), 403
         return f(*args, **kwargs)
@@ -416,6 +424,88 @@ def save_project_files(project_id):
         })
     except Exception as e:
         return flask.jsonify({"error": f"Failed to save files: {e}"}), 500
+
+@app.route("/api/pim/analyze", methods=["POST"])
+@require_api_key
+def analyze_pim_file():
+    """Analyze PIM CSV file and match SKUs to category-facet combinations (async background task)."""
+    try:
+        if 'pimFile' not in flask.request.files:
+            return flask.jsonify({"error": "PIM file is required"}), 400
+        
+        # Get category-facet map from request
+        category_facet_map_json = flask.request.form.get('categoryFacetMap')
+        if not category_facet_map_json:
+            return flask.jsonify({"error": "Category-facet map is required"}), 400
+        
+        try:
+            category_facet_map = json.loads(category_facet_map_json)
+        except json.JSONDecodeError:
+            return flask.jsonify({"error": "Invalid category-facet map JSON"}), 400
+        
+        # Get optional SKU column name
+        sku_id_column = flask.request.form.get('skuIdColumn')
+        
+        # Save uploaded file temporarily
+        pim_file = flask.request.files['pimFile']
+        temp_dir = tempfile.mkdtemp()
+        pim_file_path = os.path.join(temp_dir, f"{uuid.uuid4()}.csv")
+        pim_file.save(pim_file_path)
+        
+        # Import task function
+        try:
+            from .tasks import run_pim_analysis_task
+        except ImportError:
+            from tasks import run_pim_analysis_task
+        
+        # Start async background task (no timeout issues!)
+        print(f"Starting PIM analysis task for file: {pim_file_path}")
+        print(f"Category-facet map has {len(category_facet_map)} pairs")
+        
+        task = run_pim_analysis_task.delay(
+            pim_file_path,
+            category_facet_map,
+            sku_id_column if sku_id_column else None,
+            temp_dir  # Pass temp_dir for cleanup
+        )
+        
+        return flask.jsonify({"task_id": task.id}), 202  # 202 Accepted - async task started
+        
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error in analyze_pim_file endpoint: {error_trace}")
+        return flask.jsonify({"error": f"Failed to start PIM analysis: {str(e)}"}), 500
+
+
+@app.route("/api/pim/status/<task_id>", methods=["GET"])
+@require_api_key
+def pim_task_status(task_id):
+    """Poll this endpoint with a task ID to get the status of a running PIM analysis task."""
+    try:
+        from .tasks import run_pim_analysis_task
+    except ImportError:
+        from tasks import run_pim_analysis_task
+    
+    task = run_pim_analysis_task.AsyncResult(task_id)
+    
+    if task.state == 'PENDING':
+        response = {'state': task.state, 'status': 'Task is pending...'}
+    elif task.state == 'PROGRESS':
+        response = {
+            'state': task.state,
+            'info': task.info  # Pass the whole meta dictionary with progress
+        }
+    elif task.state == 'SUCCESS':
+        response = {'state': task.state, 'result': task.result}
+    elif task.state != 'FAILURE':
+        response = {'state': task.state, 'status': 'In progress...'}
+    else:  # Handle failure
+        response = {
+            'state': task.state,
+            'error': str(task.info.get('exc_message', 'Unknown error')) if isinstance(task.info, dict) else str(task.info)
+        }
+    return flask.jsonify(response)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run Flask app.')

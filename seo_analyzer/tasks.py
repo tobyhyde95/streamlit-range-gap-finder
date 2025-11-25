@@ -43,3 +43,49 @@ def run_analysis_task(self, our_file_path, competitor_file_paths, onsite_file_pa
         # Clean up the temporary directory
         if os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
+
+
+@celery_app.task(bind=True)
+def run_pim_analysis_task(self, pim_file_path, category_facet_map, sku_id_column, temp_dir):
+    """Celery task for PIM SKU analysis with progress reporting."""
+    try:
+        from .pim_sku_analyzer import analyze_pim_skus
+    except ImportError:
+        from pim_sku_analyzer import analyze_pim_skus
+    
+    try:
+        # Create progress reporter function
+        def report_progress(message, current_step, total_steps):
+            meta = {
+                'status': message,
+                'current': current_step,
+                'total': total_steps
+            }
+            self.update_state(state='PROGRESS', meta=meta)
+        
+        # Analyze PIM file with progress reporting
+        result = analyze_pim_skus(
+            pim_file_path,
+            category_facet_map,
+            sku_id_column=sku_id_column if sku_id_column else None,
+            progress_reporter=report_progress  # Pass progress reporter
+        )
+        return {'status': 'SUCCESS', 'result': result}
+    except ValueError as e:
+        # User errors (like missing SKU column)
+        self.update_state(state='FAILURE', meta={'exc_type': 'ValueError', 'exc_message': str(e)})
+        return {'status': 'FAILURE', 'error': str(e)}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        self.update_state(state='FAILURE', meta={'exc_type': type(e).__name__, 'exc_message': str(e)})
+        return {'status': 'FAILURE', 'error': str(e)}
+    finally:
+        # Clean up temporary files
+        try:
+            if os.path.exists(pim_file_path):
+                os.remove(pim_file_path)
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
+        except Exception:
+            pass

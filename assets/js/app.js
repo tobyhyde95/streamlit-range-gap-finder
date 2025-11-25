@@ -452,6 +452,87 @@
         return `<div class="bg-white p-6 rounded-xl shadow-lg" data-report-title="${title}"><div class="flex flex-wrap justify-between items-center mb-6 border-b pb-4 gap-4"><div><h2 class="text-2xl font-bold">${title}</h2><p class="text-sm text-gray-600 mt-1">${subtitle}</p></div><div class="flex items-center space-x-2">${saveButton}<button data-export-type="excel" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export Excel</button><button data-export-type="json" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export JSON</button><button data-export-type="pdf" class="export-btn text-xs font-semibold py-1 px-3 rounded border border-gray-300 hover:bg-gray-100">Export PDF</button><button class="back-to-lenses-btn text-sm font-semibold text-blue-600 hover:underline">&larr; Back to Lenses</button></div></div>${extraDescription ? `<div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 p-3 rounded-md mb-4">${extraDescription}</div>` : ''}<div id="manual-overrides-container" class="mb-6"></div><div class="flex flex-wrap justify-between items-center mb-4 gap-4"><div class="flex items-center gap-2"><input type="text" id="table-search-input" placeholder="Filter with text or regex..." class="w-full md:w-auto p-2 border rounded-md focus:ring-blue-500 focus:border-blue-500">${regexTipHtml}</div><div class="flex items-center gap-4">${customContent}${timeframeToggle}</div></div><div id="interactive-table-wrapper"></div><div id="pagination-controls-wrapper" class="flex flex-wrap justify-between items-center mt-4 gap-4"></div></div>`;
     }
 
+    // Helper function to check if a category-facet combination has SKUs
+    function hasSkusForCategoryFacet(category, facetValue, pimResults, facetAttribute = null) {
+        if (!pimResults || !pimResults.category_facet_counts) return null;
+        
+        // Find matching entry - must match Category Mapping, Facet Value, and Facet Attribute (if provided)
+        // This prevents false matches like "Stone" (color) vs "Stone" (material)
+        const matchingEntry = pimResults.category_facet_counts.find(entry => {
+            const categoryMatch = entry['Category Mapping'] === category;
+            const valueMatch = entry['Facet Value'] === facetValue;
+            
+            // If facetAttribute is provided, must match (exact or semantic match)
+            // If not provided, any Facet Attribute is acceptable (fallback)
+            let attributeMatch = true;
+            if (facetAttribute) {
+                const entryAttribute = entry['Facet Attribute'] || '';
+                // Exact match or semantic match (e.g., "Colour" matches "Colour_Group")
+                attributeMatch = entryAttribute === facetAttribute || 
+                                entryAttribute.toLowerCase().replace(/[_\-\s]/g, '') === facetAttribute.toLowerCase().replace(/[_\-\s]/g, '');
+            }
+            
+            return categoryMatch && valueMatch && attributeMatch;
+        });
+        
+        return matchingEntry ? (matchingEntry['SKU Count'] > 0) : null;
+    }
+
+    // Helper function to check if a row has any SKUs
+    function rowHasSkus(row, keyGenHeaders, pimResults) {
+        if (!pimResults || !pimResults.category_facet_counts) return null;
+        
+        const category = row['Category Mapping'] || '';
+        const facetColumns = getFacetHeaders(keyGenHeaders);
+        
+        // First, check if there's a Root Category match for this category
+        // This handles cases where SKUs match the category but not specific facet combinations
+        const rootCategoryMatch = pimResults.category_facet_counts.find(entry => 
+            entry['Category Mapping'] === category && 
+            entry['Facet Attribute'] === 'Root Category' && 
+            entry['Facet Value'] === 'Root Category' &&
+            entry['SKU Count'] > 0
+        );
+        if (rootCategoryMatch) {
+            return true;
+        }
+        
+        // Check if any facet value in this row has SKUs
+        // IMPORTANT: Must match both Facet Value AND Facet Attribute (column name) to prevent false matches
+        for (const facetCol of facetColumns) {
+            const facetValues = row[facetCol];
+            if (facetValues) {
+                const values = String(facetValues).split('|').map(v => v.trim()).filter(Boolean);
+                for (const facetValue of values) {
+                    // Pass the column name as facetAttribute to ensure correct matching
+                    // E.g., "Stone" in "Colour" column should only match "Stone" with Facet Attribute "Colour", not "Stone" with Facet Attribute "Material"
+                    if (hasSkusForCategoryFacet(category, facetValue, pimResults, facetCol) === true) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        // Check if row has any non-empty facets
+        const hasFacets = facetColumns.some(col => {
+            const facetValues = row[col];
+            return facetValues && String(facetValues).trim() !== '';
+        });
+        
+        // If no facets (or all facets are empty), check just the category
+        // Note: Root Category already checked above, but also check for any other matches
+        if ((facetColumns.length === 0 || !hasFacets) && category) {
+            // Check if any entry has this category (with any facet or blank)
+            // Root Category already checked, so this is just a fallback
+            const hasMatch = pimResults.category_facet_counts.some(entry => 
+                entry['Category Mapping'] === category && entry['SKU Count'] > 0
+            );
+            return hasMatch;
+        }
+        
+        return false;
+    }
+
     async function exportCategoryOverhaulToExcel(data, headers, fileName) {
         if (typeof ExcelJS === 'undefined') {
             console.error('ExcelJS not loaded, falling back to basic export');
@@ -478,6 +559,9 @@
             return keyParts.join(' | ');
         };
 
+        // Get PIM results if available
+        const pimResults = window.pimAnalysisResults || null;
+
         // Sheet 1: Category Matrix
         const worksheet1 = workbook.addWorksheet('Category Matrix');
         const topLevelHeaders = headers.filter(h => h !== ''); 
@@ -494,7 +578,37 @@
         
         const allHeaders1 = [...topLevelHeaders, 'Category & Facet Key'];
         worksheet1.columns = allHeaders1.map(h => ({ header: h, key: h, width: 15 }));
-        worksheet1.addRows(topLevelData);
+        
+        // Add header row first
+        worksheet1.addRow(allHeaders1);
+        const headerRow = worksheet1.getRow(1);
+        headerRow.font = { bold: true };
+        headerRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFD3D3D3' }
+        };
+        
+        // Add data rows and apply red highlighting for rows without SKUs
+        topLevelData.forEach((rowData, index) => {
+            const excelRow = worksheet1.addRow(rowData);
+            
+            // Check if this row has associated SKUs
+            if (pimResults) {
+                const originalRow = data[index];
+                const hasSkus = rowHasSkus(originalRow, keyGenHeaders, pimResults);
+                
+                // If PIM data exists and this row has no SKUs, highlight in red
+                if (hasSkus === false) {
+                    excelRow.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFFFE5E5' }  // Light red background
+                    };
+                    excelRow.font = { color: { argb: 'FFCC0000' } };  // Dark red text
+                }
+            }
+        });
 
         // Sheet 2: Keyword Breakdown
         const keywordBreakdownData = [];
@@ -548,11 +662,60 @@
         const categoryFacetPairs = buildCategoryFacetPairs(data, headers);
         if (categoryFacetPairs.length > 0) {
             const worksheetPairs = workbook.addWorksheet('Category-Facet Map');
-            worksheetPairs.columns = [
-                { header: 'Category Mapping', key: 'Category Mapping', width: 30 },
-                { header: 'Facet Value', key: 'Facet Value', width: 40 }
-            ];
-            worksheetPairs.addRows(categoryFacetPairs);
+            
+            // Add SKU counts if PIM results are available
+            const pimResults = window.pimAnalysisResults || null;
+            if (pimResults && pimResults.category_facet_counts) {
+                // Create a map for quick lookup (include Facet Attribute in key)
+                const skuCountMap = new Map();
+                pimResults.category_facet_counts.forEach(entry => {
+                    const key = `${entry['Category Mapping']}|${entry['Facet Attribute'] || ''}|${entry['Facet Value']}`;
+                    skuCountMap.set(key, {
+                        count: entry['SKU Count'] || 0,
+                        skuIds: entry['SKU IDs'] || [],
+                        count: entry['SKU Count'] || 0
+                    });
+                });
+                
+                // Add SKU counts to pairs
+                const pairsWithCounts = categoryFacetPairs.map(pair => {
+                    const key = `${pair['Category Mapping']}|${pair['Facet Attribute'] || ''}|${pair['Facet Value']}`;
+                    const skuData = skuCountMap.get(key);
+                    return {
+                        'Category Mapping': pair['Category Mapping'],
+                        'Facet Attribute': pair['Facet Attribute'] || '',
+                        'Facet Value': pair['Facet Value'],
+                        'SKU Count': skuData ? skuData.count : 0,
+                        'SKU IDs': (() => {
+                            if (!skuData || !skuData.skuIds) return '(None)';
+                            // Ensure skuIds is an array
+                            const idsArray = Array.isArray(skuData.skuIds) ? skuData.skuIds : [];
+                            // Filter out null/empty/NaN values
+                            const validIds = idsArray.filter(id => {
+                                if (id == null || id === '') return false;
+                                const idStr = String(id).trim();
+                                return idStr && idStr.toLowerCase() !== 'nan' && idStr !== 'undefined';
+                            });
+                            return validIds.length > 0 ? validIds.join(', ') : '(None)';
+                        })()
+                    };
+                });
+                
+                worksheetPairs.columns = [
+                    { header: 'Category Mapping', key: 'Category Mapping', width: 30 },
+                    { header: 'Facet Value', key: 'Facet Value', width: 40 },
+                    { header: 'SKU Count', key: 'SKU Count', width: 12 },
+                    { header: 'SKU IDs', key: 'SKU IDs', width: 50 }
+                ];
+                worksheetPairs.addRows(pairsWithCounts);
+            } else {
+                worksheetPairs.columns = [
+                    { header: 'Category Mapping', key: 'Category Mapping', width: 30 },
+                    { header: 'Facet Attribute', key: 'Facet Attribute', width: 20 },
+                    { header: 'Facet Value', key: 'Facet Value', width: 40 }
+                ];
+                worksheetPairs.addRows(categoryFacetPairs);
+            }
         }
 
         // Sheet 3: Category Consolidation with colors
@@ -579,6 +742,7 @@
         if (facetColumns.length === 0) return [];
 
         const pairsSet = new Set();
+        const categoriesSet = new Set(); // Track unique categories for Root Category option
         const sanitize = value => {
             if (value === null || value === undefined) return '(Blank)';
             const cleaned = String(value).replace(/<[^>]*>?/gm, '').trim();
@@ -588,6 +752,13 @@
         data.forEach(row => {
             if (!row) return;
             const categoryValue = sanitize(row['Category Mapping']);
+            
+            // Track this category for Root Category option
+            if (categoryValue && categoryValue !== '(Blank)') {
+                categoriesSet.add(categoryValue);
+            }
+            
+            // Create category-facet pairs with Facet Attribute
             facetColumns.forEach(column => {
                 const cellValue = row[column];
                 if (cellValue === null || cellValue === undefined) return;
@@ -595,7 +766,8 @@
                 values.forEach(value => {
                     if (!value) return;
                     const cleanValue = sanitize(value);
-                    const key = JSON.stringify([categoryValue, cleanValue]);
+                    // Include Facet Attribute (column name) in the key
+                    const key = JSON.stringify([categoryValue, column, cleanValue]);
                     if (!pairsSet.has(key)) {
                         pairsSet.add(key);
                     }
@@ -604,17 +776,32 @@
         });
 
         const pairs = Array.from(pairsSet).map(key => {
-            const [category, facet] = JSON.parse(key);
+            const [category, facetAttribute, facetValue] = JSON.parse(key);
             return {
                 'Category Mapping': category,
-                'Facet Value': facet
+                'Facet Attribute': facetAttribute, // Column name like "Colour"
+                'Facet Value': facetValue
             };
+        });
+        
+        // Add "Root Category" option for each unique category
+        // This allows SKUs to be counted against just the category, even without matching facets
+        categoriesSet.forEach(category => {
+            if (category && category !== '(Blank)') {
+                pairs.push({
+                    'Category Mapping': category,
+                    'Facet Attribute': 'Root Category',
+                    'Facet Value': 'Root Category'
+                });
+            }
         });
 
         pairs.sort((a, b) => {
             const categoryCompare = a['Category Mapping'].localeCompare(b['Category Mapping']);
             if (categoryCompare !== 0) return categoryCompare;
-            return a['Facet Value'].localeCompare(b['Facet Value']);
+            const attributeCompare = (a['Facet Attribute'] || '').localeCompare(b['Facet Attribute'] || '');
+            if (attributeCompare !== 0) return attributeCompare;
+            return (a['Facet Value'] || '').localeCompare(b['Facet Value'] || '');
         });
 
         return pairs;
@@ -680,6 +867,9 @@
             fgColor: { argb: 'FFD3D3D3' }
         };
         
+        // Get PIM results if available for strikethrough
+        const pimResults = window.pimAnalysisResults || null;
+
         // Add data rows starting from row 4 with coloring
         cleanData.forEach((dataRow, rowIndex) => {
             const rowNumber = rowIndex + 4; // Start at row 4
@@ -693,6 +883,7 @@
             excelRow.values = rowValues;
             
             const originalRow = categoryConsolidationData[rowIndex];
+            const category = dataRow['Category Mapping'] || '';
             
             // Apply coloring to facet columns
             if (facetStartIndex >= 0 && originalRow._facetPercentages) {
@@ -711,12 +902,34 @@
                         } else {
                             const percentage = originalRow._facetPercentages[header];
                             const bgColor = getColorForPercentage(percentage);
+                            
+                            // Check if this facet value has SKUs - if not, strikethrough
+                            let hasSkus = null;
+                            if (pimResults && category) {
+                                // Split cell value into individual facet values
+                                const facetValues = String(cellValue).split('|').map(v => v.trim()).filter(Boolean);
+                                // Check if any facet value has SKUs - must match Facet Attribute (column name)
+                                // Use 'header' as the facet attribute (column name)
+                                hasSkus = facetValues.some(facetValue => 
+                                    hasSkusForCategoryFacet(category, facetValue, pimResults, header) === true
+                                );
+                            }
+                            
                             cell.fill = {
                                 type: 'pattern',
                                 pattern: 'solid',
                                 fgColor: bgColor
                             };
-                            cell.font = { color: { argb: 'FF000000' } };
+                            
+                            // Apply strikethrough if no SKUs found
+                            if (hasSkus === false) {
+                                cell.font = { 
+                                    color: { argb: 'FF000000' },
+                                    strike: true  // Strikethrough
+                                };
+                            } else {
+                                cell.font = { color: { argb: 'FF000000' } };
+                            }
                         }
                         cell.alignment = { wrapText: true, vertical: 'top' };
                     }
@@ -1819,6 +2032,7 @@
             else if (lensType === 'facet-potential') renderFacetPotentialAnalysisView();
             else if (lensType === 'interactive-matrix') renderInteractiveCategoryMatrixView();
             else if (lensType === 'smart-recommendations') renderSmartRecommendationsView();
+            else if (lensType === 'pim-sku-mapping') renderPimSkuMappingView();
             return;
         } 
         const scopeBtn = target.closest('.scope-toggle-btn');
@@ -2012,9 +2226,12 @@
             ui.progressContainer.classList.remove('hidden');
             document.getElementById('analyse-btn').disabled = true;
             async function startAnalysisTask(formData) {
+                const protocol = window.location.protocol || 'http:';
+                const hostname = window.location.hostname || '127.0.0.1';
                 for (let port = 5000; port <= 5010; port++) {
                     try {
-                        const response = await fetch(`http://127.0.0.1:${port}/process`, { method: 'POST', body: formData, headers: { 'X-API-KEY': API_KEY }, signal: AbortSignal.timeout(5000) });
+                        const apiUrl = `${protocol}//${hostname}:${port}/process`;
+                        const response = await fetch(apiUrl, { method: 'POST', body: formData, headers: { 'X-API-KEY': API_KEY }, signal: AbortSignal.timeout(5000) });
                         if (response.status === 202) return { port, taskId: (await response.json()).task_id };
                         if (response.status >= 400) throw new Error((await response.json()).error || `Server on port ${port} returned an error.`);
                     } catch (error) { console.log(`Port ${port} failed...`); }
@@ -2033,9 +2250,12 @@
     }
 
     function pollForResult(port, taskId) {
+        const protocol = window.location.protocol || 'http:';
+        const hostname = window.location.hostname || '127.0.0.1';
         pollingInterval = setInterval(async () => {
             try {
-                const response = await fetch(`http://127.0.0.1:${port}/status/${taskId}`, { headers: { 'X-API-KEY': API_KEY } });
+                const apiUrl = `${protocol}//${hostname}:${port}/status/${taskId}`;
+                const response = await fetch(apiUrl, { headers: { 'X-API-KEY': API_KEY } });
                 const data = await response.json();
                 if (data.state === 'PROGRESS') {
                     const progress = data.info;
@@ -2287,6 +2507,32 @@
             <div class="lens-section">
                 <h3 class="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">Taxonomy & Architecture Analysis</h3>
                 <p class="text-sm text-gray-600 mb-4">This analysis automates a category overhaul by reviewing competitor URLs to extract their category, sub-type, and facet structures, then aggregates organic traffic for each combination. Use this to find high-value taxonomy gaps and inform changes to your site architecture.</p>
+                
+                <!-- PIM Upload Section -->
+                <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 class="font-bold text-lg mb-2 text-gray-800">PIM Product Data</h4>
+                    <p class="text-sm text-gray-600 mb-3">Upload your PIM product data to see SKU counts per category-facet combination and highlight gaps in exports.</p>
+                    <div class="flex flex-wrap items-center gap-4">
+                        <div class="flex-1 min-w-[200px]">
+                            <label for="pim-file-lens" class="block text-sm font-medium text-gray-700 mb-1">PIM CSV File</label>
+                            <input type="file" id="pim-file-lens" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        </div>
+                        <div class="flex-1 min-w-[200px]" id="pim-sku-column-selector-lens" style="display: none;">
+                            <label for="sku-id-column-lens" class="block text-sm font-medium text-gray-700 mb-1">SKU ID Column (Auto-detected)</label>
+                            <select id="sku-id-column-lens" class="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                <option value="">Auto-detect</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button id="analyze-pim-btn-lens" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm" disabled>
+                                Analyze PIM Data
+                            </button>
+                        </div>
+                    </div>
+                    <div id="pim-analysis-status-lens" class="mt-3 hidden"></div>
+                    <div id="pim-results-summary" class="mt-2 text-sm text-gray-600"></div>
+                </div>
+                
                 <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
                     <div data-lens="category-overhaul" class="lens-card p-6 border rounded-lg">
                         <h3 class="font-bold text-xl">Category Overhaul Matrix</h3>
@@ -2304,12 +2550,352 @@
                         <h3 class="font-bold text-xl">Interactive Matrix Editor</h3>
                         <p>Edit individual matrix rows with conditional overrides so you can adjust values only when they appear with specific category/context combinations.</p>
                     </div>
+                    <div data-lens="pim-sku-mapping" class="lens-card p-6 border rounded-lg">
+                        <h3 class="font-bold text-xl">PIM SKU Mapping</h3>
+                        <p>View detailed SKU mapping results showing which SKUs match each category-facet combination.</p>
+                    </div>
                 </div>
             </div>`;
         }
 
         html += `</div>`;
         ui.resultsContainer.innerHTML = html;
+        
+        // Setup PIM upload event listeners if Taxonomy & Architecture Analysis section exists
+        if (hasOverhaulData || fallbackHasOverhaulData) {
+            setupPimUploadListeners();
+        }
+    }
+    
+    function setupPimUploadListeners() {
+        const pimFileInput = document.getElementById('pim-file-lens');
+        const analyzeBtn = document.getElementById('analyze-pim-btn-lens');
+        const skuColumnSelector = document.getElementById('pim-sku-column-selector-lens');
+        const skuIdColumnSelect = document.getElementById('sku-id-column-lens');
+        
+        if (!pimFileInput || !analyzeBtn) return;
+        
+        // Reset file input and status when view loads
+        pimFileInput.value = '';
+        if (skuColumnSelector) skuColumnSelector.style.display = 'none';
+        analyzeBtn.disabled = true;
+        
+        const statusDiv = document.getElementById('pim-analysis-status-lens');
+        const resultsSummary = document.getElementById('pim-results-summary');
+        if (statusDiv) statusDiv.classList.add('hidden');
+        if (resultsSummary) resultsSummary.textContent = '';
+        
+        pimFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                try {
+                    // Read CSV headers to detect SKU column
+                    const text = await file.text();
+                    const lines = text.split('\n');
+                    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+                    
+                    // Populate SKU column selector
+                    if (skuIdColumnSelect) {
+                        skuIdColumnSelect.innerHTML = '<option value="">Auto-detect</option>' + 
+                            headers.map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('');
+                    }
+                    
+                    // Show selector if hidden
+                    if (skuColumnSelector) {
+                        skuColumnSelector.style.display = 'block';
+                    }
+                    
+                    // Enable analyze button
+                    analyzeBtn.disabled = false;
+                } catch (error) {
+                    console.error('Error reading file:', error);
+                    showNotification('Error reading file. Please ensure it is a valid CSV file.', 'error');
+                }
+            }
+        });
+        
+        analyzeBtn.addEventListener('click', async () => {
+            const fileInput = document.getElementById('pim-file-lens');
+            if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+                showNotification('Please select a PIM CSV file first.', 'error');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const skuColumn = skuIdColumnSelect ? skuIdColumnSelect.value : null;
+            
+            // Get category-facet map from Category Overhaul Matrix
+            const { categoryOverhaulMatrixReport } = analysisResults;
+            if (!categoryOverhaulMatrixReport || categoryOverhaulMatrixReport.length === 0) {
+                showNotification('Category Overhaul Matrix data is required. Please run an analysis first.', 'error');
+                return;
+            }
+            
+            const categoryFacetMap = buildCategoryFacetPairs(
+                categoryOverhaulMatrixReport, 
+                Object.keys(categoryOverhaulMatrixReport[0] || {})
+            );
+            
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = 'Analyzing...';
+            
+            if (statusDiv) {
+                statusDiv.className = 'p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm';
+                statusDiv.textContent = 'Analyzing PIM data... This may take a moment.';
+                statusDiv.classList.remove('hidden');
+            }
+            
+            try {
+                // Prepare form data
+                const formData = new FormData();
+                formData.append('pimFile', file);
+                formData.append('categoryFacetMap', JSON.stringify(categoryFacetMap));
+                if (skuColumn) {
+                    formData.append('skuIdColumn', skuColumn);
+                }
+                
+                    // Call API - use full URL with port
+                    let response;
+                    let result;
+                    let apiError = null;
+                    
+                    // Try different ports (5000-5010) like the main analysis does
+                    const protocol = window.location.protocol || 'http:';
+                    const hostname = window.location.hostname || '127.0.0.1';
+                    for (let port = 5000; port <= 5010; port++) {
+                        try {
+                            const apiUrl = `${protocol}//${hostname}:${port}/api/pim/analyze`;
+                            response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: {
+                                'X-API-KEY': API_KEY
+                            },
+                            body: formData,
+                            signal: AbortSignal.timeout(360000) // 6 minute timeout (360 seconds) - backend allows up to 5 minutes
+                        });
+                        
+                        // Check if response is JSON by checking content-type header
+                        const contentType = response.headers.get('content-type') || '';
+                        
+                        if (response.status === 202 && contentType.includes('application/json')) {
+                            // Async task started - get task_id and poll for results
+                            const taskData = await response.json();
+                            if (taskData.task_id) {
+                                // Start polling for results
+                                await pollPimTaskResult(hostname, port, taskData.task_id, statusDiv, resultsSummary);
+                                return; // Exit early, polling will handle completion
+                            } else {
+                                throw new Error('Task ID not received from server');
+                            }
+                        } else if (response.ok && contentType.includes('application/json')) {
+                            // Immediate success - parse as JSON (backward compatibility)
+                            result = await response.json();
+                            break; // Success, exit loop
+                        } else {
+                            // Error response - try to parse as JSON, fallback to text
+                            let errorMessage = `Server error on port ${port} (Status: ${response.status})`;
+                            try {
+                                if (contentType.includes('application/json')) {
+                                    const errorData = await response.json();
+                                    errorMessage = errorData.error || errorMessage;
+                                } else {
+                                    // Not JSON, read as text
+                                    const text = await response.text();
+                                    console.error(`Port ${port} returned non-JSON:`, text.substring(0, 500));
+                                    if (text.trim().startsWith('<!')) {
+                                        errorMessage = `Server on port ${port} returned HTML error page. Check if the endpoint exists.`;
+                                    } else {
+                                        errorMessage = `Server error: ${text.substring(0, 200)}`;
+                                    }
+                                }
+                            } catch (parseError) {
+                                // Couldn't parse response
+                                console.error(`Failed to parse error response from port ${port}:`, parseError);
+                            }
+                            apiError = new Error(errorMessage);
+                            continue; // Try next port
+                        }
+                        } catch (error) {
+                            if (error.name === 'AbortError') {
+                                apiError = new Error(`Request to port ${port} timed out`);
+                            } else {
+                                apiError = error;
+                            }
+                            console.log(`Port ${port} failed: ${error.message}`);
+                            continue; // Try next port
+                        }
+                    }
+                    
+                    if (!result) {
+                        throw apiError || new Error('Could not connect to backend server on any port (5000-5010)');
+                    }
+                
+                // Store PIM results globally for use in exports
+                window.pimAnalysisResults = result;
+                
+                // Update status
+                if (statusDiv) {
+                    statusDiv.className = 'p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm';
+                    statusDiv.innerHTML = `
+                        <div class="font-semibold">Analysis Complete!</div>
+                        <div class="mt-1">Total SKUs: ${result.total_skus} | Matched SKUs: ${result.matched_skus} (${Math.round(result.matched_skus / result.total_skus * 100)}%)</div>
+                    `;
+                }
+                
+                // Show results summary
+                if (resultsSummary) {
+                    resultsSummary.textContent = `✓ PIM data loaded. Exports will now highlight rows/values without SKUs.`;
+                    resultsSummary.className = 'mt-2 text-sm text-green-600';
+                }
+                
+                showNotification('PIM analysis complete! Exports will now show SKU availability.', 'success');
+                
+            } catch (error) {
+                console.error('Error analyzing PIM file:', error);
+                showNotification(`Error analyzing PIM file: ${error.message}`, 'error');
+                
+                if (statusDiv) {
+                    statusDiv.className = 'p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm';
+                    statusDiv.textContent = `Error: ${error.message}`;
+                }
+            } finally {
+                // Only re-enable if not polling (polling will handle completion)
+                if (!window.pimPollingInterval) {
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.textContent = 'Analyze PIM Data';
+                }
+            }
+        });
+        
+        // Polling function for async PIM analysis task
+        async function pollPimTaskResult(hostname, port, taskId, statusDiv, resultsSummary) {
+            const protocol = window.location.protocol || 'http:';
+            const analyzeBtn = document.getElementById('analyze-pim-btn-lens');
+            
+            window.pimPollingInterval = setInterval(async () => {
+                try {
+                    const apiUrl = `${protocol}//${hostname}:${port}/api/pim/status/${taskId}`;
+                    const response = await fetch(apiUrl, { headers: { 'X-API-KEY': API_KEY } });
+                    const data = await response.json();
+                    
+                    if (data.state === 'PROGRESS') {
+                        // Update progress display
+                        const progress = data.info;
+                        const percentage = progress.total > 0 ? (progress.current / progress.total) * 100 : 0;
+                        
+                        if (statusDiv) {
+                            statusDiv.className = 'p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm';
+                            statusDiv.innerHTML = `
+                                <div class="font-semibold">${progress.status || 'Processing...'}</div>
+                                <div class="mt-2">
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-blue-600 h-2 rounded-full transition-all" style="width: ${percentage}%"></div>
+                                    </div>
+                                    <div class="mt-1 text-xs">${progress.current || 0} / ${progress.total || 0}</div>
+                                </div>
+                            `;
+                        }
+                    } else if (data.state === 'SUCCESS') {
+                        // Task completed successfully
+                        clearInterval(window.pimPollingInterval);
+                        window.pimPollingInterval = null;
+                        
+                        // Handle different result structures
+                        // Task returns: {'status': 'SUCCESS', 'result': {...}}
+                        // Status endpoint returns: {'state': 'SUCCESS', 'result': {'status': 'SUCCESS', 'result': {...}}}
+                        let result = null;
+                        if (data.result && data.result.result) {
+                            // Nested structure: {state: 'SUCCESS', result: {status: 'SUCCESS', result: {...}}}
+                            result = data.result.result;
+                        } else if (data.result && data.result.status === 'SUCCESS' && data.result.result) {
+                            // Same nested structure
+                            result = data.result.result;
+                        } else if (data.result) {
+                            // Direct result structure (fallback)
+                            result = data.result;
+                        } else {
+                            console.error('Unexpected result structure:', data);
+                            throw new Error('Unexpected result structure from server');
+                        }
+                        
+                        // Validate result structure
+                        if (!result || typeof result !== 'object') {
+                            console.error('Invalid result:', result);
+                            throw new Error('Invalid result structure received from server');
+                        }
+                        
+                        // Store PIM results globally
+                        window.pimAnalysisResults = result;
+                        
+                        // Update status
+                        if (statusDiv) {
+                            const totalSkus = result.total_skus || 0;
+                            const matchedSkus = result.matched_skus || 0;
+                            const percentage = totalSkus > 0 ? Math.round(matchedSkus / totalSkus * 100) : 0;
+                            
+                            statusDiv.className = 'p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm';
+                            statusDiv.innerHTML = `
+                                <div class="font-semibold">Analysis Complete!</div>
+                                <div class="mt-1">Total SKUs: ${totalSkus} | Matched SKUs: ${matchedSkus} (${percentage}%)</div>
+                            `;
+                        }
+                        
+                        // Show results summary
+                        if (resultsSummary) {
+                            resultsSummary.textContent = `✓ PIM data loaded. Exports will now highlight rows/values without SKUs.`;
+                            resultsSummary.className = 'mt-2 text-sm text-green-600';
+                            resultsSummary.classList.remove('hidden');
+                        }
+                        
+                        // Re-enable button
+                        if (analyzeBtn) {
+                            analyzeBtn.disabled = false;
+                            analyzeBtn.textContent = 'Analyze PIM Data';
+                        }
+                        
+                        // Display results
+                        displayPimAnalysisResults(result);
+                        
+                        showNotification('PIM analysis complete! Exports will now show SKU availability.', 'success');
+                    } else if (data.state === 'FAILURE') {
+                        // Task failed
+                        clearInterval(window.pimPollingInterval);
+                        window.pimPollingInterval = null;
+                        
+                        const errorMsg = data.error || 'Unknown error occurred';
+                        
+                        if (statusDiv) {
+                            statusDiv.className = 'p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm';
+                            statusDiv.textContent = `Error: ${errorMsg}`;
+                        }
+                        
+                        // Re-enable button
+                        if (analyzeBtn) {
+                            analyzeBtn.disabled = false;
+                            analyzeBtn.textContent = 'Analyze PIM Data';
+                        }
+                        
+                        showNotification(`PIM analysis failed: ${errorMsg}`, 'error');
+                    }
+                } catch (error) {
+                    clearInterval(window.pimPollingInterval);
+                    window.pimPollingInterval = null;
+                    
+                    console.error('Error polling PIM task status:', error);
+                    
+                    if (statusDiv) {
+                        statusDiv.className = 'p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm';
+                        statusDiv.textContent = `Error polling task status: ${error.message}`;
+                    }
+                    
+                    // Re-enable button
+                    if (analyzeBtn) {
+                        analyzeBtn.disabled = false;
+                        analyzeBtn.textContent = 'Analyze PIM Data';
+                    }
+                }
+            }, 2000); // Poll every 2 seconds
+        }
     }
     
     const monthlyToAnnualCols = [
@@ -3524,6 +4110,129 @@
         updateSmartRecommendationSelectionCount();
     }
 
+    function renderPimSkuMappingView() {
+        // Check if PIM analysis results exist
+        const pimResults = window.pimAnalysisResults;
+        
+        if (!pimResults || !pimResults.category_facet_counts || pimResults.category_facet_counts.length === 0) {
+            ui.resultsContainer.innerHTML = createReportContainer(
+                'PIM SKU Mapping',
+                'No PIM analysis results available.',
+                '',
+                'Please upload your PIM product data from the Taxonomy & Architecture Analysis lens view first. The PIM upload interface is located at the top of the lens selection page.'
+            );
+            return;
+        }
+
+        tableState.activeLens = 'pim-sku-mapping';
+        
+        const subtitle = 'Detailed SKU mapping results showing which SKUs match each category-facet combination.';
+        const customContent = `
+            <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-gray-700">
+                <strong>PIM Data Loaded:</strong> ${pimResults.total_skus} total SKUs, ${pimResults.matched_skus} matched (${Math.round(pimResults.matched_skus / pimResults.total_skus * 100)}%)
+            </div>`;
+        const explainer = `
+            <div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 p-3 rounded-md mb-4">
+                <b>SKU Mapping Results:</b> This table shows all category-facet combinations from the Category Overhaul Matrix and which SKUs from your PIM data match each combination.
+                <ul class="list-disc list-inside mt-2">
+                    <li>Each row represents a unique category-facet combination.</li>
+                    <li>The <b>SKU Count</b> column shows how many SKUs match this combination.</li>
+                    <li>The <b>SKU IDs</b> column lists all matching SKU IDs for this combination.</li>
+                    <li>This data is used to highlight gaps in the Category Overhaul Matrix and Category Consolidation exports.</li>
+                </ul>
+            </div>`;
+
+        ui.resultsContainer.innerHTML = createReportContainer('PIM SKU Mapping', subtitle, customContent, explainer);
+        
+        // Display results
+        displayPimAnalysisResults(pimResults);
+    }
+
+    function displayPimAnalysisResults(result) {
+        const { category_facet_counts, total_skus, matched_skus, sku_ids_by_combination } = result;
+        
+        // Store PIM analysis results globally for use in exports
+        window.pimAnalysisResults = result;
+        
+        const statusDiv = document.getElementById('pim-analysis-status');
+        if (statusDiv) {
+            statusDiv.className = 'p-4 bg-green-50 border border-green-200 rounded-lg text-green-700';
+            statusDiv.innerHTML = `
+                <div class="font-semibold">Analysis Complete!</div>
+                <div class="text-sm mt-1">Total SKUs: ${total_skus} | Matched SKUs: ${matched_skus} (${Math.round(matched_skus / total_skus * 100)}%)</div>
+            `;
+        }
+        
+        // Validate and format data with SKU IDs as a display string
+        if (!category_facet_counts || !Array.isArray(category_facet_counts)) {
+            console.error('Invalid category_facet_counts:', category_facet_counts, 'Full result:', result);
+            const tableWrapper = document.getElementById('interactive-table-wrapper');
+            if (tableWrapper) {
+                tableWrapper.innerHTML = '<div class="p-8 text-center text-gray-500 border rounded-lg bg-gray-50">No category-facet data available. Please check your PIM file format.</div>';
+            }
+            return;
+        }
+        
+        const formattedData = category_facet_counts.map((row, index) => {
+            // Handle both 'SKU IDs' (with space) and 'SKU_IDs' (underscore) formats
+            let skuIds = row['SKU IDs'] || row.SKU_IDs || row['SKU_IDs'] || [];
+            
+            // Debug: log first few rows to see structure
+            if (index < 3) {
+                console.log(`Row ${index} structure:`, {
+                    'Category Mapping': row['Category Mapping'],
+                    'Facet Attribute': row['Facet Attribute'],
+                    'Facet Value': row['Facet Value'],
+                    'SKU Count': row['SKU Count'],
+                    'SKU IDs raw': skuIds,
+                    'SKU IDs type': typeof skuIds,
+                    'Is array': Array.isArray(skuIds)
+                });
+            }
+            
+            // Ensure it's an array
+            let skuIdsArray = [];
+            if (Array.isArray(skuIds)) {
+                // Filter out null, empty, or 'nan' values
+                skuIdsArray = skuIds.filter(id => {
+                    if (id == null || id === '') return false;
+                    const idStr = String(id).trim();
+                    return idStr && idStr.toLowerCase() !== 'nan' && idStr !== 'undefined';
+                });
+            } else if (skuIds) {
+                // If it's a string with commas, split it
+                if (typeof skuIds === 'string') {
+                    skuIdsArray = skuIds.split(',').map(id => id.trim()).filter(id => id && id.toLowerCase() !== 'nan');
+                } else {
+                    skuIdsArray = [String(skuIds).trim()];
+                }
+            }
+            
+            const skuIdsString = skuIdsArray.length > 0 ? skuIdsArray.join(', ') : '(None)';
+            
+            return {
+                'Category Mapping': row['Category Mapping'],
+                'Facet Attribute': row['Facet Attribute'] || '',
+                'Facet Value': row['Facet Value'],
+                'SKU Count': row['SKU Count'] || 0,
+                'SKU IDs': skuIdsString,
+                '_SKU_IDS_ARRAY': skuIdsArray  // Keep original array for internal use
+            };
+        });
+        
+        // Display results in table
+        const tableWrapper = document.getElementById('interactive-table-wrapper');
+        if (tableWrapper && formattedData.length > 0) {
+            const headers = ['Category Mapping', 'Facet Attribute', 'Facet Value', 'SKU Count', 'SKU IDs'];
+            const defaultSortKey = 'SKU Count';
+            
+            tableState.activeLens = 'pim-sku-mapping';
+            initializeTable(formattedData, headers, defaultSortKey, 'Category Mapping');
+        } else if (tableWrapper) {
+            tableWrapper.innerHTML = '<div class="p-8 text-center text-gray-500 border rounded-lg bg-gray-50">No matches found. Check your PIM data format and try again.</div>';
+        }
+    }
+
     function initializeTable(data, headers, defaultSortKey, defaultSearchKey, competitorDomains = []) {
         tableState.fullData = data;
         if (Array.isArray(tableState.fullData)) {
@@ -4026,6 +4735,12 @@
             overrideRules = state.overrideRules;
         }
         
+        // Load PIM analysis results if available
+        if (state.pimAnalysisResults) {
+            window.pimAnalysisResults = state.pimAnalysisResults;
+            console.log('Loaded PIM analysis results:', state.pimAnalysisResults);
+        }
+        
         // Load analysis results if available
         if (state.analysisResults && Object.keys(state.analysisResults).length > 0) {
             analysisResults = state.analysisResults;
@@ -4181,6 +4896,7 @@
             tableState: tableState,
             overrideRules: overrideRules,
             analysisOptions: analysisOptions,
+            pimAnalysisResults: window.pimAnalysisResults || null,  // Save PIM analysis results
             savedAt: new Date().toISOString()
         };
 
