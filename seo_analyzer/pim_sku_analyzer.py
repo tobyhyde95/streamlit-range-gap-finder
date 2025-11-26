@@ -412,10 +412,38 @@ def _build_knowledge_base(
 
 
 def _normalize_value(value: str) -> str:
-    """Normalize a value for matching."""
-    # Remove special characters, convert to lowercase
-    normalized = re.sub(r'[^\w\s]', ' ', value.lower())
+    """
+    Normalize a value for matching by handling special characters intelligently.
+    
+    This function normalizes hyphens, underscores, and other separators to spaces,
+    ensuring that "Anti-Climb Paint" matches "Anti Climb Paint".
+    
+    Special characters normalized:
+    - Hyphens (-)
+    - Underscores (_)
+    - Various separators (/, |, \, etc.)
+    - Other punctuation that acts as separators
+    """
+    if not value:
+        return ''
+    
+    # Convert to lowercase first
+    normalized = value.lower().strip()
+    
+    # Replace common separators with spaces
+    # Hyphens, underscores, forward/back slashes, pipes, etc.
+    normalized = re.sub(r'[-_/\\|]+', ' ', normalized)
+    
+    # Replace other punctuation that might act as separators (but keep them as spaces)
+    # This includes: periods, commas, colons, semicolons when surrounded by word characters
+    normalized = re.sub(r'[.,;:]+(?=\s|$)|(?<=\s)[.,;:]+', '', normalized)  # Remove trailing/leading punctuation
+    
+    # Replace remaining special characters with spaces (but preserve alphanumeric and spaces)
+    normalized = re.sub(r'[^\w\s]', ' ', normalized)
+    
+    # Collapse multiple spaces into single space and trim
     normalized = ' '.join(normalized.split())
+    
     return normalized
 
 
@@ -727,16 +755,18 @@ def _intelligent_match(
     
     # Quick check: For multi-word phrases, do a simple substring check in full text first
     # This catches obvious matches like "anti mould paint" in product names
+    # Use normalized values to handle hyphens and special characters (e.g., "Anti-Climb" matches "Anti Climb")
     target_words = target_lower.split()
     
     # For categories, check even shorter phrases and allow partial matches
     min_length = 6 if match_type == 'category' else 8
-    if len(target_words) > 1 and len(target_value.replace(' ', '')) >= min_length:
-        # Normalize spaces/hyphens for comparison
-        target_phrase_simple = target_lower.replace('-', ' ').replace('_', ' ').strip()
-        sku_text_simple = sku_text.replace('-', ' ').replace('_', ' ').strip()
+    if len(target_words) > 1 and len(target_value.replace(' ', '').replace('-', '').replace('_', '')) >= min_length:
+        # Normalize values for comparison (handles hyphens, underscores, special chars)
+        target_phrase_simple = _normalize_value(target_lower)
+        sku_text_simple = _normalize_value(sku_text)
         
         # Simple substring match - if the phrase appears as-is, it's a match
+        # This handles "anti-climb paint" matching "Anti Climb Paint"
         if target_phrase_simple in sku_text_simple:
             # For longer phrases, skip false positive check (they're usually legitimate)
             return True
@@ -744,9 +774,11 @@ def _intelligent_match(
         # For categories, also check if key words appear as substring
         # E.g., "Low VOC Paint" should match "low voc" even if "paint" is missing
         if match_type == 'category' and len(target_words) >= 2:
+            # Use normalized target words for checking
+            target_words_normalized = _normalize_value(target_lower).split()
             # Check if at least 2 consecutive words appear together
-            for i in range(len(target_words) - 1):
-                two_word_phrase = f"{target_words[i]} {target_words[i+1]}"
+            for i in range(len(target_words_normalized) - 1):
+                two_word_phrase = f"{target_words_normalized[i]} {target_words_normalized[i+1]}"
                 if two_word_phrase in sku_text_simple:
                     return True
     
@@ -791,17 +823,20 @@ def _intelligent_match(
                 words_found = all(word in cell_lower for word in target_words)
             
             if words_found:
-                # Normalize spaces and hyphens for comparison (use new variable name to avoid collision)
-                target_phrase_normalized = target_lower.replace('-', ' ').replace('  ', ' ').strip()
-                cell_normalized = cell_lower.replace('-', ' ').replace('  ', ' ').strip()
+                # Use normalized values for comparison (handles hyphens, underscores, special chars)
+                # This ensures "Anti-Climb Paint" matches "Anti Climb Paint"
+                target_phrase_normalized = _normalize_value(target_lower)
+                cell_normalized = _normalize_value(cell_lower)
                 
                 # Strategy 1: Full phrase appears as substring (most lenient)
                 # This handles "anti mould paint" matching "6 year anti mould paint 2.5l"
+                # Also handles "anti-climb paint" matching "Anti Climb Paint"
                 if target_phrase_normalized in cell_normalized:
                     return True
                 
                 # Strategy 2: Remove all spaces and check if phrase matches
                 # This handles "antimouldpaint" vs "anti mould paint" variations
+                # Also handles "anti-climb-paint" vs "antclimbpaint" etc.
                 target_no_spaces = target_phrase_normalized.replace(' ', '')
                 cell_no_spaces = cell_normalized.replace(' ', '')
                 if target_no_spaces in cell_no_spaces:
@@ -809,18 +844,29 @@ def _intelligent_match(
                 
                 # Strategy 3: Check if words appear in order and close together
                 # Allow words to have other text between them (like "6 year" between words)
-                # Create list of (position, word) tuples
-                word_positions = [(cell_normalized.find(word), word) for word in target_words]
+                # Use normalized target words to handle hyphens (e.g., "anti-climb" becomes ["anti", "climb"])
+                target_words_normalized = target_phrase_normalized.split()
+                # Create list of (position, word) tuples using normalized words
+                word_positions = [(cell_normalized.find(word), word) for word in target_words_normalized]
                 # Filter out -1 (not found)
                 word_positions = [(pos, word) for pos, word in word_positions if pos >= 0]
                 
-                if len(word_positions) == len(target_words):
+                if len(word_positions) >= len(target_words_normalized) if match_type == 'category' else len(word_positions) == len(target_words_normalized):
                     # Sort by position
                     word_positions_sorted = sorted(word_positions, key=lambda x: x[0])
                     sorted_words = [word for pos, word in word_positions_sorted]
                     
                     # Check if words are in correct order and reasonably close (within 100 chars)
-                    if sorted_words == target_words:
+                    # For categories, allow partial matches
+                    if match_type == 'category':
+                        # Check if normalized words appear in order (allow partial matches)
+                        target_indices = [target_words_normalized.index(word) for word in sorted_words if word in target_words_normalized]
+                        words_in_order = (target_indices == sorted(target_indices)) if target_indices else False
+                    else:
+                        # For facets, require exact match
+                        words_in_order = (sorted_words == target_words_normalized)
+                    
+                    if words_in_order:
                         first_pos = word_positions_sorted[0][0]
                         last_pos = word_positions_sorted[-1][0] + len(word_positions_sorted[-1][1])
                         if (last_pos - first_pos) < 100:
@@ -845,9 +891,9 @@ def _intelligent_match(
             words_in_text = all(word in sku_text for word in target_words)
         
         if words_in_text:
-            # Normalize spaces and hyphens for comparison
-            target_phrase = target_lower.replace('-', ' ').replace('  ', ' ').strip()
-            sku_text_normalized = sku_text.replace('-', ' ').replace('  ', ' ').strip()
+            # Use normalized values for comparison (handles hyphens, underscores, special chars)
+            target_phrase = _normalize_value(target_lower)
+            sku_text_normalized = _normalize_value(sku_text)
             
             # Strategy 2a: Check if phrase appears as substring (most reliable)
             # This handles "anti mould paint" in "6 year anti mould paint 2.5l"

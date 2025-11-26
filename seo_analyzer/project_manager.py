@@ -132,6 +132,18 @@ class ProjectManager:
                 
                 saved_files['onsite_file'] = onsite_file_path
             
+            # Save PIM file
+            if 'pim_file' in files and files['pim_file']:
+                pim_file_path = os.path.join(project_dir, 'pim_data.csv')
+                files['pim_file'].save(pim_file_path)
+                
+                conn.execute('''
+                    INSERT INTO project_files (project_id, file_type, file_path, original_filename)
+                    VALUES (?, ?, ?, ?)
+                ''', (project_id, 'pim_file', pim_file_path, files['pim_file'].filename))
+                
+                saved_files['pim_file'] = pim_file_path
+            
             conn.commit()
         
         return saved_files
@@ -237,6 +249,9 @@ class ProjectManager:
                 elif file_type == 'onsite_file':
                     files['onsite_file'] = file_path
                     files['onsite_file_original_name'] = original_filename
+                elif file_type == 'pim_file':
+                    files['pim_file'] = file_path
+                    files['pim_file_original_name'] = original_filename
             
             return files
     
@@ -336,6 +351,11 @@ class ProjectManager:
             file_metadata['onsite_file'] = {
                 'path': files['onsite_file'],
                 'original_name': files.get('onsite_file_original_name', 'onsite_data.csv')
+            }
+        if files.get('pim_file'):
+            file_metadata['pim_file'] = {
+                'path': files['pim_file'],
+                'original_name': files.get('pim_file_original_name', 'pim_data.csv')
             }
         
         return {

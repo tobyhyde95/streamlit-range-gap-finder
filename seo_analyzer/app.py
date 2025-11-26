@@ -408,7 +408,8 @@ def save_project_files(project_id):
         files = {
             'our_file': flask.request.files.get('ourFile'),
             'competitor_files': flask.request.files.getlist('competitorFiles'),
-            'onsite_file': flask.request.files.get('onsiteFile')
+            'onsite_file': flask.request.files.get('onsiteFile'),
+            'pim_file': flask.request.files.get('pimFile')
         }
         
         # Remove None values

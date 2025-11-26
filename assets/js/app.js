@@ -2523,12 +2523,16 @@
                                 <option value="">Auto-detect</option>
                             </select>
                         </div>
-                        <div class="flex items-end">
+                        <div class="flex items-end gap-2">
+                            <button id="save-pim-btn-lens" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm" disabled>
+                                Save to Project
+                            </button>
                             <button id="analyze-pim-btn-lens" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm" disabled>
                                 Analyze PIM Data
                             </button>
                         </div>
                     </div>
+                    <div id="pim-saved-status" class="mt-2 text-sm text-green-600 hidden"></div>
                     <div id="pim-analysis-status-lens" class="mt-3 hidden"></div>
                     <div id="pim-results-summary" class="mt-2 text-sm text-gray-600"></div>
                 </div>
@@ -2570,6 +2574,7 @@
     function setupPimUploadListeners() {
         const pimFileInput = document.getElementById('pim-file-lens');
         const analyzeBtn = document.getElementById('analyze-pim-btn-lens');
+        const saveBtn = document.getElementById('save-pim-btn-lens');
         const skuColumnSelector = document.getElementById('pim-sku-column-selector-lens');
         const skuIdColumnSelect = document.getElementById('sku-id-column-lens');
         
@@ -2579,11 +2584,26 @@
         pimFileInput.value = '';
         if (skuColumnSelector) skuColumnSelector.style.display = 'none';
         analyzeBtn.disabled = true;
+        if (saveBtn) saveBtn.disabled = true;
         
         const statusDiv = document.getElementById('pim-analysis-status-lens');
         const resultsSummary = document.getElementById('pim-results-summary');
+        const savedStatus = document.getElementById('pim-saved-status');
         if (statusDiv) statusDiv.classList.add('hidden');
         if (resultsSummary) resultsSummary.textContent = '';
+        if (savedStatus) savedStatus.classList.add('hidden');
+        
+        // Load saved PIM file if project is loaded
+        if (currentProject && window.projectFileMetadata) {
+            const pimMetadata = window.projectFileMetadata.pim_file;
+            if (pimMetadata && pimMetadata.original_name) {
+                // Show saved file indicator
+                if (savedStatus) {
+                    savedStatus.textContent = `Saved: ${pimMetadata.original_name}`;
+                    savedStatus.classList.remove('hidden');
+                }
+            }
+        }
         
         pimFileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
@@ -2605,14 +2625,85 @@
                         skuColumnSelector.style.display = 'block';
                     }
                     
-                    // Enable analyze button
+                    // Enable analyze and save buttons
                     analyzeBtn.disabled = false;
+                    if (saveBtn) saveBtn.disabled = false;
+                    
+                    // Clear saved status when new file is selected
+                    if (savedStatus) savedStatus.classList.add('hidden');
                 } catch (error) {
                     console.error('Error reading file:', error);
                     showNotification('Error reading file. Please ensure it is a valid CSV file.', 'error');
                 }
             }
         });
+        
+        // Save PIM file to project
+        if (saveBtn) {
+            saveBtn.addEventListener('click', async () => {
+                if (!currentProject) {
+                    showNotification('Please select or create a project first.', 'error');
+                    return;
+                }
+                
+                const fileInput = document.getElementById('pim-file-lens');
+                if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+                    showNotification('Please select a PIM CSV file first.', 'error');
+                    return;
+                }
+                
+                const file = fileInput.files[0];
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Saving...';
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('pimFile', file);
+                    
+                    const protocol = window.location.protocol || 'http:';
+                    const hostname = window.location.hostname || '127.0.0.1';
+                    const apiUrl = `${protocol}//${hostname}:5000/api/projects/${currentProject.id}/files`;
+                    
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'X-API-KEY': API_KEY
+                        },
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to save PIM file');
+                    }
+                    
+                    const result = await response.json();
+                    
+                    // Update saved status
+                    if (savedStatus) {
+                        savedStatus.textContent = `Saved: ${file.name}`;
+                        savedStatus.classList.remove('hidden');
+                    }
+                    
+                    // Update project file metadata
+                    if (!window.projectFileMetadata) {
+                        window.projectFileMetadata = {};
+                    }
+                    window.projectFileMetadata.pim_file = {
+                        path: result.saved_files.pim_file,
+                        original_name: file.name
+                    };
+                    
+                    showNotification('PIM file saved to project successfully!', 'success');
+                } catch (error) {
+                    console.error('Error saving PIM file:', error);
+                    showNotification(`Error saving PIM file: ${error.message}`, 'error');
+                } finally {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Save to Project';
+                }
+            });
+        }
         
         analyzeBtn.addEventListener('click', async () => {
             const fileInput = document.getElementById('pim-file-lens');
@@ -4698,6 +4789,15 @@
             // Store file metadata for restoration
             if (projectData.file_metadata) {
                 window.projectFileMetadata = projectData.file_metadata;
+            } else {
+                // Build file metadata from files if not provided
+                window.projectFileMetadata = {};
+                if (projectData.files && projectData.files.pim_file) {
+                    window.projectFileMetadata.pim_file = {
+                        path: projectData.files.pim_file,
+                        original_name: projectData.files.pim_file_original_name || 'pim_data.csv'
+                    };
+                }
             }
             
             // Load project state if available
