@@ -1090,15 +1090,8 @@
                                 fgColor: bgColor
                             };
                             
-                            // Apply strikethrough if no SKUs found
-                            if (hasSkus === false) {
-                                cell.font = { 
-                                    color: { argb: 'FF000000' },
-                                    strike: true  // Strikethrough
-                                };
-                            } else {
-                                cell.font = { color: { argb: 'FF000000' } };
-                            }
+                            // Set font color (no strikethrough)
+                            cell.font = { color: { argb: 'FF000000' } };
                         }
                         cell.alignment = { wrapText: true, vertical: 'top' };
                     }
