@@ -147,6 +147,45 @@ class ProjectManager:
             conn.commit()
         
         return saved_files
+
+    def delete_pim_data(self, project_id: int) -> bool:
+        """Remove saved PIM files and metadata for a project."""
+        try:
+            pim_paths = []
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.execute('''
+                    SELECT file_path 
+                    FROM project_files 
+                    WHERE project_id = ? AND file_type = 'pim_file'
+                ''', (project_id,))
+                
+                pim_paths = [row[0] for row in cursor.fetchall()]
+                
+                conn.execute('''
+                    DELETE FROM project_files 
+                    WHERE project_id = ? AND file_type = 'pim_file'
+                ''', (project_id,))
+                
+                conn.execute('''
+                    UPDATE projects 
+                    SET updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                ''', (project_id,))
+                
+                conn.commit()
+            
+            for path in pim_paths:
+                try:
+                    if path and os.path.exists(path):
+                        os.remove(path)
+                except Exception:
+                    # Continue even if file removal fails
+                    pass
+            
+            return True
+        except Exception as e:
+            print(f"Error deleting PIM data for project {project_id}: {e}")
+            return False
     
     def save_project_state(self, project_id: int, state_data: Dict[str, Any]) -> bool:
         """Save the current state of a project."""

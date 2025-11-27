@@ -1,4 +1,4 @@
-(function() {
+;(function() {
     'use strict';
     
     let analysisResults = {};
@@ -453,23 +453,42 @@
     }
 
     // Helper function to check if a category-facet combination has SKUs
+    function normalizeSkuMatchValue(value) {
+        if (value === null || value === undefined) return '';
+        return String(value)
+            .replace(/<[^>]*>?/gm, '')
+            .toLowerCase()
+            .replace(/&/g, ' and ')
+            .replace(/[^a-z0-9]+/g, ' ')
+            .trim();
+    }
+
+    function buildSkuMatchKey(category, facetAttribute, facetValue) {
+        return [
+            normalizeSkuMatchValue(category),
+            normalizeSkuMatchValue(facetAttribute),
+            normalizeSkuMatchValue(facetValue)
+        ].join('|');
+    }
+
     function hasSkusForCategoryFacet(category, facetValue, pimResults, facetAttribute = null) {
         if (!pimResults || !pimResults.category_facet_counts) return null;
+        const normalizedCategory = normalizeSkuMatchValue(category);
+        const normalizedFacetValue = normalizeSkuMatchValue(facetValue);
+        const normalizedFacetAttribute = facetAttribute ? normalizeSkuMatchValue(facetAttribute) : null;
         
         // Find matching entry - must match Category Mapping, Facet Value, and Facet Attribute (if provided)
         // This prevents false matches like "Stone" (color) vs "Stone" (material)
         const matchingEntry = pimResults.category_facet_counts.find(entry => {
-            const categoryMatch = entry['Category Mapping'] === category;
-            const valueMatch = entry['Facet Value'] === facetValue;
+            const categoryMatch = normalizeSkuMatchValue(entry['Category Mapping']) === normalizedCategory;
+            const valueMatch = normalizeSkuMatchValue(entry['Facet Value']) === normalizedFacetValue;
             
             // If facetAttribute is provided, must match (exact or semantic match)
             // If not provided, any Facet Attribute is acceptable (fallback)
             let attributeMatch = true;
             if (facetAttribute) {
-                const entryAttribute = entry['Facet Attribute'] || '';
-                // Exact match or semantic match (e.g., "Colour" matches "Colour_Group")
-                attributeMatch = entryAttribute === facetAttribute || 
-                                entryAttribute.toLowerCase().replace(/[_\-\s]/g, '') === facetAttribute.toLowerCase().replace(/[_\-\s]/g, '');
+                const entryAttribute = normalizeSkuMatchValue(entry['Facet Attribute'] || '');
+                attributeMatch = entryAttribute === normalizedFacetAttribute;
             }
             
             return categoryMatch && valueMatch && attributeMatch;
@@ -483,14 +502,17 @@
         if (!pimResults || !pimResults.category_facet_counts) return null;
         
         const category = row['Category Mapping'] || '';
+        const normalizedCategory = normalizeSkuMatchValue(category);
+        
         const facetColumns = getFacetHeaders(keyGenHeaders);
+        const normalizedRoot = normalizeSkuMatchValue('Root Category');
         
         // First, check if there's a Root Category match for this category
         // This handles cases where SKUs match the category but not specific facet combinations
         const rootCategoryMatch = pimResults.category_facet_counts.find(entry => 
-            entry['Category Mapping'] === category && 
-            entry['Facet Attribute'] === 'Root Category' && 
-            entry['Facet Value'] === 'Root Category' &&
+            normalizeSkuMatchValue(entry['Category Mapping']) === normalizedCategory && 
+            normalizeSkuMatchValue(entry['Facet Attribute']) === normalizedRoot && 
+            normalizeSkuMatchValue(entry['Facet Value']) === normalizedRoot &&
             entry['SKU Count'] > 0
         );
         if (rootCategoryMatch) {
@@ -525,7 +547,7 @@
             // Check if any entry has this category (with any facet or blank)
             // Root Category already checked, so this is just a fallback
             const hasMatch = pimResults.category_facet_counts.some(entry => 
-                entry['Category Mapping'] === category && entry['SKU Count'] > 0
+                normalizeSkuMatchValue(entry['Category Mapping']) === normalizedCategory && entry['SKU Count'] > 0
             );
             return hasMatch;
         }
@@ -669,7 +691,7 @@
                 // Create a map for quick lookup (include Facet Attribute in key)
                 const skuCountMap = new Map();
                 pimResults.category_facet_counts.forEach(entry => {
-                    const key = `${entry['Category Mapping']}|${entry['Facet Attribute'] || ''}|${entry['Facet Value']}`;
+                    const key = buildSkuMatchKey(entry['Category Mapping'], entry['Facet Attribute'] || '', entry['Facet Value']);
                     skuCountMap.set(key, {
                         count: entry['SKU Count'] || 0,
                         skuIds: entry['SKU IDs'] || [],
@@ -679,7 +701,7 @@
                 
                 // Add SKU counts to pairs
                 const pairsWithCounts = categoryFacetPairs.map(pair => {
-                    const key = `${pair['Category Mapping']}|${pair['Facet Attribute'] || ''}|${pair['Facet Value']}`;
+                    const key = buildSkuMatchKey(pair['Category Mapping'], pair['Facet Attribute'] || '', pair['Facet Value']);
                     const skuData = skuCountMap.get(key);
                     return {
                         'Category Mapping': pair['Category Mapping'],
@@ -703,6 +725,7 @@
                 
                 worksheetPairs.columns = [
                     { header: 'Category Mapping', key: 'Category Mapping', width: 30 },
+                    { header: 'Facet Attribute', key: 'Facet Attribute', width: 20 },
                     { header: 'Facet Value', key: 'Facet Value', width: 40 },
                     { header: 'SKU Count', key: 'SKU Count', width: 12 },
                     { header: 'SKU IDs', key: 'SKU IDs', width: 50 }
@@ -749,9 +772,131 @@
             return cleaned === '' ? '(Blank)' : cleaned;
         };
 
+        // DEBUG: Check for Anti Climb Paint in input data
+        console.log('[DEBUG FRONTEND] Total rows in data:', data.length);
+        if (data.length > 0) {
+            console.log('[DEBUG FRONTEND] First row keys:', Object.keys(data[0]));
+            console.log('[DEBUG FRONTEND] First row sample:', JSON.stringify(data[0], null, 2).substring(0, 500));
+        }
+        
+        // Check all possible category field names
+        const categoryFields = ['Category Mapping', 'CategoryMapping', 'category_mapping', 'Category'];
+        let categoryField = null;
+        for (const field of categoryFields) {
+            if (data.length > 0 && data[0].hasOwnProperty(field)) {
+                categoryField = field;
+                console.log(`[DEBUG FRONTEND] Found category field: "${field}"`);
+                break;
+            }
+        }
+        
+        // Also check if any row has "climb" in any field
+        const climbRows = data.filter(row => {
+            if (!row) return false;
+            for (const key in row) {
+                const value = String(row[key] || '').toLowerCase();
+                if (value.includes('climb')) {
+                    console.log(`[DEBUG FRONTEND] Found "climb" in field "${key}": "${row[key]}"`);
+                    return true;
+                }
+            }
+            return false;
+        });
+        
+        if (climbRows.length > 0) {
+            console.log('[DEBUG FRONTEND] Found', climbRows.length, 'rows with "climb" anywhere:');
+            climbRows.slice(0, 3).forEach((row, idx) => {
+                console.log(`  [${idx}] Full row:`, JSON.stringify(row, null, 2).substring(0, 1000));
+                console.log(`  [${idx}] Category Mapping: "${row['Category Mapping']}"`);
+                console.log(`  [${idx}] Navigation_Type: "${row['Navigation_Type']}"`);
+                console.log(`  [${idx}] All facet fields:`, Object.keys(row).filter(k => k !== 'Category Mapping' && k !== 'Monthly Organic Traffic' && k !== 'Total Monthly Google Searches' && k !== 'Total On-Site Searches' && k !== 'KeywordDetails'));
+            });
+        } else {
+            console.log('[DEBUG FRONTEND] WARNING: No rows found with "climb" anywhere!');
+            console.log('[DEBUG FRONTEND] Sample categories in data:', data.slice(0, 10).map(r => {
+                const cat = categoryField ? r[categoryField] : r['Category Mapping'];
+                return cat;
+            }).filter(Boolean));
+        }
+
+        // Use detected category field or fallback to 'Category Mapping'
+        const catField = categoryField || 'Category Mapping';
+        
+        // DEBUG: Search for "Anti Climb Paint" specifically in Category Mapping
+        const antiClimbPaintRows = data.filter(row => {
+            const cat = String(row[catField] || '').toLowerCase();
+            return cat.includes('anti') && cat.includes('climb') && cat.includes('paint');
+        });
+        if (antiClimbPaintRows.length > 0) {
+            console.log(`[DEBUG FRONTEND] Found ${antiClimbPaintRows.length} rows with "Anti Climb Paint" in Category Mapping:`);
+            antiClimbPaintRows.slice(0, 2).forEach((row, idx) => {
+                console.log(`  [${idx}] Category Mapping: "${row[catField]}"`);
+            });
+        } else {
+            console.log('[DEBUG FRONTEND] No rows found with "Anti Climb Paint" in Category Mapping');
+            
+            // Check ALL unique Category Mapping values to see what we have
+            const allCategories = new Set();
+            data.forEach(row => {
+                const cat = String(row[catField] || '').trim();
+                if (cat && cat !== '(Blank)') {
+                    allCategories.add(cat);
+                }
+            });
+            console.log(`[DEBUG FRONTEND] Total unique categories in Category Mapping: ${allCategories.size}`);
+            
+            // Check for categories containing "climb"
+            const climbCategories = Array.from(allCategories).filter(cat => cat.toLowerCase().includes('climb'));
+            if (climbCategories.length > 0) {
+                console.log(`[DEBUG FRONTEND] Categories with "climb": ${climbCategories.join(', ')}`);
+            }
+            
+            // Check if we need to construct category from Category Mapping + Navigation_Type
+            const constructedRows = data.filter(row => {
+                const navType = String(row['Navigation_Type'] || '').toLowerCase();
+                return navType.includes('anti') && navType.includes('climb');
+            });
+            if (constructedRows.length > 0) {
+                console.log(`[DEBUG FRONTEND] Found ${constructedRows.length} rows with "Anti Climb" in Navigation_Type`);
+                console.log(`[DEBUG FRONTEND] Sample: Category Mapping="${constructedRows[0][catField]}", Navigation_Type="${constructedRows[0]['Navigation_Type']}"`);
+                console.log(`[DEBUG FRONTEND] Should we construct category as: "${constructedRows[0][catField]} ${constructedRows[0]['Navigation_Type']}"?`);
+            }
+        }
+        
+        // Helper function to construct full category name from generic Category Mapping + facets
+        function constructCategoryName(row) {
+            const baseCategory = String(row[catField] || '').trim();
+            
+            // If Category Mapping is generic (ends with .Cat),
+            // construct the full category name from Navigation_Type + base category
+            if (baseCategory.endsWith('.Cat')) {
+                const navType = String(row['Navigation_Type'] || '').trim();
+                if (navType) {
+                    // Remove .Cat suffix and combine with Navigation_Type
+                    // Example: "Paint.Cat" + "Anti Climb" -> "Anti Climb Paint"
+                    const baseName = baseCategory.replace(/\.Cat$/, '');
+                    const constructed = `${navType} ${baseName}`.trim();
+                    return constructed;
+                }
+            }
+            
+            // Return original category name if not generic or no Navigation_Type
+            return baseCategory;
+        }
+        
         data.forEach(row => {
             if (!row) return;
-            const categoryValue = sanitize(row['Category Mapping']);
+            
+            // Construct category name (may combine Category Mapping + Navigation_Type)
+            const rawCategory = constructCategoryName(row);
+            const categoryValue = sanitize(rawCategory);
+            
+            // DEBUG: Log category construction for Anti Climb
+            if (rawCategory && rawCategory.toLowerCase().includes('climb')) {
+                const originalCat = String(row[catField] || '').trim();
+                const navType = String(row['Navigation_Type'] || '').trim();
+                console.log(`[DEBUG FRONTEND] Constructed category: "${categoryValue}" from Category Mapping="${originalCat}" + Navigation_Type="${navType}"`);
+            }
             
             // Track this category for Root Category option
             if (categoryValue && categoryValue !== '(Blank)') {
@@ -786,6 +931,15 @@
         
         // Add "Root Category" option for each unique category
         // This allows SKUs to be counted against just the category, even without matching facets
+        const climbCategories = Array.from(categoriesSet).filter(cat => cat && cat.toLowerCase().includes('climb'));
+        if (climbCategories.length > 0) {
+            console.log('[DEBUG FRONTEND] Categories with "climb" in categoriesSet:', climbCategories);
+        } else {
+            console.log('[DEBUG FRONTEND] WARNING: No categories with "climb" in categoriesSet!');
+            console.log('[DEBUG FRONTEND] Total categories in set:', categoriesSet.size);
+            console.log('[DEBUG FRONTEND] Sample categories:', Array.from(categoriesSet).slice(0, 10));
+        }
+        
         categoriesSet.forEach(category => {
             if (category && category !== '(Blank)') {
                 pairs.push({
@@ -793,6 +947,9 @@
                     'Facet Attribute': 'Root Category',
                     'Facet Value': 'Root Category'
                 });
+                if (category.toLowerCase().includes('climb')) {
+                    console.log(`[DEBUG FRONTEND] Added Root Category pair for: "${category}"`);
+                }
             }
         });
 
@@ -803,6 +960,18 @@
             if (attributeCompare !== 0) return attributeCompare;
             return (a['Facet Value'] || '').localeCompare(b['Facet Value'] || '');
         });
+
+        // DEBUG: Check final pairs for Anti Climb Paint
+        const climbPairs = pairs.filter(p => p['Category Mapping'] && p['Category Mapping'].toLowerCase().includes('climb'));
+        if (climbPairs.length > 0) {
+            console.log(`[DEBUG FRONTEND] Final pairs with "climb": ${climbPairs.length}`);
+            climbPairs.forEach(p => {
+                console.log(`  - "${p['Category Mapping']}" | ${p['Facet Attribute']} | ${p['Facet Value']}`);
+            });
+        } else {
+            console.log('[DEBUG FRONTEND] WARNING: No pairs with "climb" in final output!');
+            console.log('[DEBUG FRONTEND] Total pairs:', pairs.length);
+        }
 
         return pairs;
     }
@@ -1640,17 +1809,65 @@
             const baseHeaders = Object.keys(analysisResults.categoryOverhaulMatrixReport[0] || {});
             const currentDataState = applyOverridesAndMerge(analysisResults.categoryOverhaulMatrixReport, baseHeaders, analysisResults.hasOnsiteData);
             
+            // Get traffic headers for filtering
+            const annualTrafficHeader = updateHeadersForTimeframe(['Monthly Organic Traffic'], 'annual')[0];
+            const monthlyTrafficHeader = updateHeadersForTimeframe(['Monthly Organic Traffic'], 'monthly')[0];
+            
+            // If hideZeroTraffic is enabled, filter values that only appear on rows with 0 traffic
+            const shouldFilterByTraffic = tableState.hideZeroTraffic;
+            
+            // Track which values appear on rows with traffic > 0
+            const valueToRowMap = new Map(); // value -> array of rows containing this value
+            
+            currentDataState.forEach(row => {
+                const cellValue = row[selectedColumn];
+                const values = cellValue === null || cellValue === undefined || String(cellValue).trim() === '' 
+                    ? [''] 
+                    : String(cellValue).split(' | ').map(v => v.trim());
+                
+                values.forEach(v => {
+                    if (!valueToRowMap.has(v)) {
+                        valueToRowMap.set(v, []);
+                    }
+                    valueToRowMap.get(v).push(row);
+                });
+            });
+            
             const valueSet = new Set();
             let hasBlanks = false;
 
-            currentDataState.forEach(row => {
-                const cellValue = row[selectedColumn];
-                if (cellValue === null || cellValue === undefined || String(cellValue).trim() === '') {
+            // Filter values based on traffic if hideZeroTraffic is enabled
+            valueToRowMap.forEach((rows, value) => {
+                if (value === '') {
                     hasBlanks = true;
                 } else {
-                    String(cellValue).split(' | ').forEach(v => valueSet.add(v.trim()));
+                    if (shouldFilterByTraffic) {
+                        // Only include value if it appears on at least one row with traffic > 0
+                        const hasTraffic = rows.some(row => {
+                            const traffic = row[annualTrafficHeader] || row[monthlyTrafficHeader];
+                            return typeof traffic === 'number' && traffic > 0;
+                        });
+                        if (hasTraffic) {
+                            valueSet.add(value);
+                        }
+                    } else {
+                        // Include all values if filtering is disabled
+                        valueSet.add(value);
+                    }
                 }
             });
+            
+            // Handle blanks - only show if blank appears on at least one row with traffic > 0
+            if (hasBlanks && shouldFilterByTraffic) {
+                const blankRows = valueToRowMap.get('') || [];
+                const blankHasTraffic = blankRows.some(row => {
+                    const traffic = row[annualTrafficHeader] || row[monthlyTrafficHeader];
+                    return typeof traffic === 'number' && traffic > 0;
+                });
+                if (!blankHasTraffic) {
+                    hasBlanks = false; // Hide blank option if all blank rows have 0 traffic
+                }
+            }
 
             const sortedValues = Array.from(valueSet).sort();
             const listbox = document.getElementById('rule-value-listbox');
@@ -1987,13 +2204,24 @@
                 const processedData = applyOverridesAndMerge(originalData, Object.keys(originalData[0] || {}), analysisResults.hasOnsiteData);
                 const transformedData = transformDataForTimeframe(processedData, tableState.timeframe);
                 
+                // Filter out rows with 0 traffic if hideZeroTraffic is enabled
+                let dataToExport = transformedData;
+                if (tableState.hideZeroTraffic) {
+                    const annualTrafficHeader = updateHeadersForTimeframe(['Monthly Organic Traffic'], 'annual')[0];
+                    const monthlyTrafficHeader = updateHeadersForTimeframe(['Monthly Organic Traffic'], 'monthly')[0];
+                    dataToExport = transformedData.filter(row => {
+                        const traffic = row[annualTrafficHeader] || row[monthlyTrafficHeader];
+                        return typeof traffic === 'number' && traffic > 0;
+                    });
+                }
+                
                 if (exportType === 'excel') {
-                    exportCategoryOverhaulToExcel(transformedData, headersToExport, fileName).catch(err => {
+                    exportCategoryOverhaulToExcel(dataToExport, headersToExport, fileName).catch(err => {
                         console.error('Error exporting to Excel:', err);
                         alert('There was an error exporting to Excel. Please try again.');
                     });
                 } else if (exportType === 'json') {
-                    exportCategoryOverhaulToJson(transformedData, headersToExport, fileName);
+                    exportCategoryOverhaulToJson(dataToExport, headersToExport, fileName);
                 }
             }
             else if (title.includes('Facet Potential Analysis')) {
@@ -2096,6 +2324,12 @@
             tableState.hideZeroTraffic = target.checked;
             tableState.currentPage = 1;
             renderTableAndControls();
+            // Refresh Value-Based Rules dropdown if it exists and has a selected column
+            const sourceColumnSelect = document.getElementById('rule-source-column');
+            if (sourceColumnSelect && sourceColumnSelect.value) {
+                // Trigger the change event to refresh the dropdown
+                sourceColumnSelect.dispatchEvent(new Event('change'));
+            }
         }
         const detailsToggle = target.closest('.keyword-details-toggle');
         if(detailsToggle) {
@@ -2535,6 +2769,11 @@
                     <div id="pim-saved-status" class="mt-2 text-sm text-green-600 hidden"></div>
                     <div id="pim-analysis-status-lens" class="mt-3 hidden"></div>
                     <div id="pim-results-summary" class="mt-2 text-sm text-gray-600"></div>
+                    <div id="pim-management-actions" class="mt-3">
+                        <button id="clear-pim-data-btn" class="hidden bg-red-50 text-red-700 border border-red-200 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            Delete Saved PIM Data
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
@@ -2577,8 +2816,24 @@
         const saveBtn = document.getElementById('save-pim-btn-lens');
         const skuColumnSelector = document.getElementById('pim-sku-column-selector-lens');
         const skuIdColumnSelect = document.getElementById('sku-id-column-lens');
+        const clearPimBtn = document.getElementById('clear-pim-data-btn');
         
         if (!pimFileInput || !analyzeBtn) return;
+        
+        const hasSavedPimData = () => {
+            const hasFile = !!(window.projectFileMetadata && window.projectFileMetadata.pim_file);
+            const hasResults = !!(window.pimAnalysisResults && Object.keys(window.pimAnalysisResults).length > 0);
+            return hasFile || hasResults;
+        };
+        
+        const updateClearPimButton = () => {
+            if (!clearPimBtn) return;
+            if (hasSavedPimData()) {
+                clearPimBtn.classList.remove('hidden');
+            } else {
+                clearPimBtn.classList.add('hidden');
+            }
+        };
         
         // Reset file input and status when view loads
         pimFileInput.value = '';
@@ -2592,6 +2847,7 @@
         if (statusDiv) statusDiv.classList.add('hidden');
         if (resultsSummary) resultsSummary.textContent = '';
         if (savedStatus) savedStatus.classList.add('hidden');
+        updateClearPimButton();
         
         // Load saved PIM file if project is loaded
         if (currentProject && window.projectFileMetadata) {
@@ -2604,6 +2860,7 @@
                 }
             }
         }
+        updateClearPimButton();
         
         pimFileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
@@ -2637,6 +2894,72 @@
                 }
             }
         });
+        
+        if (clearPimBtn) {
+            clearPimBtn.addEventListener('click', async () => {
+                if (!currentProject) {
+                    showNotification('Please select or create a project first.', 'error');
+                    return;
+                }
+                
+                if (!confirm('Delete the saved PIM data for this project? This cannot be undone.')) {
+                    return;
+                }
+                
+                const originalText = clearPimBtn.textContent;
+                clearPimBtn.disabled = true;
+                clearPimBtn.textContent = 'Deleting...';
+                
+                try {
+                    const protocol = window.location.protocol || 'http:';
+                    const hostname = window.location.hostname || '127.0.0.1';
+                    const apiUrl = `${protocol}//${hostname}:5000/api/projects/${currentProject.id}/pim_data`;
+                    
+                    const response = await fetch(apiUrl, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-API-KEY': API_KEY
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        let message = 'Failed to delete saved PIM data';
+                        try {
+                            const errorData = await response.json();
+                            message = errorData.error || message;
+                        } catch (err) {
+                            // Ignore JSON parse errors
+                        }
+                        throw new Error(message);
+                    }
+                    
+                    if (window.projectFileMetadata && window.projectFileMetadata.pim_file) {
+                        delete window.projectFileMetadata.pim_file;
+                    }
+                    window.pimAnalysisResults = null;
+                    
+                    pimFileInput.value = '';
+                    if (skuColumnSelector) skuColumnSelector.style.display = 'none';
+                    analyzeBtn.disabled = true;
+                    if (saveBtn) saveBtn.disabled = true;
+                    if (statusDiv) statusDiv.classList.add('hidden');
+                    if (resultsSummary) {
+                        resultsSummary.textContent = '';
+                        resultsSummary.className = 'mt-2 text-sm text-gray-600';
+                    }
+                    if (savedStatus) savedStatus.classList.add('hidden');
+                    
+                    showNotification('Saved PIM data removed from this project.', 'success');
+                } catch (error) {
+                    console.error('Error deleting PIM data:', error);
+                    showNotification(error.message || 'Error deleting PIM data', 'error');
+                } finally {
+                    clearPimBtn.disabled = false;
+                    clearPimBtn.textContent = originalText;
+                    updateClearPimButton();
+                }
+            });
+        }
         
         // Save PIM file to project
         if (saveBtn) {
@@ -2694,6 +3017,7 @@
                         original_name: file.name
                     };
                     
+                    updateClearPimButton();
                     showNotification('PIM file saved to project successfully!', 'success');
                 } catch (error) {
                     console.error('Error saving PIM file:', error);
@@ -2716,15 +3040,29 @@
             const skuColumn = skuIdColumnSelect ? skuIdColumnSelect.value : null;
             
             // Get category-facet map from Category Overhaul Matrix
-            const { categoryOverhaulMatrixReport } = analysisResults;
+            // Use the processed data (with overrides applied) if available, otherwise use raw data
+            const { categoryOverhaulMatrixReport, hasOnsiteData } = analysisResults;
             if (!categoryOverhaulMatrixReport || categoryOverhaulMatrixReport.length === 0) {
                 showNotification('Category Overhaul Matrix data is required. Please run an analysis first.', 'error');
                 return;
             }
             
+            // Process the data the same way the Category Overhaul Matrix view does
+            // This applies user overrides and merges rows
+            const baseHeaders = Object.keys(categoryOverhaulMatrixReport[0] || {});
+            const excludeFromAggregation = [];
+            if (tableState.hideFeatures) {
+                excludeFromAggregation.push('Features', 'Discovered Features');
+            }
+            
+            // Apply overrides and merge (same as renderCategoryOverhaulMatrixView)
+            const modifiedData = applyOverridesAndMerge(categoryOverhaulMatrixReport, baseHeaders, hasOnsiteData, excludeFromAggregation);
+            const transformedData = transformDataForTimeframe(modifiedData, tableState.timeframe);
+            
+            // Use the processed data for building category-facet pairs
             const categoryFacetMap = buildCategoryFacetPairs(
-                categoryOverhaulMatrixReport, 
-                Object.keys(categoryOverhaulMatrixReport[0] || {})
+                transformedData, 
+                Object.keys(transformedData[0] || {})
             );
             
             analyzeBtn.disabled = true;
@@ -2823,6 +3161,7 @@
                 
                 // Store PIM results globally for use in exports
                 window.pimAnalysisResults = result;
+                updateClearPimButton();
                 
                 // Update status
                 if (statusDiv) {
@@ -2917,6 +3256,7 @@
                         
                         // Store PIM results globally
                         window.pimAnalysisResults = result;
+                        updateClearPimButton();
                         
                         // Update status
                         if (statusDiv) {

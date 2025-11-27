@@ -426,6 +426,18 @@ def save_project_files(project_id):
     except Exception as e:
         return flask.jsonify({"error": f"Failed to save files: {e}"}), 500
 
+@app.route("/api/projects/<int:project_id>/pim_data", methods=["DELETE"])
+@require_api_key
+def delete_project_pim_data(project_id):
+    """Delete saved PIM data (file & metadata) for a project."""
+    try:
+        success = project_manager.delete_pim_data(project_id)
+        if success:
+            return flask.jsonify({"message": "PIM data deleted successfully"})
+        return flask.jsonify({"error": "Failed to delete PIM data"}), 400
+    except Exception as e:
+        return flask.jsonify({"error": f"Failed to delete PIM data: {e}"}), 500
+
 @app.route("/api/pim/analyze", methods=["POST"])
 @require_api_key
 def analyze_pim_file():
