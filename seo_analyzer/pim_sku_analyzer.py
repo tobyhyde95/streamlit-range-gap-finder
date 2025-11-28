@@ -9,6 +9,7 @@ import numpy as np
 import re
 import math
 import html
+import os
 from typing import Dict, List, Tuple, Optional, Set
 from collections import defaultdict
 import spacy
@@ -28,6 +29,9 @@ PROTECTED_PREFIXES = [
     'anti', 'non', 'multi', 'low', 'high', 'quick', 'fast', 'self',
     'water', 'solvent', 'heavy', 'light', 'fire'
 ]
+
+VERBOSE_CATEGORY_DEBUG = bool(int(os.getenv("SKU_ANALYZER_DEBUG", "0")))
+DEBUG_CATEGORY_KEYWORD = os.getenv("SKU_ANALYZER_DEBUG_KEYWORD", "climb").strip().lower()
 
 PREFIX_FUSION_REGEX = re.compile(
     r'\b(' + '|'.join(PROTECTED_PREFIXES) + r')[-\s]+([a-z0-9]+)',
@@ -368,11 +372,21 @@ def analyze_pim_skus(
         category_columns = [col for col in all_columns if any(term in col.lower() for term in ['category', 'type']) and not re.search(r'product.*type', col.lower())]
         tier1_columns, tier2_columns = _derive_tiered_columns(all_columns)
         column_profiles = _map_columns_to_facets(pim_df)
+        prepared_pairs = _prepare_category_facet_pairs(
+            category_facet_pairs,
+            all_columns,
+            column_embeddings_cache,
+            facet_attribute_embeddings_cache,
+            column_profiles,
+            nlp,
+            facet_value_domains,
+            tier2_columns if tier2_columns else all_columns
+        )
         
         # Match SKUs to category-facet combinations
         # Add progress reporting for large files
         sku_matches = []
-        print(f"Starting PIM analysis: {total_rows} SKUs to process against {len(category_facet_pairs)} category-facet combinations")
+        print(f"Starting PIM analysis: {total_rows} SKUs to process against {len(prepared_pairs)} category-facet combinations")
         
         # Pre-process SKU text embeddings for faster matching (PERFORMANCE OPTIMIZATION)
         # Process each SKU once and cache its text embeddings - ALL COLUMNS, ALL TEXT
@@ -381,56 +395,62 @@ def analyze_pim_skus(
         
         print("Pre-processing SKU text embeddings (all columns, full text)...")
         sku_text_cache = {}
-        if nlp is not None:
-            for idx, (_, row) in enumerate(pim_df.iterrows()):
-                if progress_reporter and idx % 50 == 0:
-                    progress_reporter(f"Pre-processing SKU {idx}/{total_rows}...", 10 + idx, total_rows + 100)
-                
-                try:
-                    sku_id = row[sku_id_column]
-                    if pd.isna(sku_id) or not str(sku_id).strip():
-                        continue
-                    
-                    # Get ALL text content from ALL columns in the SKU row (no truncation)
-                    sku_text = ' '.join([
-                        str(val) for val in row.values 
-                        if pd.notna(val) and str(val).strip()
-                    ]).lower()
-                    
-                    if sku_text and len(sku_text) > 10:  # Only cache if there's substantial text
-                        try:
-                            # Process FULL SKU text with NLP (no truncation for accuracy)
-                            # This processes all columns and all text within them
-                            sku_doc = nlp(sku_text)  # Process full text, no truncation
-                            
-                            # Store column text for later processing (lazy evaluation)
-                            # We'll process individual columns only if needed during matching
-                            column_texts = {}
-                            for col in all_columns:
-                                if col in row.index and pd.notna(row[col]):
-                                    cell_value = str(row[col]).strip()
-                                    if cell_value and len(cell_value) > 5:  # Only store substantial cells
-                                        column_texts[col] = cell_value.lower()
-                            
-                            sku_text_cache[str(sku_id)] = {
-                                'text': sku_text,
-                                'embedding': sku_doc.vector,
-                                'keywords': [token.lemma_.lower() for token in sku_doc if not token.is_stop and token.is_alpha],
-                                'normalized_text': _normalize_value(sku_text),
-                                'column_texts': column_texts  # Store column texts for lazy processing
-                            }
-                        except Exception as e:
-                            # If NLP fails for this SKU, cache text without embedding
-                            sku_text_cache[str(sku_id)] = {
-                                'text': sku_text,
-                                'embedding': None,
-                                'keywords': [],
-                                'normalized_text': _normalize_value(sku_text),
-                                'column_texts': {}
-                            }
-                except Exception as e:
-                    # If processing fails for this SKU, continue
+        sku_id_index = all_columns.index(sku_id_column)
+        for idx, row_tuple in enumerate(pim_df.itertuples(index=False, name=None)):
+            if progress_reporter and idx % 50 == 0:
+                progress_reporter(f"Pre-processing SKU {idx}/{total_rows}...", 10 + idx, total_rows + 100)
+            
+            try:
+                row_values = row_tuple
+                sku_id = row_values[sku_id_index]
+                if pd.isna(sku_id) or not str(sku_id).strip():
                     continue
+                
+                column_texts = {}
+                sku_text_parts = []
+                for col_name, cell in zip(all_columns, row_values):
+                    if pd.isna(cell):
+                        continue
+                    cell_value = str(cell).strip()
+                    if not cell_value:
+                        continue
+                    sku_text_parts.append(cell_value)
+                    if len(cell_value) > 5:
+                        normalized_cell = _normalize_value(cell_value)
+                        column_texts[col_name] = {
+                            'raw': cell_value,
+                            'lower': cell_value.lower(),
+                            'normalized': normalized_cell,
+                            'multi_values': None
+                        }
+                if not sku_text_parts:
+                    continue
+                
+                sku_text_combined = ' '.join(sku_text_parts).lower()
+                cache_entry = {
+                    'text': sku_text_combined,
+                    'embedding': None,
+                    'keywords': [],
+                    'normalized_text': _normalize_value(sku_text_combined),
+                    'column_texts': column_texts or {}
+                }
+                
+                if nlp is not None and sku_text_combined and len(sku_text_combined) > 10:
+                    try:
+                        sku_doc = nlp(sku_text_combined)
+                        cache_entry['embedding'] = sku_doc.vector
+                        cache_entry['keywords'] = [
+                            token.lemma_.lower()
+                            for token in sku_doc
+                            if not token.is_stop and token.is_alpha
+                        ]
+                    except Exception:
+                        cache_entry['embedding'] = None
+                        cache_entry['keywords'] = []
+                
+                sku_text_cache[str(sku_id)] = cache_entry
+            except Exception:
+                continue
         
         print(f"Pre-processed {len(sku_text_cache)} SKU text embeddings")
         
@@ -440,7 +460,7 @@ def analyze_pim_skus(
         # Now match SKUs to category-facet combinations using cached embeddings
         # Process ALL columns and ALL text within cells for full semantic matching
         print("Matching SKUs to category-facet combinations (processing all columns and full text)...")
-        print(f"Total comparisons to make: {total_rows} SKUs × {len(category_facet_pairs)} combinations = {total_rows * len(category_facet_pairs)}")
+        print(f"Total comparisons to make: {total_rows} SKUs × {len(prepared_pairs)} combinations = {total_rows * len(prepared_pairs)}")
         print("Processing EVERY column, EVERY row, EVERY character for maximum accuracy...")
         
         # Use itertuples() instead of iterrows() for better performance (3-5x faster)
@@ -467,7 +487,7 @@ def analyze_pim_skus(
                 
                 matches = _match_sku_to_category_facets(
                     row, 
-                    category_facet_pairs, 
+                    prepared_pairs, 
                     knowledge_base,
                     all_columns,  # Process ALL columns
                     brand_columns,
@@ -499,7 +519,7 @@ def analyze_pim_skus(
         
         # DEBUG: Log all categories being processed
         all_categories = set()
-        for pair in category_facet_pairs:
+        for pair in prepared_pairs:
             cat = pair.get('Category Mapping', '').strip()
             if cat and 'climb' in cat.lower():
                 print(f"[DEBUG] Found category with 'climb': '{cat}'")
@@ -707,6 +727,16 @@ def _normalize_value(value: str) -> str:
     normalized = ' '.join(normalized.split())
     
     return normalized
+
+
+def _should_debug_category(category: Optional[str]) -> bool:
+    """Return True when verbose debugging is enabled for the given category."""
+    if not VERBOSE_CATEGORY_DEBUG or not category:
+        return False
+    keyword = DEBUG_CATEGORY_KEYWORD
+    if not keyword:
+        return True
+    return keyword in category.lower()
 
 
 PROTECTED_PHRASES = [
@@ -1024,6 +1054,172 @@ def _map_columns_to_facets(pim_df: pd.DataFrame) -> Dict[str, Dict]:
             'boolean_ratio': boolean_ratio
         }
     return profiles
+
+
+def _prepare_category_facet_pairs(
+    category_facet_pairs: List[Dict],
+    all_columns: List[str],
+    column_embeddings_cache: Optional[Dict[str, Dict]] = None,
+    facet_attribute_embeddings_cache: Optional[Dict[str, Dict]] = None,
+    column_profiles: Optional[Dict[str, Dict]] = None,
+    nlp_model=None,
+    facet_value_domains: Optional[Dict[str, Set[str]]] = None,
+    fallback_columns: Optional[List[str]] = None
+) -> List[Dict]:
+    """Pre-compute expensive metadata for each category-facet pair once."""
+    if not category_facet_pairs:
+        return []
+    
+    fallback_columns = fallback_columns or all_columns
+    prepared_pairs = []
+    
+    for pair in category_facet_pairs:
+        category = pair.get('Category Mapping', '').strip()
+        facet_attribute = pair.get('Facet Attribute', '').strip()
+        facet_value = pair.get('Facet Value', '').strip()
+        
+        facet_attribute_lower = facet_attribute.lower().strip() if facet_attribute else ''
+        is_root_category = (facet_attribute == 'Root Category' or facet_value == 'Root Category')
+        facet_attribute_is_blank = (not facet_attribute) or facet_attribute in ('(Blank)', 'Root Category')
+        
+        category_required_tokens = _category_required_tokens(category)
+        if facet_attribute_is_blank:
+            relevant_columns = list(all_columns)
+            attribute_used_fallback = False
+        else:
+            relevant_columns, attribute_used_fallback = _resolve_facet_attribute_columns(
+                facet_attribute_lower,
+                all_columns,
+                column_embeddings_cache,
+                facet_attribute_embeddings_cache,
+                column_profiles,
+                nlp_model,
+                fallback_columns
+            )
+        
+        is_discrete = False
+        if facet_value_domains is not None and not is_root_category:
+            is_discrete = _is_discrete_facet_attribute(facet_attribute_lower, facet_value_domains)
+        
+        prepared_entry = dict(pair)
+        prepared_entry['_category_required_tokens'] = category_required_tokens
+        prepared_entry['_is_root_category'] = is_root_category
+        prepared_entry['_facet_attribute_lower'] = facet_attribute_lower
+        prepared_entry['_facet_attribute_is_blank'] = facet_attribute_is_blank
+        prepared_entry['_facet_relevant_columns'] = tuple(relevant_columns)
+        prepared_entry['_facet_attribute_used_fallback'] = attribute_used_fallback
+        prepared_entry['_is_discrete_facet'] = is_discrete
+        prepared_pairs.append(prepared_entry)
+    
+    return prepared_pairs
+
+
+def _resolve_facet_attribute_columns(
+    facet_attribute_lower: str,
+    all_columns: List[str],
+    column_embeddings_cache: Optional[Dict[str, Dict]],
+    facet_attribute_embeddings_cache: Optional[Dict[str, Dict]],
+    column_profiles: Optional[Dict[str, Dict]],
+    nlp_model,
+    fallback_columns: List[str]
+) -> Tuple[List[str], bool]:
+    """Resolve which columns best align with a facet attribute using semantic cues."""
+    if not facet_attribute_lower or facet_attribute_lower in ('(blank)', 'root category'):
+        return list(all_columns), False
+    
+    matching_columns: List[str] = []
+    facet_intent = _facet_attribute_intent(facet_attribute_lower)
+    
+    def _boost_similarity(column_name: str, score: float) -> float:
+        if not column_profiles or not facet_intent:
+            return score
+        if not (0.4 < score < 0.85):
+            return score
+        profile = column_profiles.get(column_name)
+        if profile and _column_profile_matches_intent(profile, facet_intent):
+            return 1.0
+        return score
+    
+    attr_embedding = None
+    attr_keywords: List[str] = []
+    attr_norm = 0.0
+    
+    if nlp_model is not None:
+        try:
+            if facet_attribute_embeddings_cache and facet_attribute_lower in facet_attribute_embeddings_cache:
+                attr_data = facet_attribute_embeddings_cache[facet_attribute_lower]
+                attr_embedding = attr_data['embedding']
+                attr_keywords = attr_data.get('keywords', [])
+                attr_norm = attr_data.get('norm', np.linalg.norm(attr_embedding))
+            else:
+                attr_doc = nlp_model(facet_attribute_lower)
+                attr_embedding = attr_doc.vector
+                attr_keywords = [token.lemma_.lower() for token in attr_doc if not token.is_stop and token.is_alpha]
+                attr_norm = np.linalg.norm(attr_embedding)
+        except Exception:
+            attr_embedding = None
+            attr_keywords = []
+            attr_norm = 0.0
+    
+    if attr_embedding is not None and attr_norm > 0:
+        cache_source = column_embeddings_cache
+        if cache_source is None:
+            cache_source = {}
+            for col in all_columns:
+                try:
+                    col_doc = nlp_model(col.lower())
+                    cache_source[col] = {
+                        'embedding': col_doc.vector,
+                        'keywords': [token.lemma_.lower() for token in col_doc if not token.is_stop and token.is_alpha]
+                    }
+                except Exception:
+                    continue
+        
+        for col, col_data in cache_source.items():
+            try:
+                col_embedding = col_data['embedding']
+                col_keywords = col_data.get('keywords', [])
+                col_norm = np.linalg.norm(col_embedding)
+                if col_norm == 0:
+                    continue
+                similarity = np.dot(attr_embedding, col_embedding) / (attr_norm * col_norm)
+                similarity = _boost_similarity(col, similarity)
+                if similarity >= 0.65:
+                    if attr_keywords and col_keywords:
+                        matching_keywords = sum(1 for kw in attr_keywords if kw in col_keywords)
+                        ratio = matching_keywords / len(attr_keywords) if attr_keywords else 0
+                        if ratio >= 0.3 or similarity >= 0.80:
+                            matching_columns.append(col)
+                    elif similarity >= 0.80:
+                        matching_columns.append(col)
+            except Exception:
+                continue
+    
+    # Fallback to normalized header comparisons
+    if not matching_columns:
+        attr_normalized = facet_attribute_lower.replace('_', ' ').replace('-', ' ').replace(' ', '').strip()
+        for col in all_columns:
+            col_normalized = col.lower().replace('_', ' ').replace('-', ' ').replace(' ', '').strip()
+            if (attr_normalized and (
+                attr_normalized == col_normalized or
+                attr_normalized in col_normalized or
+                col_normalized in attr_normalized
+            )):
+                matching_columns.append(col)
+    
+    # Pattern override using column profiles
+    if not matching_columns and facet_intent and column_profiles:
+        pattern_matches = [
+            col_name for col_name, profile in column_profiles.items()
+            if _column_profile_matches_intent(profile, facet_intent)
+        ]
+        matching_columns.extend(pattern_matches)
+    
+    if matching_columns:
+        unique_columns = list(dict.fromkeys(matching_columns))
+        return unique_columns, False
+    
+    return list(dict.fromkeys(fallback_columns)), True
 
 
 def _compute_column_pattern_scores(samples: List[str]) -> Dict[str, float]:
@@ -1345,9 +1541,6 @@ def _match_sku_to_category_facets(
     """
     matches = []
     
-    # Track processing stats for debugging (not used in production, just for monitoring)
-    total_checks = 0
-    
     # Get all text content from the SKU row (use cached if available)
     if sku_text_data and 'text' in sku_text_data:
         sku_text = sku_text_data['text']
@@ -1394,17 +1587,25 @@ def _match_sku_to_category_facets(
         category = pair.get('Category Mapping', '').strip()
         facet_attribute = pair.get('Facet Attribute', '').strip()
         facet_value = pair.get('Facet Value', '').strip()
-        facet_attribute_lower = facet_attribute.lower().strip() if facet_attribute else ''
+        facet_attribute_lower = pair.get('_facet_attribute_lower')
+        if facet_attribute_lower is None:
+            facet_attribute_lower = facet_attribute.lower().strip() if facet_attribute else ''
         
         if not category and not facet_value:
             continue
         
         # Check if this is a "Root Category" match (category only, no facets)
-        is_root_category = (facet_attribute == 'Root Category' or facet_value == 'Root Category')
-        category_required_tokens = _category_required_tokens(category)
+        is_root_category = pair.get('_is_root_category')
+        if is_root_category is None:
+            is_root_category = (facet_attribute == 'Root Category' or facet_value == 'Root Category')
+        category_required_tokens = pair.get('_category_required_tokens')
+        if category_required_tokens is None:
+            category_required_tokens = _category_required_tokens(category)
+        
+        debug_enabled = _should_debug_category(category)
         
         # DEBUG: Log details for Anti Climb Paint category
-        if category and 'climb' in category.lower():
+        if debug_enabled:
             print(f"\n[DEBUG SKU {sku_id}] Checking category: '{category}'")
             print(f"  Normalized category: '{_normalize_value(category)}'")
             print(f"  Required tokens: {category_required_tokens}")
@@ -1429,7 +1630,8 @@ def _match_sku_to_category_facets(
                     match_type='category',
                     embedding_cache=embedding_cache,
                     sku_embedding_cached=sku_embedding_cached,
-                    sku_keywords_cached=sku_keywords_cached
+                    sku_keywords_cached=sku_keywords_cached,
+                    sku_text_data=sku_text_data
                 )
             if not category_matched:
                 fallback_columns = effective_tier2 if effective_tier2 else all_columns
@@ -1443,6 +1645,7 @@ def _match_sku_to_category_facets(
                     embedding_cache=embedding_cache,
                     sku_embedding_cached=sku_embedding_cached,
                     sku_keywords_cached=sku_keywords_cached,
+                    sku_text_data=sku_text_data,
                     column_text_overrides=tier2_overrides_cache,
                     sku_text_override=sanitized_tier2_text
                 )
@@ -1454,7 +1657,7 @@ def _match_sku_to_category_facets(
             tokens_present_before_fallback = _category_tokens_present(category_required_tokens, sku_text_normalized_full, tier1_text_samples)
             if tokens_present_before_fallback:
                 category_matched = True
-                if category and 'climb' in category.lower():
+                if debug_enabled:
                     print(f"  [DEBUG] Fallback triggered: tokens present, allowing match")
         
         # VALIDATION: If _intelligent_match passed but required tokens are NOT present,
@@ -1463,11 +1666,11 @@ def _match_sku_to_category_facets(
             tokens_present_after = _category_tokens_present(category_required_tokens, sku_text_normalized_full, tier1_text_samples)
             if not tokens_present_after:
                 category_matched = False
-                if category and 'climb' in category.lower():
+                if debug_enabled:
                     print(f"  [DEBUG] Validation failed: tokens NOT present, rejecting match")
         
         # DEBUG: Log final decision for Anti Climb Paint
-        if category and 'climb' in category.lower():
+        if debug_enabled:
             tokens_final = _category_tokens_present(category_required_tokens, sku_text_normalized_full, tier1_text_samples) if category_required_tokens else True
             print(f"  [DEBUG] Final decision: category_matched={category_matched}, tokens_present={tokens_final}, is_root_category={is_root_category}")
         
@@ -1479,153 +1682,26 @@ def _match_sku_to_category_facets(
                     'facet_attribute': 'Root Category',
                     'facet_value': 'Root Category'
                 })
-                if category and 'climb' in category.lower():
+                if debug_enabled:
                     print(f"  [DEBUG] ✓ MATCHED: Added to matches list")
             else:
-                if category and 'climb' in category.lower():
+                if debug_enabled:
                     print(f"  [DEBUG] ✗ NOT MATCHED: category_matched was False")
             continue  # Skip facet matching for Root Category
         
-        # Match facet attribute using PURELY SEMANTIC matching via NLP embeddings
-        # No hardcoded patterns or dictionaries - works intelligently for ANY attribute combination
-        # Uses NLP to detect semantic similarity: "Colour" matches "Colour_Group", "Brand" matches "Product Brand", etc.
-        facet_attribute_matched = False
-        relevant_columns_for_facet = all_columns  # Initialize with all columns as fallback
-        facet_attribute_used_fallback = False
-        
-        if not facet_attribute or facet_attribute == '(Blank)' or facet_attribute == 'Root Category':
-            facet_attribute_matched = True  # If no attribute specified, consider matched
+        # Match facet attribute using pre-computed semantic mapping
+        facet_attribute_matched = True
+        relevant_columns_for_facet = pair.get('_facet_relevant_columns')
+        if relevant_columns_for_facet:
+            relevant_columns_for_facet = list(relevant_columns_for_facet)
+        if not relevant_columns_for_facet:
+            relevant_columns_for_facet = effective_tier2 if effective_tier2 else all_columns
+            facet_attribute_used_fallback = True
         else:
-            matching_columns = []
-            facet_intent = _facet_attribute_intent(facet_attribute_lower)
-            
-            def _boost_similarity_if_applicable(column_name: str, similarity_value: float) -> float:
-                if not column_profiles or not facet_intent:
-                    return similarity_value
-                if not (0.4 < similarity_value < 0.85):
-                    return similarity_value
-                profile = column_profiles.get(column_name)
-                if profile and _column_profile_matches_intent(profile, facet_intent):
-                    return 1.0
-                return similarity_value
-            
-            # PRIMARY METHOD: Use PURELY SEMANTIC matching via NLP embeddings
-            # This intelligently detects matches for ANY attribute type without hardcoded patterns
-            # Works for: "Colour" vs "Colour_Group", "Brand" vs "Manufacturer Brand", "Material" vs "Product Material", etc.
-            if nlp is not None:
-                try:
-                    # Use pre-computed facet attribute embedding if available (MAJOR PERFORMANCE BOOST)
-                    # This avoids processing the same facet attribute thousands of times
-                    if facet_attribute_embeddings_cache and facet_attribute_lower in facet_attribute_embeddings_cache:
-                        attr_data = facet_attribute_embeddings_cache[facet_attribute_lower]
-                        attr_embedding = attr_data['embedding']
-                        attr_keywords = attr_data['keywords']
-                        attr_norm = attr_data['norm']
-                    else:
-                        # Fallback: Process facet attribute with NLP on-demand (slower, but still works)
-                        attr_doc = nlp(facet_attribute_lower)
-                        attr_embedding = attr_doc.vector
-                        attr_keywords = [token.lemma_.lower() for token in attr_doc if not token.is_stop and token.is_alpha]
-                        attr_norm = np.linalg.norm(attr_embedding)
-                    
-                    # Use pre-computed column embeddings if available (MAJOR PERFORMANCE BOOST)
-                    # This avoids processing the same column names thousands of times
-                    if column_embeddings_cache and attr_norm > 0:
-                        # Fast path: Use pre-computed column embeddings
-                        for col, col_data in column_embeddings_cache.items():
-                            try:
-                                col_embedding = col_data['embedding']
-                                col_keywords = col_data.get('keywords', [])
-                                col_norm = np.linalg.norm(col_embedding)
-                                
-                                if col_norm > 0:
-                                    # Calculate cosine similarity using pre-computed embeddings (VERY FAST)
-                                    similarity = np.dot(attr_embedding, col_embedding) / (attr_norm * col_norm)
-                                    similarity = _boost_similarity_if_applicable(col, similarity)
-                                    
-                                    # Use intelligent semantic threshold (works for ANY attribute type)
-                                    if similarity >= 0.65:  # Semantic threshold for intelligent attribute matching
-                                        # Validate with keyword overlap to ensure semantic match is meaningful
-                                        if len(attr_keywords) > 0 and len(col_keywords) > 0:
-                                            # Check if key words from attribute appear in column keywords
-                                            matching_keywords = sum(1 for kw in attr_keywords if kw in col_keywords)
-                                            matching_ratio = matching_keywords / len(attr_keywords) if len(attr_keywords) > 0 else 0
-                                            
-                                            # Require meaningful keyword overlap for validation
-                                            if matching_ratio >= 0.3 or (similarity >= 0.80):  # Lower threshold for very high similarity
-                                                matching_columns.append(col)
-                                        else:
-                                            # If no keywords available, rely purely on semantic similarity
-                                            if similarity >= 0.80:
-                                                matching_columns.append(col)
-                            except Exception:
-                                continue  # Skip if calculation fails
-                    else:
-                        # Fallback: Process column names with NLP on-demand (slower, but still works)
-                        for col in all_columns:
-                            col_lower = col.lower()
-                            try:
-                                # Process column name with NLP to get semantic embedding
-                                col_doc = nlp(col_lower)
-                                col_embedding = col_doc.vector
-                                col_keywords = [token.lemma_.lower() for token in col_doc if not token.is_stop and token.is_alpha]
-                                col_norm = np.linalg.norm(col_embedding)
-                                
-                                if attr_norm > 0 and col_norm > 0:
-                                    similarity = np.dot(attr_embedding, col_embedding) / (attr_norm * col_norm)
-                                    similarity = _boost_similarity_if_applicable(col, similarity)
-                                    
-                                    if similarity >= 0.65:
-                                        if len(attr_keywords) > 0 and len(col_keywords) > 0:
-                                            matching_keywords = sum(1 for kw in attr_keywords if kw in col_keywords)
-                                            matching_ratio = matching_keywords / len(attr_keywords) if len(attr_keywords) > 0 else 0
-                                            if matching_ratio >= 0.3 or (similarity >= 0.80):
-                                                matching_columns.append(col)
-                                        else:
-                                            if similarity >= 0.80:
-                                                matching_columns.append(col)
-                            except Exception:
-                                continue  # Skip if NLP fails for this column
-                except Exception:
-                    # If NLP fails entirely, fall back to normalized substring matching (better than missing matches)
-                    pass
-            
-            # FALLBACK: If no semantic matches found (or NLP unavailable), try normalized substring matching
-            # This catches exact matches and simple variations (handles underscores, hyphens, spaces)
-            if not matching_columns:
-                attr_normalized = facet_attribute_lower.replace('_', ' ').replace('-', ' ').replace(' ', '').strip()
-                for col in all_columns:
-                    col_lower = col.lower()
-                    col_normalized = col_lower.replace('_', ' ').replace('-', ' ').replace(' ', '').strip()
-                    
-                    # Normalized exact/substring match (fallback only)
-                    if (attr_normalized == col_normalized or 
-                        attr_normalized in col_normalized or 
-                        col_normalized in attr_normalized):
-                        matching_columns.append(col)
-            
-            # Pattern override: if header similarity failed but column content clearly matches the intent
-            if (not matching_columns and facet_intent and column_profiles):
-                pattern_matches = [
-                    col_name for col_name, profile in column_profiles.items()
-                    if _column_profile_matches_intent(profile, facet_intent)
-                ]
-                if pattern_matches:
-                    matching_columns.extend(pattern_matches)
-            
-            # Use matching columns for facet value matching (prioritizes semantic matches)
-            if matching_columns:
-                facet_attribute_matched = True
-                # Store matching columns for use in facet value matching
-                # These columns represent where the facet attribute was found semantically
-                relevant_columns_for_facet = matching_columns
-            else:
-                # No reliable attribute alignment found—fall back to descriptive columns (e.g., long descriptions)
-                # so genuine stray mentions still count, but mark as fallback for stricter downstream checks.
-                fallback_columns = effective_tier2 if effective_tier2 else all_columns
-                facet_attribute_matched = True
-                relevant_columns_for_facet = fallback_columns
-                facet_attribute_used_fallback = True
+            facet_attribute_used_fallback = pair.get('_facet_attribute_used_fallback', False)
+        is_discrete_facet = pair.get('_is_discrete_facet')
+        if is_discrete_facet is None:
+            is_discrete_facet = _is_discrete_facet_attribute(facet_attribute_lower, facet_value_domains)
         
         # Match facet value (only if attribute matched or is Root Category)
         facet_value_matched = False
@@ -1639,7 +1715,6 @@ def _match_sku_to_category_facets(
                     for col in relevant_columns_for_facet
                     if col in tier2_overrides_cache
                 }
-            is_discrete_facet = _is_discrete_facet_attribute(facet_attribute_lower, facet_value_domains)
             # Search in relevant columns (those matching the facet attribute) for maximum accuracy
             # This prevents false positives like "stone" (material) matching "Stone" (colour)
             if is_discrete_facet:
@@ -1662,6 +1737,7 @@ def _match_sku_to_category_facets(
                     embedding_cache=embedding_cache,
                     sku_embedding_cached=sku_embedding_cached,
                     sku_keywords_cached=sku_keywords_cached,
+                    sku_text_data=sku_text_data,
                     column_text_overrides=facet_column_overrides,
                     semantic_threshold=semantic_threshold
                 )
@@ -1690,6 +1766,7 @@ def _intelligent_match(
     embedding_cache: Dict = None,
     sku_embedding_cached: np.ndarray = None,
     sku_keywords_cached: List[str] = None,
+    sku_text_data: Optional[Dict] = None,
     column_text_overrides: Optional[Dict[str, str]] = None,
     semantic_threshold: Optional[float] = None,
     sku_text_override: Optional[str] = None
@@ -1778,29 +1855,56 @@ def _intelligent_match(
     
     # Strategy 1: Exact match in ALL relevant columns (process every column, every cell, every character)
     # This ensures maximum accuracy by checking every column and every character
+    column_text_cache = sku_text_data.get('column_texts', {}) if sku_text_data else {}
+    
     for col in relevant_columns:
         if col not in sku_row.index:
             continue
         
+        cache_entry = column_text_cache.get(col) if column_text_cache else None
+        cached_multi_values = None
+        
         # Process FULL cell value - every character, no truncation
         if column_text_overrides and col in column_text_overrides:
+            cache_entry = None
             cell_value = column_text_overrides[col].strip()
+            if not cell_value:
+                continue
+            cell_lower = cell_value.lower()
+            cell_normalized = _normalize_value(cell_value)
         else:
-            cell_value = str(sku_row[col]).strip() if pd.notna(sku_row[col]) else ''
-        if not cell_value:
-            continue
-        
-        # Process the ENTIRE cell value - no truncation for maximum accuracy
-        
-        cell_lower = cell_value.lower()
-        cell_normalized = _normalize_value(cell_value)
+            cell_raw = sku_row[col]
+            if pd.isna(cell_raw):
+                continue
+            if cache_entry:
+                cell_value = cache_entry.get('raw', '').strip()
+                if not cell_value:
+                    continue
+                cell_lower = cache_entry.get('lower')
+                if cell_lower is None:
+                    cell_lower = cell_value.lower()
+                cell_normalized = cache_entry.get('normalized')
+                if cell_normalized is None:
+                    cell_normalized = _normalize_value(cell_value)
+                cached_multi_values = cache_entry.get('multi_values')
+            else:
+                cell_value = str(cell_raw).strip()
+                if not cell_value:
+                    continue
+                cell_lower = cell_value.lower()
+                cell_normalized = _normalize_value(cell_value)
         
         # Exact match (case-insensitive)
         if (target_lower == cell_lower or target_normalized == cell_normalized) and _accept_positive_match(target_value, cell_value):
             return True
         
         # Check for exact match within multi-value cells
-        for candidate in _split_multi_value_cell(cell_value):
+        multi_value_candidates = cached_multi_values
+        if multi_value_candidates is None:
+            multi_value_candidates = _split_multi_value_cell(cell_value)
+            if cache_entry is not None:
+                cache_entry['multi_values'] = multi_value_candidates
+        for candidate in multi_value_candidates:
             candidate_lower = candidate.lower()
             candidate_normalized = _normalize_value(candidate)
             if (target_lower == candidate_lower or target_normalized == candidate_normalized) and _accept_positive_match(target_value, cell_value):
