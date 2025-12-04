@@ -1118,7 +1118,9 @@
             'Keyword Count',
             'KeywordDetails',
             'Derived Facets',
-            'Category & Facet Key'
+            'Category & Facet Key',
+            'Calculated SKU Count',
+            'Recommendation'
         ];
         
         const facetColumns = headers.filter(h => 
@@ -1136,7 +1138,9 @@
             'Annual Organic Traffic',
             'Total Monthly Google Searches',
             'Total Annual Google Searches',
-            'Total On-Site Searches'
+            'Total On-Site Searches',
+            'Calculated SKU Count',
+            'Recommendation'
         ].filter(col => headers.includes(col));
         
         // Determine primary traffic column for percentage calculations
@@ -1202,7 +1206,14 @@
             // Aggregate metrics
             metricColumns.forEach(col => {
                 const value = row[col];
-                if (value && !isNaN(value)) {
+                // For numeric columns, sum them
+                if (col === 'Calculated SKU Count' || col === 'Recommendation') {
+                    // For SKU Count and Recommendation, take the first non-null value
+                    // (these should be consistent across rows for the same category)
+                    if (value && categoryGroups[categoryMapping].metrics[col] === 0) {
+                        categoryGroups[categoryMapping].metrics[col] = value;
+                    }
+                } else if (value && !isNaN(value)) {
                     categoryGroups[categoryMapping].metrics[col] += Number(value);
                 }
             });

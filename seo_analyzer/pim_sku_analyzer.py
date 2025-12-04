@@ -50,6 +50,234 @@ NEGATIVE_LOOKBEHIND_PATTERN = (
 
 NEGATIVE_WINDOW_TERMS = ('not', 'no', 'non', 'except', 'unlike', 'exclude')
 
+# ============================================================================
+# SMART SKU COUNTING - Column Weighting & Noise Detection (v2.0)
+# ============================================================================
+
+# Threshold constants for classification logic
+SKU_THRESHOLD_HIGH = 40
+TRAFFIC_THRESHOLD_HIGH = 1000
+
+# Column weight configuration for Smart SKU Counting
+COLUMN_WEIGHTS = {
+    'high_confidence': 10,    # Part Name, Part Name Type
+    'medium_confidence': 5,    # Product Brand Name, dynamic/unknown columns
+    'low_confidence': 1,       # Description/Copy columns
+    'ignore': 0                # TS Product Code
+}
+
+# High confidence column patterns
+HIGH_CONFIDENCE_COLUMNS = [
+    'part name', 'part_name', 'partname',
+    'part name type', 'part_name_type', 'partnametype',
+    'product name', 'product_name', 'productname'
+]
+
+# Low confidence column patterns (description/copy columns)
+LOW_CONFIDENCE_COLUMNS = [
+    'toolstation web copy', 'web copy', 'webcopy',
+    'toolstation catalogue copy', 'catalogue copy', 'cataloguecopy',
+    'supplier copy', 'suppliercopy',
+    'description', 'desc', 'long description', 'short description',
+    'product description', 'product_description'
+]
+
+# Columns to ignore completely
+IGNORE_COLUMNS = [
+    'ts product code', 'product code', 'productcode',
+    'sku', 'sku_id', 'id', 'code'
+]
+
+# Noise detection threshold (15%)
+NOISE_FREQUENCY_THRESHOLD = 0.15
+
+
+def _get_column_weight(column_name: str) -> int:
+    """
+    Determine the weight for a column based on its name.
+    
+    Returns:
+        int: Weight value (10, 5, 1, or 0)
+    """
+    col_lower = column_name.lower().strip()
+    
+    # Check if column should be ignored
+    if any(pattern in col_lower for pattern in IGNORE_COLUMNS):
+        return COLUMN_WEIGHTS['ignore']
+    
+    # Check if column is high confidence
+    if any(pattern in col_lower for pattern in HIGH_CONFIDENCE_COLUMNS):
+        return COLUMN_WEIGHTS['high_confidence']
+    
+    # Check if column is low confidence (description/copy)
+    if any(pattern in col_lower for pattern in LOW_CONFIDENCE_COLUMNS):
+        return COLUMN_WEIGHTS['low_confidence']
+    
+    # Default: medium confidence for unknown/dynamic columns
+    return COLUMN_WEIGHTS['medium_confidence']
+
+
+def _is_term_noisy(pim_df: pd.DataFrame, term: str, description_columns: List[str], description_corpus: pd.Series = None) -> bool:
+    """
+    Determine if a search term is "noisy" by checking its frequency in description columns.
+    
+    PERFORMANCE OPTIMIZED: Uses pre-computed description corpus to avoid row iteration.
+    
+    Args:
+        pim_df: DataFrame containing PIM data
+        term: Search term to check
+        description_columns: List of description column names
+        description_corpus: Pre-computed series of concatenated description text (optional, for performance)
+    
+    Returns:
+        bool: True if term appears in > 15% of rows (noisy), False otherwise (specific)
+    """
+    if pim_df.empty:
+        return False
+    
+    term_lower = term.lower().strip()
+    total_rows = len(pim_df)
+    
+    # OPTIMIZATION: If pre-computed corpus is provided, use it (much faster)
+    if description_corpus is not None:
+        # Vectorized search on pre-computed corpus (single operation, no loops!)
+        matching_rows = description_corpus.str.contains(term_lower, regex=False, na=False).sum()
+    else:
+        # Fallback: Row-by-row search (slower, but works without pre-computation)
+        if not description_columns:
+            return False
+        
+        matching_rows = 0
+        for _, row in pim_df.iterrows():
+            found_in_row = False
+            for col in description_columns:
+                if col in row and pd.notna(row[col]):
+                    if term_lower in str(row[col]).lower():
+                        found_in_row = True
+                        break
+            if found_in_row:
+                matching_rows += 1
+    
+    frequency = matching_rows / total_rows if total_rows > 0 else 0
+    is_noisy = frequency > NOISE_FREQUENCY_THRESHOLD
+    
+    print(f"  Noise detection for '{term}': {matching_rows}/{total_rows} rows ({frequency:.1%}) - {'NOISY' if is_noisy else 'SPECIFIC'}")
+    
+    return is_noisy
+
+
+def calculate_match_score_weighted(
+    row: pd.Series,
+    term: str,
+    is_noisy: bool,
+    column_weights_map: Dict[str, int],
+    description_columns: Set[str]
+) -> int:
+    """
+    Calculate weighted match score for a search term in a SKU row.
+    
+    Args:
+        row: DataFrame row containing SKU data
+        term: Search term to match
+        is_noisy: Whether the term is noisy (from noise detection)
+        column_weights_map: Dictionary mapping column names to weights
+        description_columns: Set of description column names
+    
+    Returns:
+        int: Total match score
+    """
+    term_lower = term.lower().strip()
+    score = 0
+    
+    for col_name, value in row.items():
+        if pd.isna(value) or not str(value).strip():
+            continue
+        
+        # Get column weight
+        weight = column_weights_map.get(col_name, 0)
+        
+        # If term is noisy, ignore description columns completely
+        if is_noisy and col_name in description_columns:
+            continue
+        
+        # Check if term appears in this column's value
+        value_lower = str(value).lower()
+        if term_lower in value_lower:
+            score += weight
+    
+    return score
+
+
+def _calculate_sku_count_for_term_weighted(
+    pim_df: pd.DataFrame,
+    term: str,
+    sku_id_column: str,
+    description_corpus: pd.Series = None
+) -> int:
+    """
+    Calculate SKU count for a term using the Smart SKU Counting logic.
+    
+    PERFORMANCE OPTIMIZED: Accepts pre-computed description corpus to avoid row iteration in noise detection.
+    
+    Args:
+        pim_df: DataFrame containing PIM data
+        term: Search term
+        sku_id_column: Name of SKU ID column
+        description_corpus: Pre-computed series of concatenated description text (optional, for performance)
+    
+    Returns:
+        int: Number of SKUs matching the term
+    """
+    # Step 1: Identify column types
+    all_columns = pim_df.columns.tolist()
+    description_columns = [col for col in all_columns if _get_column_weight(col) == COLUMN_WEIGHTS['low_confidence']]
+    
+    # Step 2: Perform noise detection (use pre-computed corpus if available)
+    is_noisy = _is_term_noisy(pim_df, term, description_columns, description_corpus)
+    
+    # Step 3: Set match threshold based on noise
+    threshold = 5 if is_noisy else 1
+    print(f"  Match threshold for '{term}': {threshold} (term is {'NOISY' if is_noisy else 'SPECIFIC'})")
+    
+    # Step 4: Build column weights map
+    column_weights_map = {col: _get_column_weight(col) for col in all_columns}
+    description_columns_set = set(description_columns)
+    
+    # Step 5: Calculate match scores for each row
+    matched_skus = 0
+    for _, row in pim_df.iterrows():
+        score = calculate_match_score_weighted(
+            row, term, is_noisy, column_weights_map, description_columns_set
+        )
+        if score >= threshold:
+            matched_skus += 1
+    
+    return matched_skus
+
+
+def classify_term_by_depth_and_demand(sku_count: int, organic_traffic: float) -> str:
+    """
+    Classify a term based on SKU Count (Depth) and Traffic Volume (Demand).
+    
+    Classification Matrix:
+    - SKU Count >= 40: "Core Category"
+    - SKU Count < 40 AND Traffic >= 1000: "SEO Landing Page"
+    - SKU Count < 40 AND Traffic < 1000: "Facet / Filter"
+    
+    Args:
+        sku_count: Number of matching SKUs
+        organic_traffic: Monthly organic traffic
+    
+    Returns:
+        str: Recommendation ("Core Category", "SEO Landing Page", or "Facet / Filter")
+    """
+    if sku_count >= SKU_THRESHOLD_HIGH:
+        return "Core Category"
+    elif organic_traffic >= TRAFFIC_THRESHOLD_HIGH:
+        return "SEO Landing Page"
+    else:
+        return "Facet / Filter"
+
 
 def _detect_file_encoding(file_path: str, sample_size: int = 65536) -> Optional[str]:
     """
@@ -216,6 +444,88 @@ except OSError:
     except (subprocess.CalledProcessError, OSError):
         print("Warning: spaCy model not available. Intelligent matching will be limited.")
         nlp = None
+
+
+def calculate_sku_counts_for_terms(
+    pim_csv_path: str,
+    terms: List[str],
+    sku_id_column: str = None,
+    progress_reporter: callable = None
+) -> Dict[str, int]:
+    """
+    Calculate SKU counts for a list of terms using Smart SKU Counting logic.
+    
+    This function uses weighted scoring and noise detection to provide accurate
+    SKU counts that eliminate false positives (e.g., "Spray Paint" mentioned
+    in description of "Masonry Paint").
+    
+    PERFORMANCE OPTIMIZED: Pre-computes description corpus once for all terms.
+    
+    Args:
+        pim_csv_path: Path to the PIM CSV file
+        terms: List of search terms to count SKUs for
+        sku_id_column: Name of the SKU ID column (auto-detected if None)
+        progress_reporter: Optional callback for progress reporting
+    
+    Returns:
+        Dict[str, int]: Dictionary mapping terms to SKU counts
+    """
+    try:
+        # Load PIM CSV with encoding fallback
+        pim_df = _read_csv_with_encoding_fallback(pim_csv_path)
+        
+        if progress_reporter:
+            progress_reporter("Loading PIM data for SKU counting...", 0, len(terms))
+        
+        # Clean the dataframe
+        pim_df = _clean_pim_dataframe(pim_df)
+        
+        # Auto-detect SKU ID column if not provided
+        if sku_id_column is None:
+            sku_id_column = _detect_sku_column(pim_df)
+        
+        if sku_id_column is None or sku_id_column not in pim_df.columns:
+            raise ValueError(f"SKU ID column '{sku_id_column}' not found in PIM CSV")
+        
+        print(f"\n=== Smart SKU Counting ===")
+        print(f"Processing {len(terms)} terms against {len(pim_df)} SKUs")
+        print(f"Using weighted scoring with noise detection\n")
+        
+        # OPTIMIZATION: Pre-calculate description corpus ONCE (not per term!)
+        # This dramatically improves performance for multiple terms
+        all_columns = pim_df.columns.tolist()
+        description_columns = [col for col in all_columns if _get_column_weight(col) == COLUMN_WEIGHTS['low_confidence']]
+        
+        if description_columns:
+            print(f"Pre-computing description corpus from columns: {description_columns}")
+            # Create a single series of lowercase description text for fast searching
+            description_corpus = pim_df[description_columns].apply(
+                lambda x: ' '.join(x.astype(str)), axis=1
+            ).str.lower()
+            print(f"Description corpus ready ({len(description_corpus)} rows)\n")
+        else:
+            description_corpus = None
+        
+        # Calculate SKU count for each term
+        results = {}
+        for idx, term in enumerate(terms):
+            if progress_reporter and idx % 10 == 0:
+                progress_reporter(f"Calculating SKU counts: {idx}/{len(terms)}", idx, len(terms))
+            
+            print(f"[{idx+1}/{len(terms)}] Analyzing term: '{term}'")
+            sku_count = _calculate_sku_count_for_term_weighted(pim_df, term, sku_id_column, description_corpus)
+            results[term] = sku_count
+            print(f"  → SKU Count: {sku_count}\n")
+        
+        if progress_reporter:
+            progress_reporter("SKU counting complete", len(terms), len(terms))
+        
+        return results
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise ValueError(f"Failed to calculate SKU counts: {str(e)}")
 
 
 def analyze_pim_skus(

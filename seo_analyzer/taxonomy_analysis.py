@@ -15,9 +15,11 @@ import sys
 try:
     from .url_parser import URLParser
     from .synonym_discovery import SynonymDiscovery
+    from .pim_sku_analyzer import classify_term_by_depth_and_demand
 except ImportError:
     from url_parser import URLParser
     from synonym_discovery import SynonymDiscovery
+    from pim_sku_analyzer import classify_term_by_depth_and_demand
 
 
 try:
@@ -743,6 +745,50 @@ def _generate_category_overhaul_matrix(
             facet_potential_report_raw = final_report_df.to_dict(orient='records')
 
     matrix_df.replace({pd.NA: None, np.nan: None, '': None}, inplace=True)
+    
+    # Add Classification Logic: Depth vs. Demand
+    # This provides recommendations based on SKU depth and traffic demand
+    print("\n=== Applying Classification Logic (Depth vs. Demand) ===")
+    
+    # DATA SAFETY FIX: Force traffic column to numeric
+    # This prevents crashes when CSV loads traffic as strings (e.g., "1,000" or "N/A")
+    # Coerce errors to NaN, then fill with 0
+    if 'Monthly Organic Traffic' in matrix_df.columns:
+        matrix_df['Monthly Organic Traffic'] = pd.to_numeric(
+            matrix_df['Monthly Organic Traffic'], 
+            errors='coerce'
+        ).fillna(0)
+        print(f"Traffic column converted to numeric (handling any string values)")
+    
+    # For now, set placeholder SKU counts (will be replaced by actual PIM analysis when available)
+    # In a full implementation, this would call calculate_sku_counts_for_terms() with a PIM file
+    # For the initial rollout, we'll provide a column that can be populated later
+    matrix_df['Calculated SKU Count'] = None
+    matrix_df['Recommendation'] = None
+    
+    # If SKU counts are available, apply classification
+    if 'Calculated SKU Count' in matrix_df.columns and matrix_df['Calculated SKU Count'].notna().any():
+        # Ensure SKU Count is also numeric
+        matrix_df['Calculated SKU Count'] = pd.to_numeric(
+            matrix_df['Calculated SKU Count'],
+            errors='coerce'
+        ).fillna(0)
+        
+        matrix_df['Recommendation'] = matrix_df.apply(
+            lambda row: classify_term_by_depth_and_demand(
+                row.get('Calculated SKU Count', 0) or 0,
+                row.get('Monthly Organic Traffic', 0) or 0
+            ),
+            axis=1
+        )
+        print(f"Applied classification to {len(matrix_df)} rows")
+    else:
+        print("SKU counts not available - classification will be populated when PIM data is analyzed")
+    
+    # Sort by Organic Traffic (descending) so high-impact items are at the top
+    if 'Monthly Organic Traffic' in matrix_df.columns:
+        matrix_df.sort_values('Monthly Organic Traffic', ascending=False, inplace=True)
+        print("Sorted matrix by Monthly Organic Traffic (descending)")
     
     # Debug: Check if KeywordDetails are being populated
     sample_row = matrix_df.iloc[0] if not matrix_df.empty else None
