@@ -187,6 +187,8 @@ def calculate_match_score_weighted(
         int: Total match score
     """
     term_lower = term.lower().strip()
+    term_normalized = _normalize_value(term_lower)
+    term_tokens = [t for t in term_normalized.split() if t]
     score = 0
     
     for col_name, value in row.items():
@@ -202,8 +204,19 @@ def calculate_match_score_weighted(
         
         # Check if term appears in this column's value
         value_lower = str(value).lower()
-        if term_lower in value_lower:
+        value_normalized = _normalize_value(value_lower)
+        value_tokens = set(value_normalized.split()) if value_normalized else set()
+
+        boundary_match = bool(re.search(rf'\b{re.escape(term_lower)}\b', value_lower))
+        normalized_boundary_match = bool(re.search(rf'\b{re.escape(term_normalized)}\b', value_normalized))
+        token_word_match = bool(term_tokens) and all(tok in value_tokens for tok in term_tokens)
+
+        if boundary_match or normalized_boundary_match or token_word_match:
             score += weight
+        elif len(term_tokens) >= 2:
+            # Fallback: allow non-contiguous substring matches only when all tokens are present as substrings
+            if all(tok in value_normalized for tok in term_tokens):
+                score += max(1, int(weight * 0.6))
     
     return score
 
