@@ -2,6 +2,11 @@
     'use strict';
     
     let analysisResults = {};
+    let contentGapSkuCounts = null;
+    let contentGapTopicSkuIds = {};
+    let contentGapGroupSkuIds = {};
+    let contentGapTopicSkuIdKeywordMap = {};
+    let contentGapGroupSkuIdKeywordMap = {};
     let pollingInterval = null;
     let tableState = {
         fullData: [], headers: [], sortKey: null, sortDir: 'desc',
@@ -1353,6 +1358,80 @@
         XLSX.writeFile(wb, `${fileName}.xlsx`);
     }
 
+    function buildContentGapExport(data, headers, title) {
+        const exportHeaders = [...headers.filter(h => h !== '')];
+        const exportData = data.map(row => ({ ...row }));
+        const skuCounts = window.contentGapSkuCounts || contentGapSkuCounts;
+        const groupSkuIds = window.contentGapGroupSkuIds || contentGapGroupSkuIds || {};
+        const groupKeywordsMap = buildContentGapGroupKeywordsMap();
+        const isKeywordView = title.includes('Content Gaps | Individual Keywords');
+        const isGroupView = title.includes('Content Gaps | Keyword Groups');
+
+        if (!skuCounts || (!isKeywordView && !isGroupView)) {
+            return { exportHeaders, exportData };
+        }
+
+        const addHeaderIfMissing = (h) => {
+            if (!exportHeaders.includes(h)) exportHeaders.push(h);
+        };
+
+        if (isKeywordView) {
+            addHeaderIfMissing('Estimated TS SKU Count');
+            addHeaderIfMissing('Matched SKU IDs');
+            exportData.forEach(row => {
+                const kw = row['Keyword'];
+                const entry = kw ? skuCounts[kw] : null;
+                const countVal = entry && typeof entry === 'object'
+                    ? (entry.count ?? entry.sku_count ?? entry.skuCount ?? 0)
+                    : (entry ?? 0);
+                const ids = entry && typeof entry === 'object' && Array.isArray(entry.sku_ids)
+                    ? entry.sku_ids.filter(id => id !== null && id !== undefined && String(id).trim() !== '')
+                    : [];
+                row['Estimated TS SKU Count'] = countVal;
+                row['Matched SKU IDs'] = ids.length ? ids.map(id => `${id} (${kw})`).join(', ') : '';
+            });
+        } else if (isGroupView) {
+            addHeaderIfMissing('Estimated TS SKU Count');
+            addHeaderIfMissing('Matched SKU IDs');
+            addHeaderIfMissing('Group Keywords');
+            exportData.forEach(row => {
+                const groupName = row['Keyword Group'];
+                const ids = groupSkuIds[groupName] || [];
+                const kwMap = (window.contentGapGroupSkuIdKeywordMap || contentGapGroupSkuIdKeywordMap || {})[groupName] || {};
+                const formatted = ids.map(id => {
+                    const kw = kwMap[id];
+                    return kw ? `${id} (${kw})` : id;
+                });
+                row['Matched SKU IDs'] = formatted.length ? formatted.join(', ') : '';
+                const groupKeywords = groupKeywordsMap[groupName] || [];
+                row['Group Keywords'] = groupKeywords.join(', ');
+            });
+        }
+
+        return { exportHeaders, exportData };
+    }
+
+    function buildContentGapGroupKeywordsMap() {
+        const map = {};
+        const sources = [
+            { report: analysisResults.topicGapReport || [], kwMap: analysisResults.topicKeywordMap || {} },
+            { report: analysisResults.coreTopicGapReport || [], kwMap: analysisResults.coreTopicKeywordMap || {} }
+        ];
+
+        sources.forEach(src => {
+            (src.report || []).forEach(row => {
+                const groupName = row['Keyword Group'];
+                const topicId = row['TopicID'];
+                const keywords = src.kwMap ? src.kwMap[topicId] || [] : [];
+                if (!groupName) return;
+                if (!map[groupName]) map[groupName] = new Set();
+                keywords.forEach(kw => map[groupName].add(kw));
+            });
+        });
+
+        return Object.fromEntries(Object.entries(map).map(([k, v]) => [k, Array.from(v)]));
+    }
+
     function exportToPdf(data, headers, fileName, title) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'landscape' });
@@ -2199,8 +2278,15 @@
             const exportType = exportBtn.dataset.exportType;
             const title = reportContainer ? reportContainer.dataset.reportTitle : 'Report';
             const fileName = title.replace(/[^\w\s]/gi, '').replace(/\s+/g, '_');
-            const dataToExport = getFilteredData();
-            const headersToExport = updateHeadersForTimeframe(tableState.headers, tableState.timeframe);
+            let dataToExport = getFilteredData();
+            let headersToExport = updateHeadersForTimeframe(tableState.headers, tableState.timeframe);
+
+            // Enrich Content Gap exports with SKU IDs and counts
+            if (title.includes('Content Gaps')) {
+                const built = buildContentGapExport(dataToExport, headersToExport, title);
+                dataToExport = built.exportData;
+                headersToExport = built.exportHeaders;
+            }
 
             if (title.includes('Category Overhaul Matrix')) {
                 // Use the original data from analysisResults instead of the processed data
@@ -3733,9 +3819,274 @@
         return true;
     }
 
+    function getContentGapSkuTerms() {
+        const terms = new Set();
+        if (analysisResults.keywordGapReport && Array.isArray(analysisResults.keywordGapReport)) {
+            analysisResults.keywordGapReport.forEach(row => {
+                const term = row && row.Keyword ? String(row.Keyword).trim() : '';
+                if (term) terms.add(term);
+            });
+        }
+        return Array.from(terms);
+    }
+
+    function renderContentGapSkuControls() {
+        const hasCounts = contentGapSkuCounts && Object.keys(contentGapSkuCounts).length > 0;
+        const statusText = hasCounts
+            ? 'SKU counts loaded'
+            : 'Upload a PIM CSV to estimate Toolstation SKU coverage for gaps.';
+
+        return `
+            <div id="content-gap-sku-controls" class="flex flex-wrap items-center gap-2">
+                <label class="text-xs font-semibold text-gray-700">PIM CSV</label>
+                <input type="file" id="content-gap-pim-file" accept=".csv" class="text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                <div id="content-gap-sku-column-wrapper" class="hidden">
+                    <select id="content-gap-sku-id-column" class="text-xs px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        <option value="">Auto-detect SKU column</option>
+                    </select>
+                </div>
+                <button id="run-content-gap-sku-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    Estimate SKU Counts
+                </button>
+                <div id="content-gap-sku-status" class="text-xs text-gray-600">${statusText}</div>
+            </div>
+        `;
+    }
+
+    function handleContentGapSkuResult(result, statusDiv, actionBtn) {
+        let payload = result;
+        if (payload && payload.result) {
+            payload = payload.result;
+        }
+        if (payload && payload.status === 'SUCCESS' && payload.result) {
+            payload = payload.result;
+        }
+
+        const counts = (payload && (payload.sku_counts || payload.skuCounts)) || null;
+        if (counts && typeof counts === 'object') {
+            contentGapSkuCounts = counts;
+            window.contentGapSkuCounts = counts;
+            const countMessage = `SKU counts ready for ${Object.keys(counts).length} keywords.`;
+            if (statusDiv) {
+                statusDiv.textContent = countMessage;
+                statusDiv.className = 'text-xs text-green-700';
+            }
+            showNotification('Estimated SKU counts calculated. Tables refreshed.', 'success');
+            rerenderCurrentContentGapLens();
+        } else if (statusDiv) {
+            statusDiv.textContent = 'Received response, but no SKU counts were found.';
+            statusDiv.className = 'text-xs text-yellow-700';
+        }
+
+        if (actionBtn) {
+            actionBtn.disabled = false;
+            actionBtn.textContent = 'Estimate SKU Counts';
+        }
+    }
+
+    async function startContentGapSkuPolling(hostname, port, taskId, statusDiv, actionBtn) {
+        const protocol = window.location.protocol || 'http:';
+        if (window.contentGapSkuPollingInterval) {
+            clearInterval(window.contentGapSkuPollingInterval);
+        }
+
+        window.contentGapSkuPollingInterval = setInterval(async () => {
+            try {
+                const apiUrl = `${protocol}//${hostname}:${port}/api/pim/sku_counts/status/${taskId}`;
+                const response = await fetch(apiUrl, { headers: { 'X-API-KEY': API_KEY } });
+                const data = await response.json();
+
+                if (data.state === 'PROGRESS' && statusDiv) {
+                    const progress = data.info || {};
+                    const percentage = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
+                    statusDiv.textContent = `${progress.status || 'Processing'} (${percentage}%)`;
+                    statusDiv.className = 'text-xs text-blue-700';
+                } else if (data.state === 'SUCCESS') {
+                    clearInterval(window.contentGapSkuPollingInterval);
+                    window.contentGapSkuPollingInterval = null;
+                    handleContentGapSkuResult(data.result || data, statusDiv, actionBtn);
+                } else if (data.state === 'FAILURE') {
+                    clearInterval(window.contentGapSkuPollingInterval);
+                    window.contentGapSkuPollingInterval = null;
+                    const errorMsg = data.error || 'SKU counting failed';
+                    if (statusDiv) {
+                        statusDiv.textContent = `Error: ${errorMsg}`;
+                        statusDiv.className = 'text-xs text-red-700';
+                    }
+                    showNotification(errorMsg, 'error');
+                    if (actionBtn) {
+                        actionBtn.disabled = false;
+                        actionBtn.textContent = 'Estimate SKU Counts';
+                    }
+                }
+            } catch (error) {
+                clearInterval(window.contentGapSkuPollingInterval);
+                window.contentGapSkuPollingInterval = null;
+                console.error('Error polling SKU count task:', error);
+                if (statusDiv) {
+                    statusDiv.textContent = `Error polling task: ${error.message}`;
+                    statusDiv.className = 'text-xs text-red-700';
+                }
+                if (actionBtn) {
+                    actionBtn.disabled = false;
+                    actionBtn.textContent = 'Estimate SKU Counts';
+                }
+            }
+        }, 2000);
+    }
+
+    function setupContentGapSkuUpload() {
+        const fileInput = document.getElementById('content-gap-pim-file');
+        const runBtn = document.getElementById('run-content-gap-sku-btn');
+        const statusDiv = document.getElementById('content-gap-sku-status');
+        const skuWrapper = document.getElementById('content-gap-sku-column-wrapper');
+        const skuSelect = document.getElementById('content-gap-sku-id-column');
+
+        if (!fileInput || !runBtn) return;
+
+        if (contentGapSkuCounts && statusDiv) {
+            statusDiv.textContent = `SKU counts ready for ${Object.keys(contentGapSkuCounts).length} keywords.`;
+            statusDiv.className = 'text-xs text-green-700';
+        }
+
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) {
+                runBtn.disabled = true;
+                return;
+            }
+            try {
+                const text = await file.text();
+                const headerLine = (text.split(/\r?\n/)[0] || '');
+                const headers = headerLine.split(',').map(h => h.trim().replace(/^"|"$/g, '')).filter(Boolean);
+                if (skuWrapper && skuSelect) {
+                    skuSelect.innerHTML = '<option value="">Auto-detect SKU column</option>' + headers.map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('');
+                    skuWrapper.classList.remove('hidden');
+                }
+                runBtn.disabled = false;
+                if (statusDiv) {
+                    statusDiv.textContent = 'Ready to estimate SKU counts';
+                    statusDiv.className = 'text-xs text-gray-700';
+                }
+            } catch (error) {
+                console.error('Error reading PIM file:', error);
+                showNotification('Error reading PIM file. Please check the CSV and try again.', 'error');
+                runBtn.disabled = true;
+            }
+        });
+
+        runBtn.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                showNotification('Please select a PIM CSV file first.', 'error');
+                return;
+            }
+
+            const terms = getContentGapSkuTerms();
+            if (!terms.length) {
+                showNotification('No keyword gaps available to estimate SKU counts.', 'error');
+                return;
+            }
+
+            const skuColumn = skuSelect ? skuSelect.value : '';
+            const formData = new FormData();
+            formData.append('pimFile', file);
+            formData.append('terms', JSON.stringify(terms));
+            if (skuColumn) {
+                formData.append('skuIdColumn', skuColumn);
+            }
+
+            runBtn.disabled = true;
+            runBtn.textContent = 'Estimating...';
+            if (statusDiv) {
+                statusDiv.textContent = 'Uploading and estimating SKU counts...';
+                statusDiv.className = 'text-xs text-blue-700';
+            }
+
+            const protocol = window.location.protocol || 'http:';
+            const hostname = window.location.hostname || '127.0.0.1';
+            let lastError = null;
+            let immediateResult = null;
+
+            for (let port = 5000; port <= 5010; port++) {
+                try {
+                    const apiUrl = `${protocol}//${hostname}:${port}/api/pim/sku_counts`;
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'X-API-KEY': API_KEY
+                        },
+                        body: formData,
+                        signal: AbortSignal.timeout(360000)
+                    });
+
+                    const contentType = response.headers.get('content-type') || '';
+                    if (response.status === 202 && contentType.includes('application/json')) {
+                        const taskData = await response.json();
+                        if (taskData.task_id) {
+                            startContentGapSkuPolling(hostname, port, taskData.task_id, statusDiv, runBtn);
+                            return;
+                        }
+                    } else if (response.ok && contentType.includes('application/json')) {
+                        immediateResult = await response.json();
+                        break;
+                    } else {
+                        let errorMessage = `Server error on port ${port} (Status: ${response.status})`;
+                        try {
+                            if (contentType.includes('application/json')) {
+                                const errorData = await response.json();
+                                errorMessage = errorData.error || errorMessage;
+                            } else {
+                                const text = await response.text();
+                                errorMessage = text.substring(0, 200) || errorMessage;
+                            }
+                        } catch (_) {
+                            // ignore parse errors
+                        }
+                        lastError = new Error(errorMessage);
+                        continue;
+                    }
+                } catch (error) {
+                    lastError = error;
+                    continue;
+                }
+            }
+
+            if (!immediateResult) {
+                const errMessage = lastError ? lastError.message : 'Could not reach SKU counting endpoint.';
+                showNotification(errMessage, 'error');
+                if (statusDiv) {
+                    statusDiv.textContent = `Error: ${errMessage}`;
+                    statusDiv.className = 'text-xs text-red-700';
+                }
+                runBtn.disabled = false;
+                runBtn.textContent = 'Estimate SKU Counts';
+                return;
+            }
+
+            handleContentGapSkuResult(immediateResult, statusDiv, runBtn);
+        });
+    }
+
+    function rerenderCurrentContentGapLens() {
+        const container = document.querySelector('[data-report-title]');
+        if (!container) return;
+        const title = container.dataset.reportTitle || '';
+
+        if (title.includes('Content Gaps | Individual Keywords')) {
+            renderKeywordGapAnalysisView();
+        } else if (title.includes('Content Gaps | Keyword Groups')) {
+            const activeScopeBtn = document.querySelector('.scope-toggle-btn.active');
+            const scope = activeScopeBtn && activeScopeBtn.dataset.scope ? activeScopeBtn.dataset.scope : 'core';
+            renderTopicGapAnalysisView(scope);
+        }
+    }
+
     function renderKeywordGapAnalysisView() {
         const { keywordGapReport, hasOnsiteData, onsiteDateRange } = analysisResults;
         let transformedData = transformDataForTimeframe(keywordGapReport, tableState.timeframe);
+        const skuCounts = window.contentGapSkuCounts || contentGapSkuCounts;
+        const hasSkuCounts = skuCounts && Object.keys(skuCounts).length > 0;
 
         const dateSuffix = onsiteDateRange ? ` (${onsiteDateRange})` : '';
         const onsiteSearchesHeader = `On-Site Searches${dateSuffix}`;
@@ -3756,6 +4107,9 @@
                 }
             });
         }
+        if (hasSkuCounts) {
+            headers.push('Estimated TS SKU Count');
+        }
 
         const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
 
@@ -3766,13 +4120,23 @@
             if (urlKeyInRow && newRow[urlKeyInRow]) {
                 newRow[urlKeyInRow] = `<a href="${newRow[urlKeyInRow]}" target="_blank" class="text-blue-600 hover:underline break-all">${newRow[urlKeyInRow]}</a>`;
             }
+            if (hasSkuCounts) {
+                const keyword = row['Keyword'];
+                const skuEntry = keyword && skuCounts ? skuCounts[keyword] : null;
+                const skuCountValue = typeof skuEntry === 'object' && skuEntry !== null
+                    ? (skuEntry.count ?? skuEntry.sku_count ?? skuEntry.skuCount ?? 0)
+                    : (skuEntry ?? 0);
+                newRow['Estimated TS SKU Count'] = skuCountValue;
+            }
             return newRow;
         });
 
         const subtitle = 'Specific keywords where competitors rank, but you do not. Prioritised by Opportunity Score.';
         const scoreDescription = `The <strong>Opportunity Score</strong> is a 0-100 metric calculated by weighting on-site search volume (40%), Google search volume (20%), and the top competitor's traffic (40%) to prioritise your most valuable content gaps.`;
         const description = GAP_ANALYSIS_CAVEAT + (hasOnsiteData ? `<br><br>${scoreDescription}`: '');
-        ui.resultsContainer.innerHTML = createReportContainer('Content Gaps | Individual Keywords', subtitle, '', description);
+        const skuControls = renderContentGapSkuControls();
+        ui.resultsContainer.innerHTML = createReportContainer('Content Gaps | Individual Keywords', subtitle, skuControls, description);
+        setupContentGapSkuUpload();
 
         const defaultSortKeyFromHeaders = hasOnsiteData ? opportunityScoreHeader : headers[1];
         const defaultSortKey = updateHeadersForTimeframe([defaultSortKeyFromHeaders], tableState.timeframe)[0];
@@ -3782,6 +4146,71 @@
     function renderTopicGapAnalysisView(scope = 'core') {
         const reportData = (scope === 'core') ? analysisResults.coreTopicGapReport : analysisResults.topicGapReport;
         let transformedData = transformDataForTimeframe(reportData, tableState.timeframe);
+        const skuCounts = window.contentGapSkuCounts || contentGapSkuCounts;
+        const hasSkuCounts = skuCounts && Object.keys(skuCounts).length > 0;
+        const keywordMap = scope === 'core' ? analysisResults.coreTopicKeywordMap : analysisResults.topicKeywordMap;
+        const topicSkuCounts = {};
+        const topicSkuIdsMap = {};
+        const groupSkuIdsMap = {};
+
+        if (hasSkuCounts && keywordMap) {
+            Object.entries(keywordMap).forEach(([topicId, keywords]) => {
+                const uniqueSkuIds = new Set();
+                const idKeywordMap = {};
+                let fallbackSum = 0;
+
+                (keywords || []).forEach(kw => {
+                    const entry = skuCounts[kw];
+                    if (entry && typeof entry === 'object') {
+                        if (Array.isArray(entry.sku_ids)) {
+                            entry.sku_ids.forEach(id => {
+                                const idStr = (id !== null && id !== undefined) ? String(id).trim() : '';
+                                if (idStr) {
+                                    uniqueSkuIds.add(idStr);
+                                    if (!idKeywordMap[idStr]) {
+                                        idKeywordMap[idStr] = kw;
+                                    }
+                                }
+                            });
+                        }
+                        const entryCount = entry.count ?? entry.sku_count ?? entry.skuCount ?? 0;
+                        fallbackSum += entryCount;
+                    } else if (entry !== undefined && entry !== null) {
+                        fallbackSum += Number(entry) || 0;
+                    }
+                });
+
+                topicSkuCounts[topicId] = uniqueSkuIds.size > 0 ? uniqueSkuIds.size : fallbackSum;
+                topicSkuIdsMap[topicId] = Array.from(uniqueSkuIds);
+                contentGapTopicSkuIdKeywordMap[topicId] = idKeywordMap;
+            });
+            // Build group-level map keyed by Keyword Group label
+            transformedData.forEach(row => {
+                const topicId = row['TopicID'];
+                const groupName = row['Keyword Group'];
+                const ids = topicSkuIdsMap[topicId] || [];
+                const idKwMap = contentGapTopicSkuIdKeywordMap[topicId] || {};
+                if (groupName) {
+                    const current = groupSkuIdsMap[groupName] || new Set();
+                    const currentKwMap = contentGapGroupSkuIdKeywordMap[groupName] || {};
+                    ids.forEach(id => {
+                        current.add(id);
+                        if (!currentKwMap[id] && idKwMap[id]) {
+                            currentKwMap[id] = idKwMap[id];
+                        }
+                    });
+                    groupSkuIdsMap[groupName] = current;
+                    contentGapGroupSkuIdKeywordMap[groupName] = currentKwMap;
+                }
+            });
+            // Persist globally for exports
+            contentGapTopicSkuIds = topicSkuIdsMap;
+            contentGapGroupSkuIds = Object.fromEntries(Object.entries(groupSkuIdsMap).map(([k, v]) => [k, Array.from(v)]));
+            window.contentGapTopicSkuIds = contentGapTopicSkuIds;
+            window.contentGapGroupSkuIds = contentGapGroupSkuIds;
+            window.contentGapTopicSkuIdKeywordMap = contentGapTopicSkuIdKeywordMap;
+            window.contentGapGroupSkuIdKeywordMap = contentGapGroupSkuIdKeywordMap;
+        }
 
         const { hasOnsiteData, onsiteDateRange } = analysisResults;
         const dateSuffix = onsiteDateRange ? ` (${onsiteDateRange})` : '';
@@ -3807,6 +4236,9 @@
                 }
             });
         }
+        if (hasSkuCounts) {
+            headers.push('Estimated TS SKU Count');
+        }
         const displayHeaders = updateHeadersForTimeframe(headers, tableState.timeframe);
 
         const displayData = transformedData.map(row => {
@@ -3815,6 +4247,9 @@
             if (gapCountKey) {
                 newRow[gapCountKey] = `<button class="text-blue-600 hover:underline view-keywords-btn" data-map-source="${scope}" data-topic-id="${row['TopicID']}">${row[gapCountKey]}</button>`;
             }
+            if (hasSkuCounts) {
+                newRow['Estimated TS SKU Count'] = topicSkuCounts[row['TopicID']] ?? null;
+            }
             return newRow;
         });
 
@@ -3822,7 +4257,9 @@
         const topicDescription = `<b>Note:</b> Metrics shown are aggregated from <em>all</em> keywords in the topic group. The group name is generated from the top 3 keywords with the highest Opportunity Score.<br><br>The <strong>Competitor Avg. Rank</strong> is the average ranking position of all competitors for the keywords within that topic group, considering only keywords for which you have no ranking.`;
         const fullDescription = GAP_ANALYSIS_CAVEAT + `<br><br>` + topicDescription;
         const scopeToggle = `<div class="mb-4"><span class="text-sm font-semibold mr-2">Topic Scope:</span><button data-scope="core" class="scope-toggle-btn text-xs font-semibold py-1 px-3 rounded-l-md ${scope === 'core' ? 'active' : ''}">Core</button><button data-scope="full" class="scope-toggle-btn text-xs font-semibold py-1 px-3 rounded-r-md ${scope === 'full' ? 'active' : ''}">Full</button></div>`;
-        ui.resultsContainer.innerHTML = createReportContainer('Content Gaps | Keyword Groups', subtitle, scopeToggle, fullDescription);
+        const skuControls = renderContentGapSkuControls();
+        ui.resultsContainer.innerHTML = createReportContainer('Content Gaps | Keyword Groups', subtitle, scopeToggle + skuControls, fullDescription);
+        setupContentGapSkuUpload();
         
         const finalTableHeaders = displayHeaders.filter(h => h !== 'TopicID'); 
         const dataForTable = displayData.map(row => { 
@@ -5184,6 +5621,26 @@
             window.pimAnalysisResults = state.pimAnalysisResults;
             console.log('Loaded PIM analysis results:', state.pimAnalysisResults);
         }
+        if (state.contentGapSkuCounts) {
+            contentGapSkuCounts = state.contentGapSkuCounts;
+            window.contentGapSkuCounts = state.contentGapSkuCounts;
+        }
+        if (state.contentGapTopicSkuIds) {
+            contentGapTopicSkuIds = state.contentGapTopicSkuIds;
+            window.contentGapTopicSkuIds = state.contentGapTopicSkuIds;
+        }
+        if (state.contentGapGroupSkuIds) {
+            contentGapGroupSkuIds = state.contentGapGroupSkuIds;
+            window.contentGapGroupSkuIds = state.contentGapGroupSkuIds;
+        }
+        if (state.contentGapTopicSkuIdKeywordMap) {
+            contentGapTopicSkuIdKeywordMap = state.contentGapTopicSkuIdKeywordMap;
+            window.contentGapTopicSkuIdKeywordMap = state.contentGapTopicSkuIdKeywordMap;
+        }
+        if (state.contentGapGroupSkuIdKeywordMap) {
+            contentGapGroupSkuIdKeywordMap = state.contentGapGroupSkuIdKeywordMap;
+            window.contentGapGroupSkuIdKeywordMap = state.contentGapGroupSkuIdKeywordMap;
+        }
         
         // Load analysis results if available
         if (state.analysisResults && Object.keys(state.analysisResults).length > 0) {
@@ -5341,6 +5798,11 @@
             overrideRules: overrideRules,
             analysisOptions: analysisOptions,
             pimAnalysisResults: window.pimAnalysisResults || null,  // Save PIM analysis results
+            contentGapSkuCounts: window.contentGapSkuCounts || contentGapSkuCounts || null,
+            contentGapTopicSkuIds: window.contentGapTopicSkuIds || contentGapTopicSkuIds || null,
+            contentGapGroupSkuIds: window.contentGapGroupSkuIds || contentGapGroupSkuIds || null,
+            contentGapTopicSkuIdKeywordMap: window.contentGapTopicSkuIdKeywordMap || contentGapTopicSkuIdKeywordMap || null,
+            contentGapGroupSkuIdKeywordMap: window.contentGapGroupSkuIdKeywordMap || contentGapGroupSkuIdKeywordMap || null,
             savedAt: new Date().toISOString()
         };
 

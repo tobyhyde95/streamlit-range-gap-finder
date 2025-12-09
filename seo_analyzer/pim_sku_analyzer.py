@@ -212,8 +212,9 @@ def _calculate_sku_count_for_term_weighted(
     pim_df: pd.DataFrame,
     term: str,
     sku_id_column: str,
-    description_corpus: pd.Series = None
-) -> int:
+    description_corpus: pd.Series = None,
+    collect_ids: bool = False
+) -> Tuple[int, Optional[Set[str]]]:
     """
     Calculate SKU count for a term using the Smart SKU Counting logic.
     
@@ -245,14 +246,19 @@ def _calculate_sku_count_for_term_weighted(
     
     # Step 5: Calculate match scores for each row
     matched_skus = 0
+    matched_ids: Set[str] = set() if collect_ids else None
     for _, row in pim_df.iterrows():
         score = calculate_match_score_weighted(
             row, term, is_noisy, column_weights_map, description_columns_set
         )
         if score >= threshold:
             matched_skus += 1
+            if collect_ids:
+                sku_val = row.get(sku_id_column)
+                if pd.notna(sku_val) and str(sku_val).strip():
+                    matched_ids.add(str(sku_val).strip())
     
-    return matched_skus
+    return matched_skus, matched_ids
 
 
 def classify_term_by_depth_and_demand(sku_count: int, organic_traffic: float) -> str:
@@ -450,8 +456,9 @@ def calculate_sku_counts_for_terms(
     pim_csv_path: str,
     terms: List[str],
     sku_id_column: str = None,
-    progress_reporter: callable = None
-) -> Dict[str, int]:
+    progress_reporter: callable = None,
+    include_sku_ids: bool = True
+) -> Dict[str, Dict]:
     """
     Calculate SKU counts for a list of terms using Smart SKU Counting logic.
     
@@ -513,9 +520,18 @@ def calculate_sku_counts_for_terms(
                 progress_reporter(f"Calculating SKU counts: {idx}/{len(terms)}", idx, len(terms))
             
             print(f"[{idx+1}/{len(terms)}] Analyzing term: '{term}'")
-            sku_count = _calculate_sku_count_for_term_weighted(pim_df, term, sku_id_column, description_corpus)
-            results[term] = sku_count
-            print(f"  → SKU Count: {sku_count}\n")
+            sku_count, sku_ids = _calculate_sku_count_for_term_weighted(
+                pim_df,
+                term,
+                sku_id_column,
+                description_corpus,
+                collect_ids=include_sku_ids
+            )
+            results[term] = {
+                'count': sku_count,
+                'sku_ids': list(sku_ids) if include_sku_ids and sku_ids is not None else None
+            }
+            print(f"  → SKU Count: {sku_count} (ids collected: {include_sku_ids and sku_ids is not None})\n")
         
         if progress_reporter:
             progress_reporter("SKU counting complete", len(terms), len(terms))

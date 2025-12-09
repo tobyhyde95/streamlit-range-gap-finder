@@ -520,6 +520,83 @@ def pim_task_status(task_id):
         }
     return flask.jsonify(response)
 
+
+@app.route("/api/pim/sku_counts", methods=["POST"])
+@require_api_key
+def calculate_pim_sku_counts():
+    """Calculate SKU counts for provided terms using the uploaded PIM CSV (async task)."""
+    try:
+        if 'pimFile' not in flask.request.files:
+            return flask.jsonify({"error": "PIM file is required"}), 400
+
+        terms_json = flask.request.form.get('terms')
+        if not terms_json:
+            return flask.jsonify({"error": "Terms are required"}), 400
+
+        try:
+            terms = json.loads(terms_json)
+            if not isinstance(terms, list):
+                raise ValueError("Terms payload must be a JSON array")
+        except Exception:
+            return flask.jsonify({"error": "Invalid terms JSON provided"}), 400
+
+        sku_id_column = flask.request.form.get('skuIdColumn')
+
+        pim_file = flask.request.files['pimFile']
+        temp_dir = tempfile.mkdtemp()
+        pim_file_path = os.path.join(temp_dir, f"{uuid.uuid4()}.csv")
+        pim_file.save(pim_file_path)
+
+        try:
+            from .tasks import run_pim_sku_count_task
+        except ImportError:
+            from tasks import run_pim_sku_count_task
+
+        print(f"Starting PIM SKU count task for {len(terms)} terms using file {pim_file_path}")
+        task = run_pim_sku_count_task.delay(
+            pim_file_path,
+            terms,
+            sku_id_column if sku_id_column else None,
+            temp_dir
+        )
+
+        return flask.jsonify({"task_id": task.id}), 202
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error in calculate_pim_sku_counts endpoint: {error_trace}")
+        return flask.jsonify({"error": f"Failed to start SKU counting: {str(e)}"}), 500
+
+
+@app.route("/api/pim/sku_counts/status/<task_id>", methods=["GET"])
+@require_api_key
+def pim_sku_counts_status(task_id):
+    """Check status for SKU count calculation task."""
+    try:
+        from .tasks import run_pim_sku_count_task
+    except ImportError:
+        from tasks import run_pim_sku_count_task
+
+    task = run_pim_sku_count_task.AsyncResult(task_id)
+
+    if task.state == 'PENDING':
+        response = {'state': task.state, 'status': 'Task is pending...'}
+    elif task.state == 'PROGRESS':
+        response = {
+            'state': task.state,
+            'info': task.info
+        }
+    elif task.state == 'SUCCESS':
+        response = {'state': task.state, 'result': task.result}
+    elif task.state != 'FAILURE':
+        response = {'state': task.state, 'status': 'In progress...'}
+    else:
+        response = {
+            'state': task.state,
+            'error': str(task.info.get('exc_message', 'Unknown error')) if isinstance(task.info, dict) else str(task.info)
+        }
+    return flask.jsonify(response)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run Flask app.')
     parser.add_argument('--port', type=int, default=5001, help='Port to run on.')

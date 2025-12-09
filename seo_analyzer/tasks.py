@@ -89,3 +89,54 @@ def run_pim_analysis_task(self, pim_file_path, category_facet_map, sku_id_column
                 shutil.rmtree(temp_dir)
         except Exception:
             pass
+
+
+@celery_app.task(bind=True)
+def run_pim_sku_count_task(self, pim_file_path, terms, sku_id_column, temp_dir):
+    """Celery task to calculate SKU counts for a list of terms."""
+    try:
+        from .pim_sku_analyzer import calculate_sku_counts_for_terms
+    except ImportError:
+        from pim_sku_analyzer import calculate_sku_counts_for_terms
+
+    try:
+        def report_progress(message, current_step, total_steps):
+            meta = {
+                'status': message,
+                'current': current_step,
+                'total': total_steps
+            }
+            self.update_state(state='PROGRESS', meta=meta)
+
+        sku_counts = calculate_sku_counts_for_terms(
+            pim_file_path,
+            terms,
+            sku_id_column=sku_id_column if sku_id_column else None,
+            progress_reporter=report_progress,
+            include_sku_ids=True
+        )
+
+        return {
+            'status': 'SUCCESS',
+            'result': {
+                'sku_counts': sku_counts,
+                'total_terms': len(terms or []),
+                'requested_terms': terms
+            }
+        }
+    except ValueError as e:
+        self.update_state(state='FAILURE', meta={'exc_type': 'ValueError', 'exc_message': str(e)})
+        return {'status': 'FAILURE', 'error': str(e)}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        self.update_state(state='FAILURE', meta={'exc_type': type(e).__name__, 'exc_message': str(e)})
+        return {'status': 'FAILURE', 'error': str(e)}
+    finally:
+        try:
+            if os.path.exists(pim_file_path):
+                os.remove(pim_file_path)
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
+        except Exception:
+            pass
