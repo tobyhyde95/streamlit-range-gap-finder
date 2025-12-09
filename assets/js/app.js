@@ -1358,6 +1358,14 @@
         XLSX.writeFile(wb, `${fileName}.xlsx`);
     }
 
+    function truncateForExcel(text, maxLength = 32767) {
+        if (!text || text.length <= maxLength) return text;
+        // Leave room for truncation message
+        const truncateMsg = ' ... (truncated - data exceeds Excel cell limit)';
+        const availableLength = maxLength - truncateMsg.length;
+        return text.substring(0, availableLength) + truncateMsg;
+    }
+
     function buildContentGapExport(data, headers, title) {
         const exportHeaders = [...headers.filter(h => h !== '')];
         const exportData = data.map(row => ({ ...row }));
@@ -1388,7 +1396,8 @@
                     ? entry.sku_ids.filter(id => id !== null && id !== undefined && String(id).trim() !== '')
                     : [];
                 row['Estimated TS SKU Count'] = countVal;
-                row['Matched SKU IDs'] = ids.length ? ids.map(id => `${id} (${kw})`).join(', ') : '';
+                const skuIdsText = ids.length ? ids.map(id => `${id} (${kw})`).join(', ') : '';
+                row['Matched SKU IDs'] = truncateForExcel(skuIdsText);
             });
         } else if (isGroupView) {
             addHeaderIfMissing('Estimated TS SKU Count');
@@ -1402,9 +1411,15 @@
                     const kw = kwMap[id];
                     return kw ? `${id} (${kw})` : id;
                 });
-                row['Matched SKU IDs'] = formatted.length ? formatted.join(', ') : '';
+                const skuIdsText = formatted.length ? formatted.join(', ') : '';
+                row['Matched SKU IDs'] = truncateForExcel(skuIdsText);
+                // Use the count from the row if available, otherwise use the length of unique SKU IDs
+                if (row['Estimated TS SKU Count'] === undefined || row['Estimated TS SKU Count'] === null) {
+                    row['Estimated TS SKU Count'] = ids.length || 0;
+                }
                 const groupKeywords = groupKeywordsMap[groupName] || [];
-                row['Group Keywords'] = groupKeywords.join(', ');
+                const keywordsText = groupKeywords.join(', ');
+                row['Group Keywords'] = truncateForExcel(keywordsText);
             });
         }
 
