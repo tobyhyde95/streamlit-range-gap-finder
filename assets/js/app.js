@@ -2791,10 +2791,40 @@
         </div><div class="space-y-8">`;
         
         if (hasGaps) {
+            const hasSkuCounts = (window.contentGapSkuCounts || contentGapSkuCounts) && Object.keys(window.contentGapSkuCounts || contentGapSkuCounts || {}).length > 0;
+            const skuStatusText = hasSkuCounts
+                ? `SKU counts ready for ${Object.keys(window.contentGapSkuCounts || contentGapSkuCounts || {}).length} keywords.`
+                : 'Upload a PIM CSV to estimate Toolstation SKU coverage for gaps.';
+            
             html += `
             <div class="lens-section">
                 <h3 class="text-2xl font-bold mb-4 text-gray-800 border-b pb-2">Content Gaps</h3>
                 <p class="text-sm text-gray-600 mb-4">This analysis reveals keywords and topics where your competitors have ranking visibility, but your domain does not. It's designed to uncover new content opportunities and areas where you can expand your digital footprint.</p>
+                
+                <!-- PIM Upload Section for Content Gaps -->
+                <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 class="font-bold text-lg mb-2 text-gray-800">PIM Product Data</h4>
+                    <p class="text-sm text-gray-600 mb-3">Upload your PIM product data to see estimated SKU counts for content gaps. SKU counts will be available in both Individual Keywords and Keyword Groups views.</p>
+                    <div class="flex flex-wrap items-center gap-4">
+                        <div class="flex-1 min-w-[200px]">
+                            <label for="content-gap-pim-file-lens" class="block text-sm font-medium text-gray-700 mb-1">PIM CSV File</label>
+                            <input type="file" id="content-gap-pim-file-lens" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        </div>
+                        <div class="flex-1 min-w-[200px]" id="content-gap-sku-column-selector-lens" style="display: none;">
+                            <label for="content-gap-sku-id-column-lens" class="block text-sm font-medium text-gray-700 mb-1">SKU ID Column (Auto-detected)</label>
+                            <select id="content-gap-sku-id-column-lens" class="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                <option value="">Auto-detect</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end gap-2">
+                            <button id="run-content-gap-sku-btn-lens" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm" disabled>
+                                Estimate SKU Counts
+                            </button>
+                        </div>
+                    </div>
+                    <div id="content-gap-sku-status-lens" class="mt-2 text-sm text-gray-600">${skuStatusText}</div>
+                </div>
+                
                 <div class="grid md:grid-cols-2 gap-6">
                     <div data-lens="keyword-gaps" class="lens-card p-6 border rounded-lg"><h3 class="font-bold text-xl">Individual Keywords</h3><p>Keywords where competitors rank but you don't.</p></div>
                     <div data-lens="topic-gaps" class="lens-card p-6 border rounded-lg"><h3 class="font-bold text-xl">Keyword Groups</h3><p>Topic groups where you have no ranking visibility.</p></div>
@@ -2897,6 +2927,11 @@
         // Setup PIM upload event listeners if Taxonomy & Architecture Analysis section exists
         if (hasOverhaulData || fallbackHasOverhaulData) {
             setupPimUploadListeners();
+        }
+        
+        // Setup Content Gap PIM upload event listeners if Content Gaps section exists
+        if (hasGaps) {
+            setupContentGapPimUploadListeners();
         }
     }
     
@@ -3867,15 +3902,37 @@
             contentGapSkuCounts = counts;
             window.contentGapSkuCounts = counts;
             const countMessage = `SKU counts ready for ${Object.keys(counts).length} keywords.`;
+            
+            // Update status in both the lens-level view and current view (if applicable)
             if (statusDiv) {
                 statusDiv.textContent = countMessage;
-                statusDiv.className = 'text-xs text-green-700';
+                statusDiv.className = statusDiv.id === 'content-gap-sku-status-lens' 
+                    ? 'mt-2 text-sm text-green-600' 
+                    : 'text-xs text-green-700';
             }
-            showNotification('Estimated SKU counts calculated. Tables refreshed.', 'success');
-            rerenderCurrentContentGapLens();
+            
+            // Also update lens-level status if we're in a detail view
+            const lensStatusDiv = document.getElementById('content-gap-sku-status-lens');
+            if (lensStatusDiv && lensStatusDiv !== statusDiv) {
+                lensStatusDiv.textContent = countMessage;
+                lensStatusDiv.className = 'mt-2 text-sm text-green-600';
+            }
+            
+            showNotification('Estimated SKU counts calculated. Available in all Content Gap views.', 'success');
+            
+            // If we're in a detail view, refresh it; otherwise the counts will be available when switching views
+            const container = document.querySelector('[data-report-title]');
+            if (container) {
+                const title = container.dataset.reportTitle || '';
+                if (title.includes('Content Gaps')) {
+                    rerenderCurrentContentGapLens();
+                }
+            }
         } else if (statusDiv) {
             statusDiv.textContent = 'Received response, but no SKU counts were found.';
-            statusDiv.className = 'text-xs text-yellow-700';
+            statusDiv.className = statusDiv.id === 'content-gap-sku-status-lens' 
+                ? 'mt-2 text-sm text-yellow-600' 
+                : 'text-xs text-yellow-700';
         }
 
         if (actionBtn) {
@@ -3900,7 +3957,9 @@
                     const progress = data.info || {};
                     const percentage = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
                     statusDiv.textContent = `${progress.status || 'Processing'} (${percentage}%)`;
-                    statusDiv.className = 'text-xs text-blue-700';
+                    statusDiv.className = statusDiv.id === 'content-gap-sku-status-lens' 
+                        ? 'mt-2 text-sm text-blue-600' 
+                        : 'text-xs text-blue-700';
                 } else if (data.state === 'SUCCESS') {
                     clearInterval(window.contentGapSkuPollingInterval);
                     window.contentGapSkuPollingInterval = null;
@@ -3911,7 +3970,9 @@
                     const errorMsg = data.error || 'SKU counting failed';
                     if (statusDiv) {
                         statusDiv.textContent = `Error: ${errorMsg}`;
-                        statusDiv.className = 'text-xs text-red-700';
+                        statusDiv.className = statusDiv.id === 'content-gap-sku-status-lens' 
+                            ? 'mt-2 text-sm text-red-600' 
+                            : 'text-xs text-red-700';
                     }
                     showNotification(errorMsg, 'error');
                     if (actionBtn) {
@@ -3925,7 +3986,9 @@
                 console.error('Error polling SKU count task:', error);
                 if (statusDiv) {
                     statusDiv.textContent = `Error polling task: ${error.message}`;
-                    statusDiv.className = 'text-xs text-red-700';
+                    statusDiv.className = statusDiv.id === 'content-gap-sku-status-lens' 
+                        ? 'mt-2 text-sm text-red-600' 
+                        : 'text-xs text-red-700';
                 }
                 if (actionBtn) {
                     actionBtn.disabled = false;
@@ -3935,18 +3998,28 @@
         }, 2000);
     }
 
-    function setupContentGapSkuUpload() {
-        const fileInput = document.getElementById('content-gap-pim-file');
-        const runBtn = document.getElementById('run-content-gap-sku-btn');
-        const statusDiv = document.getElementById('content-gap-sku-status');
-        const skuWrapper = document.getElementById('content-gap-sku-column-wrapper');
-        const skuSelect = document.getElementById('content-gap-sku-id-column');
+    function setupContentGapPimUploadListeners() {
+        const fileInput = document.getElementById('content-gap-pim-file-lens');
+        const runBtn = document.getElementById('run-content-gap-sku-btn-lens');
+        const statusDiv = document.getElementById('content-gap-sku-status-lens');
+        const skuWrapper = document.getElementById('content-gap-sku-column-selector-lens');
+        const skuSelect = document.getElementById('content-gap-sku-id-column-lens');
 
         if (!fileInput || !runBtn) return;
 
-        if (contentGapSkuCounts && statusDiv) {
-            statusDiv.textContent = `SKU counts ready for ${Object.keys(contentGapSkuCounts).length} keywords.`;
-            statusDiv.className = 'text-xs text-green-700';
+        // Reset file input and status when view loads
+        fileInput.value = '';
+        if (skuWrapper) skuWrapper.style.display = 'none';
+        runBtn.disabled = true;
+
+        // Update status if SKU counts already exist
+        const skuCounts = window.contentGapSkuCounts || contentGapSkuCounts;
+        if (skuCounts && Object.keys(skuCounts).length > 0 && statusDiv) {
+            statusDiv.textContent = `SKU counts ready for ${Object.keys(skuCounts).length} keywords.`;
+            statusDiv.className = 'mt-2 text-sm text-green-600';
+        } else if (statusDiv) {
+            statusDiv.textContent = 'Upload a PIM CSV to estimate Toolstation SKU coverage for gaps.';
+            statusDiv.className = 'mt-2 text-sm text-gray-600';
         }
 
         fileInput.addEventListener('change', async (e) => {
@@ -3966,7 +4039,7 @@
                 runBtn.disabled = false;
                 if (statusDiv) {
                     statusDiv.textContent = 'Ready to estimate SKU counts';
-                    statusDiv.className = 'text-xs text-gray-700';
+                    statusDiv.className = 'mt-2 text-sm text-gray-600';
                 }
             } catch (error) {
                 console.error('Error reading PIM file:', error);
@@ -4000,7 +4073,9 @@
             runBtn.textContent = 'Estimating...';
             if (statusDiv) {
                 statusDiv.textContent = 'Uploading and estimating SKU counts...';
-                statusDiv.className = 'text-xs text-blue-700';
+                statusDiv.className = statusDiv.id === 'content-gap-sku-status-lens' 
+                    ? 'mt-2 text-sm text-blue-600' 
+                    : 'text-xs text-blue-700';
             }
 
             const protocol = window.location.protocol || 'http:';
@@ -4057,7 +4132,9 @@
                 showNotification(errMessage, 'error');
                 if (statusDiv) {
                     statusDiv.textContent = `Error: ${errMessage}`;
-                    statusDiv.className = 'text-xs text-red-700';
+                    statusDiv.className = statusDiv.id === 'content-gap-sku-status-lens' 
+                        ? 'mt-2 text-sm text-red-600' 
+                        : 'text-xs text-red-700';
                 }
                 runBtn.disabled = false;
                 runBtn.textContent = 'Estimate SKU Counts';
@@ -4134,9 +4211,7 @@
         const subtitle = 'Specific keywords where competitors rank, but you do not. Prioritised by Opportunity Score.';
         const scoreDescription = `The <strong>Opportunity Score</strong> is a 0-100 metric calculated by weighting on-site search volume (40%), Google search volume (20%), and the top competitor's traffic (40%) to prioritise your most valuable content gaps.`;
         const description = GAP_ANALYSIS_CAVEAT + (hasOnsiteData ? `<br><br>${scoreDescription}`: '');
-        const skuControls = renderContentGapSkuControls();
-        ui.resultsContainer.innerHTML = createReportContainer('Content Gaps | Individual Keywords', subtitle, skuControls, description);
-        setupContentGapSkuUpload();
+        ui.resultsContainer.innerHTML = createReportContainer('Content Gaps | Individual Keywords', subtitle, '', description);
 
         const defaultSortKeyFromHeaders = hasOnsiteData ? opportunityScoreHeader : headers[1];
         const defaultSortKey = updateHeadersForTimeframe([defaultSortKeyFromHeaders], tableState.timeframe)[0];
@@ -4257,9 +4332,7 @@
         const topicDescription = `<b>Note:</b> Metrics shown are aggregated from <em>all</em> keywords in the topic group. The group name is generated from the top 3 keywords with the highest Opportunity Score.<br><br>The <strong>Competitor Avg. Rank</strong> is the average ranking position of all competitors for the keywords within that topic group, considering only keywords for which you have no ranking.`;
         const fullDescription = GAP_ANALYSIS_CAVEAT + `<br><br>` + topicDescription;
         const scopeToggle = `<div class="mb-4"><span class="text-sm font-semibold mr-2">Topic Scope:</span><button data-scope="core" class="scope-toggle-btn text-xs font-semibold py-1 px-3 rounded-l-md ${scope === 'core' ? 'active' : ''}">Core</button><button data-scope="full" class="scope-toggle-btn text-xs font-semibold py-1 px-3 rounded-r-md ${scope === 'full' ? 'active' : ''}">Full</button></div>`;
-        const skuControls = renderContentGapSkuControls();
-        ui.resultsContainer.innerHTML = createReportContainer('Content Gaps | Keyword Groups', subtitle, scopeToggle + skuControls, fullDescription);
-        setupContentGapSkuUpload();
+        ui.resultsContainer.innerHTML = createReportContainer('Content Gaps | Keyword Groups', subtitle, scopeToggle, fullDescription);
         
         const finalTableHeaders = displayHeaders.filter(h => h !== 'TopicID'); 
         const dataForTable = displayData.map(row => { 
