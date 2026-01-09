@@ -14,6 +14,7 @@
         timeframe: 'monthly',
         hideFeatures: false,
         hideZeroValueColumns: false,
+        deletedColumns: [],
         activeLens: null,
         rowEditState: null,
         interactiveHeaders: []
@@ -1734,8 +1735,12 @@
         const container = document.getElementById('manual-overrides-container');
         if (!container) return;
 
-        const filteredHeaders = headers.filter(h => !h.includes('Traffic') && !h.includes('Searches'));
+        const deletedColumns = tableState.deletedColumns || [];
+        const filteredHeaders = headers.filter(h => !h.includes('Traffic') && !h.includes('Searches') && !deletedColumns.includes(h));
         const optionsHtml = filteredHeaders.map(h => `<option value="${h}">${h}</option>`).join('');
+        // For delete column dropdown, include all columns (including deleted ones for restoration)
+        const allHeadersForDelete = headers.filter(h => !h.includes('Traffic') && !h.includes('Searches'));
+        const deleteColumnOptionsHtml = allHeadersForDelete.map(h => `<option value="${h}" ${deletedColumns.includes(h) ? 'disabled' : ''}>${h}${deletedColumns.includes(h) ? ' (deleted)' : ''}</option>`).join('');
 
         const activeRulesHtml = overrideRules.map(rule => {
             let ruleText = `From <b>${rule.sourceColumn}</b>, `;
@@ -1843,10 +1848,30 @@
                                 </div>
                             </div>
                             <div id="column-ops-panel" class="tab-panel hidden">
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end p-4 border rounded-md bg-white">
-                                    <div><label for="merge-source-column" class="block text-sm font-medium">Merge & Delete this Column</label><select id="merge-source-column" class="mt-1 block w-full p-2 border-gray-300 rounded-md">${optionsHtml}</select></div>
-                                    <div><label for="merge-target-column" class="block text-sm font-medium">Into this Column</label><select id="merge-target-column" class="mt-1 block w-full p-2 border-gray-300 rounded-md">${optionsHtml}</select></div>
-                                    <div><button id="merge-column-btn" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 control-btn">Merge & Delete</button></div>
+                                <div class="space-y-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end p-4 border rounded-md bg-white">
+                                        <div><label for="merge-source-column" class="block text-sm font-medium">Merge & Delete this Column</label><select id="merge-source-column" class="mt-1 block w-full p-2 border-gray-300 rounded-md">${optionsHtml}</select></div>
+                                        <div><label for="merge-target-column" class="block text-sm font-medium">Into this Column</label><select id="merge-target-column" class="mt-1 block w-full p-2 border-gray-300 rounded-md">${optionsHtml}</select></div>
+                                        <div><button id="merge-column-btn" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 control-btn">Merge & Delete</button></div>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end p-4 border rounded-md bg-white">
+                                        <div><label for="delete-column-select" class="block text-sm font-medium">Delete Column (preserves rows)</label><select id="delete-column-select" class="mt-1 block w-full p-2 border-gray-300 rounded-md">${deleteColumnOptionsHtml}</select></div>
+                                        <div><button id="delete-column-btn" class="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 control-btn">Delete Column</button></div>
+                                    </div>
+                                    ${tableState.deletedColumns && tableState.deletedColumns.length > 0 ? `
+                                    <div class="p-4 border rounded-md bg-yellow-50">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h4 class="font-semibold text-sm">Deleted Columns</h4>
+                                            <button id="restore-all-columns-btn" class="text-xs text-blue-600 hover:underline">Restore All</button>
+                                        </div>
+                                        <div class="flex flex-wrap gap-2">
+                                            ${tableState.deletedColumns.map(col => `<span class="inline-flex items-center px-2 py-1 rounded-md bg-yellow-100 text-yellow-800 text-xs">
+                                                ${col}
+                                                <button class="ml-2 text-yellow-600 hover:text-yellow-800 restore-column-btn" data-column="${col}">&times;</button>
+                                            </span>`).join('')}
+                                        </div>
+                                    </div>
+                                    ` : ''}
                                 </div>
                             </div>
                         </div>
@@ -2089,6 +2114,52 @@
             }
         });
 
+        document.getElementById('delete-column-btn')?.addEventListener('click', () => {
+            const columnToDelete = document.getElementById('delete-column-select').value;
+            
+            if (!columnToDelete) {
+                alert('Please select a column to delete.');
+                return;
+            }
+
+            // Prevent deleting essential columns
+            const essentialColumns = ['Category Mapping', 'Monthly Organic Traffic', 'Total Monthly Google Searches', 'Total On-Site Searches', 'KeywordDetails'];
+            if (essentialColumns.includes(columnToDelete)) {
+                alert('Cannot delete essential columns like Category Mapping, Traffic, or KeywordDetails.');
+                return;
+            }
+
+            if (confirm(`Are you sure you want to delete the "${columnToDelete}" column? The column will be removed from the matrix and exports, but all rows will be preserved. You can restore it later if needed.`)) {
+                if (!tableState.deletedColumns) {
+                    tableState.deletedColumns = [];
+                }
+                if (!tableState.deletedColumns.includes(columnToDelete)) {
+                    tableState.deletedColumns.push(columnToDelete);
+                }
+                handleRuleChange();
+            }
+        });
+
+        // Restore individual column
+        document.addEventListener('click', (e) => {
+            const restoreBtn = e.target.closest('.restore-column-btn');
+            if (restoreBtn) {
+                const columnToRestore = restoreBtn.dataset.column;
+                if (tableState.deletedColumns && tableState.deletedColumns.includes(columnToRestore)) {
+                    tableState.deletedColumns = tableState.deletedColumns.filter(col => col !== columnToRestore);
+                    handleRuleChange();
+                }
+            }
+
+            // Restore all columns
+            if (e.target.id === 'restore-all-columns-btn') {
+                if (tableState.deletedColumns && tableState.deletedColumns.length > 0) {
+                    tableState.deletedColumns = [];
+                    handleRuleChange();
+                }
+            }
+        });
+
         document.getElementById('rule-value-listbox')?.addEventListener('click', (e) => {
             const item = e.target.closest('.rule-value-item');
             if (item) {
@@ -2309,16 +2380,28 @@
                 const processedData = applyOverridesAndMerge(originalData, Object.keys(originalData[0] || {}), analysisResults.hasOnsiteData);
                 const transformedData = transformDataForTimeframe(processedData, tableState.timeframe);
                 
+                // Remove deleted columns from data rows (preserve rows, just remove column properties)
+                const deletedColumns = tableState.deletedColumns || [];
+                let dataToExport = transformedData.map(row => {
+                    const newRow = { ...row };
+                    deletedColumns.forEach(col => {
+                        delete newRow[col];
+                    });
+                    return newRow;
+                });
+                
                 // Filter out rows with 0 traffic if hideZeroTraffic is enabled
-                let dataToExport = transformedData;
                 if (tableState.hideZeroTraffic) {
                     const annualTrafficHeader = updateHeadersForTimeframe(['Monthly Organic Traffic'], 'annual')[0];
                     const monthlyTrafficHeader = updateHeadersForTimeframe(['Monthly Organic Traffic'], 'monthly')[0];
-                    dataToExport = transformedData.filter(row => {
+                    dataToExport = dataToExport.filter(row => {
                         const traffic = row[annualTrafficHeader] || row[monthlyTrafficHeader];
                         return typeof traffic === 'number' && traffic > 0;
                     });
                 }
+                
+                // Filter deleted columns from headers
+                headersToExport = headersToExport.filter(h => !deletedColumns.includes(h));
                 
                 if (exportType === 'excel') {
                     exportCategoryOverhaulToExcel(dataToExport, headersToExport, fileName).catch(err => {
@@ -4479,17 +4562,27 @@
         const modifiedData = applyOverridesAndMerge(categoryOverhaulMatrixReport, baseHeaders, hasOnsiteData, excludeFromAggregation);
         const transformedData = transformDataForTimeframe(modifiedData, tableState.timeframe);
 
+        // Remove deleted columns from data rows (preserve rows, just remove column properties)
+        const deletedColumns = tableState.deletedColumns || [];
+        const cleanedData = transformedData.map(row => {
+            const newRow = { ...row };
+            deletedColumns.forEach(col => {
+                delete newRow[col];
+            });
+            return newRow;
+        });
+
         const allKeys = new Set();
-        transformedData.forEach(row => { Object.keys(row).forEach(key => allKeys.add(key)); });
+        cleanedData.forEach(row => { Object.keys(row).forEach(key => allKeys.add(key)); });
         
         const preferredOrder = ['Category Mapping', 'Derived Facets', 'Sub Type'];
         const endColumnsBases = ['Monthly Organic Traffic', 'Total Monthly Google Searches', 'Total On-Site Searches', 'KeywordDetails'];
         const endColumns = updateHeadersForTimeframe(endColumnsBases, tableState.timeframe);
 
         const finalHeaders = [
-            ...preferredOrder.filter(h => allKeys.has(h)),
-            ...Array.from(allKeys).filter(h => !preferredOrder.includes(h) && !endColumns.includes(h)).sort(),
-            ...endColumns.filter(h => allKeys.has(h))
+            ...preferredOrder.filter(h => allKeys.has(h) && !deletedColumns.includes(h)),
+            ...Array.from(allKeys).filter(h => !preferredOrder.includes(h) && !endColumns.includes(h) && !deletedColumns.includes(h)).sort(),
+            ...endColumns.filter(h => allKeys.has(h) && !deletedColumns.includes(h))
         ];
 
         const subtitle = "Analyse competitor taxonomy to find high-value category and facet opportunities.";
@@ -4529,7 +4622,7 @@
         }
         
         // Filter out columns with all blank/0 values if the option is enabled
-        if (tableState.hideZeroValueColumns && transformedData.length > 0) {
+        if (tableState.hideZeroValueColumns && cleanedData.length > 0) {
             displayHeaders = displayHeaders.filter(header => {
                 // Always keep certain important columns
                 const keepColumns = ['Category Mapping', 'Derived Facets', 'Sub Type', 'KeywordDetails'];
@@ -4538,7 +4631,7 @@
                 }
                 
                 // Check if all values in this column are blank/0
-                const hasNonBlankValue = transformedData.some(row => {
+                const hasNonBlankValue = cleanedData.some(row => {
                     const value = row[header];
                     // Consider a value as non-blank if it's not null, undefined, empty string, or 0
                     return value !== null && value !== undefined && value !== '' && value !== 0;
@@ -4549,7 +4642,7 @@
         }
         
         const defaultSortKey = displayHeaders.find(h => h.includes('Organic Traffic'));
-        initializeTable(transformedData, displayHeaders, defaultSortKey, 'Category Mapping');
+        initializeTable(cleanedData, displayHeaders, defaultSortKey, 'Category Mapping');
         
         // Add event listener for column visibility toggle
         document.getElementById('hide-features-column')?.addEventListener('change', (e) => {
@@ -4585,17 +4678,27 @@
         const modifiedData = applyOverridesAndMerge(categoryOverhaulMatrixReport, baseHeaders, hasOnsiteData, excludeFromAggregation);
         const transformedData = transformDataForTimeframe(modifiedData, tableState.timeframe);
 
+        // Remove deleted columns from data rows (preserve rows, just remove column properties)
+        const deletedColumns = tableState.deletedColumns || [];
+        const cleanedData = transformedData.map(row => {
+            const newRow = { ...row };
+            deletedColumns.forEach(col => {
+                delete newRow[col];
+            });
+            return newRow;
+        });
+
         const allKeys = new Set();
-        transformedData.forEach(row => { Object.keys(row).forEach(key => allKeys.add(key)); });
+        cleanedData.forEach(row => { Object.keys(row).forEach(key => allKeys.add(key)); });
 
         const preferredOrder = ['Category Mapping', 'Derived Facets', 'Sub Type'];
         const endColumnsBases = ['Monthly Organic Traffic', 'Total Monthly Google Searches', 'Total On-Site Searches', 'KeywordDetails'];
         const endColumns = updateHeadersForTimeframe(endColumnsBases, tableState.timeframe);
 
         const finalHeaders = [
-            ...preferredOrder.filter(h => allKeys.has(h)),
-            ...Array.from(allKeys).filter(h => !preferredOrder.includes(h) && !endColumns.includes(h)).sort(),
-            ...endColumns.filter(h => allKeys.has(h))
+            ...preferredOrder.filter(h => allKeys.has(h) && !deletedColumns.includes(h)),
+            ...Array.from(allKeys).filter(h => !preferredOrder.includes(h) && !endColumns.includes(h) && !deletedColumns.includes(h)).sort(),
+            ...endColumns.filter(h => allKeys.has(h) && !deletedColumns.includes(h))
         ];
 
         const subtitle = "Edit specific matrix rows and add conditional overrides without leaving the table.";
@@ -4627,13 +4730,13 @@
         if (tableState.hideFeatures) {
             displayHeaders = displayHeaders.filter(h => h !== 'Features' && h !== 'Discovered Features');
         }
-        if (tableState.hideZeroValueColumns && transformedData.length > 0) {
+        if (tableState.hideZeroValueColumns && cleanedData.length > 0) {
             displayHeaders = displayHeaders.filter(header => {
                 const keepColumns = ['Category Mapping', 'Derived Facets', 'Sub Type', 'KeywordDetails'];
                 if (keepColumns.includes(header) || header.includes('Traffic') || header.includes('Searches')) {
                     return true;
                 }
-                const hasNonBlankValue = transformedData.some(row => {
+                const hasNonBlankValue = cleanedData.some(row => {
                     const value = row[header];
                     return value !== null && value !== undefined && value !== '' && value !== 0;
                 });
@@ -4643,7 +4746,7 @@
 
         tableState.interactiveHeaders = displayHeaders;
         const defaultSortKey = displayHeaders.find(h => h.includes('Organic Traffic'));
-        initializeTable(transformedData, displayHeaders, defaultSortKey, 'Category Mapping');
+        initializeTable(cleanedData, displayHeaders, defaultSortKey, 'Category Mapping');
 
         document.getElementById('hide-features-column')?.addEventListener('change', (e) => {
             tableState.hideFeatures = e.target.checked;
