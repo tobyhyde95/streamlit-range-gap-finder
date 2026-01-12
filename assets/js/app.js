@@ -5099,15 +5099,34 @@
         // Get columns being edited
         const columnsBeingEdited = new Set(edits.map(e => e.column));
         
-        // Get all non-metric columns that can be used as conditions
-        // Priority: Category Mapping first, then other facet columns
-        const allHeaders = tableState.headers || [];
-        const metricColumns = ['Traffic', 'Searches', 'KeywordDetails', 'FacetValueDetails', 'Keyword Count', 'Monthly Google'];
-        const conditionColumns = allHeaders.filter(h => {
+        // Get ALL visible columns from the table - these are the columns the user can see
+        // We'll use category and facet columns as conditions to uniquely identify each row
+        // Exclude metric columns (Traffic, Searches, etc.) as they're not part of the row's identity
+        const visibleHeaders = tableState.headers || [];
+        
+        // Also get headers from the actual row data to ensure we don't miss any
+        const rowDataHeaders = new Set();
+        selectedRows.forEach(row => {
+            Object.keys(row).forEach(key => rowDataHeaders.add(key));
+        });
+        
+        // Combine visible headers with row data headers to get complete list
+        const allVisibleColumns = new Set([...visibleHeaders, ...Array.from(rowDataHeaders)]);
+        const allVisibleColumnsArray = Array.from(allVisibleColumns);
+        
+        // Define metric columns to exclude
+        const metricColumns = ['Traffic', 'Searches', 'KeywordDetails', 'FacetValueDetails', 'Keyword Count', 'Monthly Google', 'Annual', 'On-Site'];
+        
+        // Use category and facet columns as conditions (including the ones being edited)
+        // For columns being edited, we use their CURRENT value to identify the row before the change
+        // Exclude metric columns as they're not part of the row's unique identity
+        const conditionColumns = allVisibleColumnsArray.filter(h => {
             if (!h) return false;
-            if (columnsBeingEdited.has(h)) return false; // Don't use the column being edited as a condition
+            // Exclude metric columns
             if (metricColumns.some(metric => h.includes(metric))) return false;
+            // Exclude KeywordDetails and FacetValueDetails
             if (h === 'KeywordDetails' || h === 'FacetValueDetails') return false;
+            // Include everything else - Category Mapping, facet columns, etc.
             return true;
         });
 
@@ -5120,9 +5139,9 @@
 
         // Create override rules for each selected row and each column edit
         selectedRows.forEach(row => {
-            // Build conditions object from ALL non-metric columns (excluding the ones being edited)
+            // Build conditions object from ALL non-metric columns
+            // ALWAYS include Category Mapping (even if being edited) using its CURRENT value
             // Include ALL columns, even blank ones, to create a unique fingerprint for this exact row
-            // A blank condition means "this column must be blank" which is part of the row's unique identity
             const conditions = {};
             
             conditionColumns.forEach(col => {
@@ -5143,9 +5162,12 @@
                 }
             });
             
-            // Ensure we have at least Category Mapping as a condition if it exists
-            if (Object.keys(conditions).length === 0 && row['Category Mapping'] && !columnsBeingEdited.has('Category Mapping')) {
-                const catMapping = String(row['Category Mapping']).trim();
+            // ALWAYS ensure Category Mapping is included as a condition (even if being edited)
+            // We use its CURRENT value to identify the row before the change
+            // This is critical - Category Mapping is the primary row identifier
+            if (row.hasOwnProperty('Category Mapping')) {
+                // Overwrite any existing condition to ensure we use the actual row value
+                const catMapping = String(row['Category Mapping'] || '').trim();
                 if (catMapping !== '') {
                     const values = catMapping.split('|').map(v => v.trim()).filter(Boolean);
                     if (values.length > 0) {
@@ -6240,6 +6262,13 @@
         // Load table state if available
         if (state.tableState) {
             tableState = { ...tableState, ...state.tableState };
+            // Convert bulkEditSelectedRows back to Set if it was saved as an array
+            if (state.tableState.bulkEditSelectedRows && Array.isArray(state.tableState.bulkEditSelectedRows)) {
+                tableState.bulkEditSelectedRows = new Set(state.tableState.bulkEditSelectedRows);
+            } else if (!tableState.bulkEditSelectedRows || !(tableState.bulkEditSelectedRows instanceof Set)) {
+                // Ensure it's always a Set, even if not in saved state
+                tableState.bulkEditSelectedRows = new Set();
+            }
         }
         
         // Load override rules if available
@@ -6423,9 +6452,15 @@
         const excludedKeywordsRaw = document.getElementById('branded-exclusions')?.value || '';
         analysisOptions.excludedKeywords = excludedKeywordsRaw.split('\n').map(kw => kw.trim()).filter(kw => kw);
 
+        // Convert Set to Array for JSON serialization
+        const tableStateForSave = { ...tableState };
+        if (tableStateForSave.bulkEditSelectedRows instanceof Set) {
+            tableStateForSave.bulkEditSelectedRows = Array.from(tableStateForSave.bulkEditSelectedRows);
+        }
+
         const stateData = {
             analysisResults: analysisResults,
-            tableState: tableState,
+            tableState: tableStateForSave,
             overrideRules: overrideRules,
             analysisOptions: analysisOptions,
             pimAnalysisResults: window.pimAnalysisResults || null,  // Save PIM analysis results
