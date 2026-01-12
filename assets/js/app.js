@@ -3670,13 +3670,36 @@
     function matchesRuleConditions(rule, rowFacets = {}) {
         if (!rule || !rule.conditions || Object.keys(rule.conditions).length === 0) return true;
         return Object.entries(rule.conditions).every(([column, expectedValue]) => {
-            const required = expectedValue === undefined || expectedValue === null ? '' : String(expectedValue).trim();
+            // Handle bulk edit conditions that allow matching either original or new value
+            let allowedValues = [];
+            if (Array.isArray(expectedValue)) {
+                // This is a bulk edit condition - accept either original or new value
+                allowedValues = expectedValue.map(v => (v === undefined || v === null ? '' : String(v).trim()));
+            } else {
+                // Normal condition - only accept the specified value
+                const required = expectedValue === undefined || expectedValue === null ? '' : String(expectedValue).trim();
+                allowedValues = [required];
+            }
+            
             const cellValue = rowFacets[column];
             if (cellValue === null || cellValue === undefined || String(cellValue).trim() === '') {
-                return required === '';
+                // Cell is blank - check if blank is one of the allowed values
+                return allowedValues.includes('');
             }
+            
             const cellValues = String(cellValue).split('|').map(v => v.trim()).filter(Boolean);
-            return required === '' ? cellValues.length === 0 : cellValues.includes(required);
+            if (cellValues.length === 0) {
+                // Cell is effectively blank - check if blank is allowed
+                return allowedValues.includes('');
+            }
+            
+            // Check if any of the cell values match any of the allowed values
+            return allowedValues.some(allowed => {
+                if (allowed === '') {
+                    return cellValues.length === 0;
+                }
+                return cellValues.includes(allowed);
+            });
         });
     }
 
@@ -5092,41 +5115,35 @@
             return;
         }
 
-        // Get selected rows
+        // Get selected rows from the processed data
         const selectedRowIds = Array.from(tableState.bulkEditSelectedRows);
         const selectedRows = tableState.fullData.filter((row, idx) => selectedRowIds.includes(idx));
 
         // Get columns being edited
         const columnsBeingEdited = new Set(edits.map(e => e.column));
         
-        // Get ALL visible columns from the table - these are the columns the user can see
-        // We'll use category and facet columns as conditions to uniquely identify each row
-        // Exclude metric columns (Traffic, Searches, etc.) as they're not part of the row's identity
+        // CRITICAL: Get the ORIGINAL data (before any overrides) to build conditions
+        // This ensures all rules for the same row use the same original values as conditions,
+        // so they all match even after the first rule is applied
+        const { categoryOverhaulMatrixReport, hasOnsiteData } = analysisResults;
+        const baseHeaders = Object.keys(categoryOverhaulMatrixReport[0] || {});
+        
+        // Get ALL visible columns from the table
         const visibleHeaders = tableState.headers || [];
-        
-        // Also get headers from the actual row data to ensure we don't miss any
-        const rowDataHeaders = new Set();
-        selectedRows.forEach(row => {
-            Object.keys(row).forEach(key => rowDataHeaders.add(key));
-        });
-        
-        // Combine visible headers with row data headers to get complete list
-        const allVisibleColumns = new Set([...visibleHeaders, ...Array.from(rowDataHeaders)]);
-        const allVisibleColumnsArray = Array.from(allVisibleColumns);
         
         // Define metric columns to exclude
         const metricColumns = ['Traffic', 'Searches', 'KeywordDetails', 'FacetValueDetails', 'Keyword Count', 'Monthly Google', 'Annual', 'On-Site'];
         
-        // Use category and facet columns as conditions (including the ones being edited)
-        // For columns being edited, we use their CURRENT value to identify the row before the change
-        // Exclude metric columns as they're not part of the row's unique identity
-        const conditionColumns = allVisibleColumnsArray.filter(h => {
+        // Use ALL category and facet columns as conditions (including ones being edited)
+        // We'll use ORIGINAL values for conditions, so they remain stable
+        const allVisibleColumns = new Set(visibleHeaders);
+        const conditionColumns = Array.from(allVisibleColumns).filter(h => {
             if (!h) return false;
             // Exclude metric columns
             if (metricColumns.some(metric => h.includes(metric))) return false;
             // Exclude KeywordDetails and FacetValueDetails
             if (h === 'KeywordDetails' || h === 'FacetValueDetails') return false;
-            // Include everything else - Category Mapping, facet columns, etc.
+            // Include everything else - Category Mapping, facet columns, etc. (even if being edited)
             return true;
         });
 
@@ -5139,13 +5156,46 @@
 
         // Create override rules for each selected row and each column edit
         selectedRows.forEach(row => {
-            // Build conditions object from ALL non-metric columns
-            // ALWAYS include Category Mapping (even if being edited) using its CURRENT value
-            // Include ALL columns, even blank ones, to create a unique fingerprint for this exact row
+            // Find the corresponding original row in the raw data
+            // We need to match by a unique combination that exists in both datasets
+            // Since rows might have been merged/aggregated, we'll try to find a matching original row
+            // by matching all available non-metric columns
+            let originalRow = null;
+            
+            // Try to find the original row by matching key columns
+            const keyColumns = conditionColumns.filter(col => 
+                row.hasOwnProperty(col) && 
+                row[col] !== null && 
+                row[col] !== undefined && 
+                String(row[col]).trim() !== ''
+            );
+            
+            if (keyColumns.length > 0) {
+                // Find original row that matches on key columns
+                originalRow = categoryOverhaulMatrixReport.find(origRow => {
+                    return keyColumns.every(col => {
+                        const currentVal = String(row[col] || '').trim();
+                        const origVal = String(origRow[col] || '').trim();
+                        // For pipe-separated values, check if they share any values
+                        const currentValues = currentVal.split('|').map(v => v.trim()).filter(Boolean);
+                        const origValues = origVal.split('|').map(v => v.trim()).filter(Boolean);
+                        if (currentValues.length === 0 && origValues.length === 0) return true;
+                        return currentValues.some(v => origValues.includes(v));
+                    });
+                });
+            }
+            
+            // If we couldn't find a matching original row, use the current row values
+            // (This can happen if rows were merged/aggregated)
+            const sourceRow = originalRow || row;
+            
+            // Build conditions object from ORIGINAL values (before any edits)
+            // This ensures all rules for the same row use the same conditions
+            // Include ALL category and facet columns, even ones being edited
             const conditions = {};
             
             conditionColumns.forEach(col => {
-                const cellValue = row[col];
+                const cellValue = sourceRow[col];
                 if (cellValue !== null && cellValue !== undefined && String(cellValue).trim() !== '') {
                     // For pipe-separated values, use the first value for condition matching
                     const values = String(cellValue).split('|').map(v => v.trim()).filter(Boolean);
@@ -5157,17 +5207,13 @@
                     }
                 } else {
                     // Blank/null/undefined values - include as blank condition
-                    // This ensures rows with blanks only match other rows with blanks in the same columns
                     conditions[col] = '';
                 }
             });
             
-            // ALWAYS ensure Category Mapping is included as a condition (even if being edited)
-            // We use its CURRENT value to identify the row before the change
-            // This is critical - Category Mapping is the primary row identifier
-            if (row.hasOwnProperty('Category Mapping')) {
-                // Overwrite any existing condition to ensure we use the actual row value
-                const catMapping = String(row['Category Mapping'] || '').trim();
+            // ALWAYS ensure Category Mapping is included as a condition
+            if (sourceRow.hasOwnProperty('Category Mapping')) {
+                const catMapping = String(sourceRow['Category Mapping'] || '').trim();
                 if (catMapping !== '') {
                     const values = catMapping.split('|').map(v => v.trim()).filter(Boolean);
                     if (values.length > 0) {
@@ -5180,6 +5226,30 @@
                 }
             }
 
+            // For bulk edits on the same row, we need to handle the case where multiple columns are edited
+            // The solution: Modify conditions to accept EITHER original OR new values for columns being edited
+            // This ensures all rules for the same row continue to match even after earlier rules are applied
+            
+            // Build a map of columns being edited to their new values
+            const editedColumnNewValues = {};
+            edits.forEach(edit => {
+                editedColumnNewValues[edit.column] = edit.value;
+            });
+            
+            // Create enhanced conditions that include alternative values for columns being edited
+            // This allows rules to match even after other rules have changed those columns
+            const enhancedConditions = { ...conditions };
+            Object.keys(editedColumnNewValues).forEach(col => {
+                if (enhancedConditions.hasOwnProperty(col)) {
+                    // For columns being edited, store both original and new value
+                    // We'll modify the condition matching to accept either
+                    const originalValue = enhancedConditions[col];
+                    const newValue = editedColumnNewValues[col];
+                    // Store as an array to indicate "match either value"
+                    enhancedConditions[col] = [originalValue, newValue];
+                }
+            });
+            
             edits.forEach(edit => {
                 const currentValue = row[edit.column];
                 if (currentValue !== null && currentValue !== undefined && String(currentValue).trim() !== '') {
@@ -5195,7 +5265,8 @@
                             targetColumn: null,
                             isNew: false,
                             moveMode: null,
-                            conditions: { ...conditions } // Include conditions to match this specific row
+                            conditions: { ...enhancedConditions }, // Use enhanced conditions with alternatives
+                            bulkEditRow: true // Flag to indicate this is part of a bulk edit
                         });
                     });
                 } else {
@@ -5209,7 +5280,8 @@
                         targetColumn: null,
                         isNew: false,
                         moveMode: null,
-                        conditions: { ...conditions } // Include conditions to match this specific row
+                        conditions: { ...enhancedConditions }, // Use enhanced conditions with alternatives
+                        bulkEditRow: true // Flag to indicate this is part of a bulk edit
                     });
                 }
             });
