@@ -17,7 +17,8 @@
         deletedColumns: [],
         activeLens: null,
         rowEditState: null,
-        interactiveHeaders: []
+        interactiveHeaders: [],
+        bulkEditSelectedRows: new Set()
     };
     let overrideRules = [];
     let smartRecommendations = [];
@@ -318,6 +319,7 @@
         const isNestableReport = data[0] && (data[0].hasOwnProperty('KeywordDetails') || data[0].hasOwnProperty('FacetValueDetails'));
         const isFacetPotentialReport = data[0] && data[0].hasOwnProperty('FacetValueDetails');
         const showRowActions = tableState.activeLens === 'interactive-matrix';
+        const showBulkEditCheckboxes = tableState.activeLens === 'bulk-edit-matrix';
         
         const baseFacetHeaders = ['Category Mapping', 'Facet Type', 'Monthly Organic Traffic', 'Total Monthly Google Searches', 'Total On-Site Searches', 'Facet Value Score'];
         
@@ -330,6 +332,11 @@
         
         let headerHtml = '';
 
+        if (showBulkEditCheckboxes) {
+            headerHtml += `<th class="p-3 w-8 text-center">
+                <input type="checkbox" id="select-all-rows" class="h-4 w-4" title="Select All">
+            </th>`;
+        }
         if (isNestableReport) {
             headerHtml += `<th class="p-3 w-8"></th>`; 
         }
@@ -345,10 +352,20 @@
         if (showRowActions) {
             headerHtml += `<th class="p-3 text-left text-xs font-bold uppercase">Actions</th>`;
         }
+        if (showBulkEditCheckboxes) {
+            headerHtml += `<th class="p-3 text-left text-xs font-bold uppercase">Actions</th>`;
+        }
 
         let bodyHtml = '';
         data.forEach(row => {
             let cells = '';
+            if (showBulkEditCheckboxes) {
+                const rowId = typeof row.__rowId === 'number' ? row.__rowId : '';
+                const isChecked = tableState.bulkEditSelectedRows.has(rowId);
+                cells += `<td class="p-3 text-center">
+                    <input type="checkbox" class="bulk-edit-row-checkbox h-4 w-4" data-row-id="${rowId}" ${isChecked ? 'checked' : ''}>
+                </td>`;
+            }
             if (isNestableReport) {
                 const hasDetails = (row.KeywordDetails && row.KeywordDetails.length > 0) || (row.FacetValueDetails && row.FacetValueDetails.length > 0);
                 cells += `<td class="p-3 text-center">
@@ -404,6 +421,9 @@
                     <button class="row-edit-btn inline-flex items-center px-3 py-1 border border-blue-300 text-blue-700 rounded hover:bg-blue-50 text-xs font-semibold" data-row-id="${rowId}">Edit Row</button>
                 </td>`;
             }
+            if (showBulkEditCheckboxes) {
+                cells += `<td class="p-3 border-t text-sm"></td>`;
+            }
 
             bodyHtml += `<tr class="hover:bg-gray-50">${cells}</tr>`;
 
@@ -414,7 +434,7 @@
                 } else if (row.FacetValueDetails) {
                     nestedHtml = createNestedFacetValueTable(row.FacetValueDetails);
                 }
-                const extraCols = (isNestableReport ? 1 : 0) + (isFacetPotentialReport ? 1 : 0) + (showRowActions ? 1 : 0);
+                const extraCols = (isNestableReport ? 1 : 0) + (isFacetPotentialReport ? 1 : 0) + (showRowActions ? 1 : 0) + (showBulkEditCheckboxes ? 1 : 0);
                 bodyHtml += `<tr class="keyword-details-row"><td colspan="${headers.length + extraCols}" class="keyword-details-cell">${nestedHtml}</td></tr>`;
             }
         });
@@ -427,6 +447,7 @@
             footerCells += headers.map(h => `<td class="p-3 text-sm">${totalRowData[h]}</td>`).join('');
             if(isFacetPotentialReport) footerCells += '<td></td>';
              if (showRowActions) footerCells += '<td></td>';
+             if (showBulkEditCheckboxes) footerCells += '<td></td>';
             footerHtml = `<tfoot><tr>${footerCells}</tr></tfoot>`;
         }
 
@@ -2447,7 +2468,7 @@
             else if (lensType === 'category-overhaul') renderCategoryOverhaulMatrixView();
             else if (lensType === 'facet-potential') renderFacetPotentialAnalysisView();
             else if (lensType === 'interactive-matrix') renderInteractiveCategoryMatrixView();
-            else if (lensType === 'smart-recommendations') renderSmartRecommendationsView();
+            else if (lensType === 'bulk-edit-matrix') renderBulkEditMatrixView();
             else if (lensType === 'pim-sku-mapping') renderPimSkuMappingView();
             return;
         } 
@@ -3003,13 +3024,13 @@
                         <h3 class="font-bold text-xl">Facet Potential Analysis</h3>
                         <p>Get a high-level view of which facet <em>types</em> (e.g., Brand, Color) drive the most traffic for each product category.</p>
                     </div>
-                    <div data-lens="smart-recommendations" class="lens-card p-6 border rounded-lg">
-                        <h3 class="font-bold text-xl">Smart Recommendations</h3>
-                        <p>Approve AI-generated taxonomy clean-up rules to normalise labels, remove SKU noise, and instantly update the Category Overhaul Matrix.</p>
-                    </div>
                     <div data-lens="interactive-matrix" class="lens-card p-6 border rounded-lg">
                         <h3 class="font-bold text-xl">Interactive Matrix Editor</h3>
                         <p>Edit individual matrix rows with conditional overrides so you can adjust values only when they appear with specific category/context combinations.</p>
+                    </div>
+                    <div data-lens="bulk-edit-matrix" class="lens-card p-6 border rounded-lg">
+                        <h3 class="font-bold text-xl">Bulk Edit Matrix</h3>
+                        <p>Select multiple rows and edit multiple columns at once. Perfect for making consistent changes across many rows simultaneously.</p>
                     </div>
                     <div data-lens="pim-sku-mapping" class="lens-card p-6 border rounded-lg">
                         <h3 class="font-bold text-xl">PIM SKU Mapping</h3>
@@ -4769,6 +4790,420 @@
         }
     }
 
+    function renderBulkEditMatrixView() {
+        const { categoryOverhaulMatrixReport, hasOnsiteData } = analysisResults;
+
+        if (!categoryOverhaulMatrixReport || categoryOverhaulMatrixReport.length === 0) {
+            ui.resultsContainer.innerHTML = createReportContainer('Bulk Edit Matrix', 'No data available for this report.');
+            return;
+        }
+
+        tableState.activeLens = 'bulk-edit-matrix';
+        tableState.rowEditState = null;
+        const baseHeaders = Object.keys(categoryOverhaulMatrixReport[0] || {});
+        const excludeFromAggregation = [];
+        if (tableState.hideFeatures) {
+            excludeFromAggregation.push('Features', 'Discovered Features');
+        }
+
+        const modifiedData = applyOverridesAndMerge(categoryOverhaulMatrixReport, baseHeaders, hasOnsiteData, excludeFromAggregation);
+        const transformedData = transformDataForTimeframe(modifiedData, tableState.timeframe);
+
+        // Remove deleted columns from data rows (preserve rows, just remove column properties)
+        const deletedColumns = tableState.deletedColumns || [];
+        const cleanedData = transformedData.map(row => {
+            const newRow = { ...row };
+            deletedColumns.forEach(col => {
+                delete newRow[col];
+            });
+            return newRow;
+        });
+
+        const allKeys = new Set();
+        cleanedData.forEach(row => { Object.keys(row).forEach(key => allKeys.add(key)); });
+
+        const preferredOrder = ['Category Mapping', 'Derived Facets', 'Sub Type'];
+        const endColumnsBases = ['Monthly Organic Traffic', 'Total Monthly Google Searches', 'Total On-Site Searches', 'KeywordDetails'];
+        const endColumns = updateHeadersForTimeframe(endColumnsBases, tableState.timeframe);
+
+        const finalHeaders = [
+            ...preferredOrder.filter(h => allKeys.has(h) && !deletedColumns.includes(h)),
+            ...Array.from(allKeys).filter(h => !preferredOrder.includes(h) && !endColumns.includes(h) && !deletedColumns.includes(h)).sort(),
+            ...endColumns.filter(h => allKeys.has(h) && !deletedColumns.includes(h))
+        ];
+
+        const subtitle = "Select multiple rows and edit multiple columns at once. Perfect for making consistent changes across many rows simultaneously.";
+        const customContent = `
+            <div class="flex flex-wrap gap-4 items-center">
+                <div class="flex items-center">
+                    <input type="checkbox" id="hide-zero-traffic-toggle" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                    <label for="hide-zero-traffic-toggle" class="ml-2 block text-sm text-gray-900">Hide rows with 0 traffic</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="hide-features-column" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" ${tableState.hideFeatures ? 'checked' : ''}>
+                    <label for="hide-features-column" class="ml-2 block text-sm text-gray-900">Hide Features column</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="hide-zero-value-columns" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" ${tableState.hideZeroValueColumns ? 'checked' : ''}>
+                    <label for="hide-zero-value-columns" class="ml-2 block text-sm text-gray-900">Hide Columns With 0 Values</label>
+                </div>
+            </div>`;
+        const explainer = `
+            <div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 p-3 rounded-md mb-4">
+                <b>Bulk Editing:</b> Select multiple rows using the checkboxes, then use the bulk edit panel below to edit multiple columns at once. Changes will be applied to all selected rows.
+            </div>`;
+
+        ui.resultsContainer.innerHTML = createReportContainer('Bulk Edit Matrix', subtitle, customContent, explainer);
+        const zeroTrafficToggle = document.getElementById('hide-zero-traffic-toggle');
+        if (zeroTrafficToggle) zeroTrafficToggle.checked = tableState.hideZeroTraffic;
+
+        let displayHeaders = [...finalHeaders];
+        if (tableState.hideFeatures) {
+            displayHeaders = displayHeaders.filter(h => h !== 'Features' && h !== 'Discovered Features');
+        }
+        if (tableState.hideZeroValueColumns && cleanedData.length > 0) {
+            displayHeaders = displayHeaders.filter(header => {
+                const keepColumns = ['Category Mapping', 'Derived Facets', 'Sub Type', 'KeywordDetails'];
+                if (keepColumns.includes(header) || header.includes('Traffic') || header.includes('Searches')) {
+                    return true;
+                }
+                const hasNonBlankValue = cleanedData.some(row => {
+                    const value = row[header];
+                    return value !== null && value !== undefined && value !== '' && value !== 0;
+                });
+                return hasNonBlankValue;
+            });
+        }
+
+        const defaultSortKey = displayHeaders.find(h => h.includes('Organic Traffic'));
+        initializeTable(cleanedData, displayHeaders, defaultSortKey, 'Category Mapping');
+
+        document.getElementById('hide-features-column')?.addEventListener('change', (e) => {
+            tableState.hideFeatures = e.target.checked;
+            renderBulkEditMatrixView();
+        });
+        document.getElementById('hide-zero-value-columns')?.addEventListener('change', (e) => {
+            tableState.hideZeroValueColumns = e.target.checked;
+            renderBulkEditMatrixView();
+        });
+
+        renderOverridesUI(baseHeaders.filter(h => h !== 'KeywordDetails'));
+        renderBulkEditPanel(displayHeaders);
+        setupBulkEditEventListeners();
+        updateBulkEditSelectionCount();
+    }
+
+    function renderBulkEditPanel(editableHeaders) {
+        const editableColumns = getEditableColumns(editableHeaders);
+        const container = document.getElementById('bulk-edit-panel');
+        if (!container) {
+            const manualContainer = document.getElementById('manual-overrides-container');
+            if (manualContainer) {
+                manualContainer.insertAdjacentHTML('afterend', `
+                    <div id="bulk-edit-panel" class="mb-6 border rounded-lg p-4 bg-white shadow-sm">
+                        <h4 class="font-semibold text-lg mb-3">Bulk Edit Panel</h4>
+                        <div class="mb-3">
+                            <span id="selected-rows-count" class="text-sm text-gray-600">0 rows selected</span>
+                        </div>
+                        <div id="bulk-edit-columns-container" class="space-y-3 mb-4">
+                            <div class="bulk-edit-column-item border rounded p-3 bg-gray-50">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                                    <div>
+                                        <label class="block text-sm font-medium mb-1">Column</label>
+                                        <select class="bulk-edit-column-select block w-full p-2 border-gray-300 rounded-md">
+                                            <option value="">Select a column...</option>
+                                            ${editableColumns.map(col => `<option value="${col}">${col}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium mb-1">New Value</label>
+                                        <input type="text" class="bulk-edit-value-input block w-full p-2 border-gray-300 rounded-md" placeholder="Enter new value...">
+                                    </div>
+                                    <div>
+                                        <button class="remove-bulk-edit-column-btn text-red-600 hover:text-red-800 text-sm font-semibold">Remove</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="add-bulk-edit-column-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm font-semibold">+ Add Column</button>
+                            <button id="apply-bulk-edit-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed" disabled>Apply Changes</button>
+                            <button id="clear-bulk-edit-selection-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm font-semibold">Clear Selection</button>
+                        </div>
+                    </div>
+                `);
+            }
+        } else {
+            container.innerHTML = `
+                <h4 class="font-semibold text-lg mb-3">Bulk Edit Panel</h4>
+                <div class="mb-3">
+                    <span id="selected-rows-count" class="text-sm text-gray-600">0 rows selected</span>
+                </div>
+                <div id="bulk-edit-columns-container" class="space-y-3 mb-4">
+                    <div class="bulk-edit-column-item border rounded p-3 bg-gray-50">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Column</label>
+                                <select class="bulk-edit-column-select block w-full p-2 border-gray-300 rounded-md">
+                                    <option value="">Select a column...</option>
+                                    ${editableColumns.map(col => `<option value="${col}">${col}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">New Value</label>
+                                <input type="text" class="bulk-edit-value-input block w-full p-2 border-gray-300 rounded-md" placeholder="Enter new value...">
+                            </div>
+                            <div>
+                                <button class="remove-bulk-edit-column-btn text-red-600 hover:text-red-800 text-sm font-semibold">Remove</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button id="add-bulk-edit-column-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm font-semibold">+ Add Column</button>
+                    <button id="apply-bulk-edit-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed" disabled>Apply Changes</button>
+                    <button id="clear-bulk-edit-selection-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm font-semibold">Clear Selection</button>
+                </div>
+            `;
+        }
+    }
+
+    function setupBulkEditEventListeners() {
+        // Select all checkbox
+        document.getElementById('select-all-rows')?.addEventListener('change', (e) => {
+            const checkboxes = document.querySelectorAll('.bulk-edit-row-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = e.target.checked;
+                const rowId = parseInt(cb.dataset.rowId);
+                if (e.target.checked) {
+                    tableState.bulkEditSelectedRows.add(rowId);
+                } else {
+                    tableState.bulkEditSelectedRows.delete(rowId);
+                }
+            });
+            updateBulkEditSelectionCount();
+        });
+
+        // Individual row checkboxes
+        document.addEventListener('change', (e) => {
+            if (e.target.classList.contains('bulk-edit-row-checkbox')) {
+                const rowId = parseInt(e.target.dataset.rowId);
+                if (e.target.checked) {
+                    tableState.bulkEditSelectedRows.add(rowId);
+                } else {
+                    tableState.bulkEditSelectedRows.delete(rowId);
+                }
+                updateBulkEditSelectionCount();
+                updateSelectAllCheckbox();
+            }
+        });
+
+        // Add column button
+        document.getElementById('add-bulk-edit-column-btn')?.addEventListener('click', () => {
+            const container = document.getElementById('bulk-edit-columns-container');
+            const editableColumns = getEditableColumns(tableState.headers || []);
+            const newItem = document.createElement('div');
+            newItem.className = 'bulk-edit-column-item border rounded p-3 bg-gray-50';
+            newItem.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Column</label>
+                        <select class="bulk-edit-column-select block w-full p-2 border-gray-300 rounded-md">
+                            <option value="">Select a column...</option>
+                            ${editableColumns.map(col => `<option value="${col}">${col}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">New Value</label>
+                        <input type="text" class="bulk-edit-value-input block w-full p-2 border-gray-300 rounded-md" placeholder="Enter new value...">
+                    </div>
+                    <div>
+                        <button class="remove-bulk-edit-column-btn text-red-600 hover:text-red-800 text-sm font-semibold">Remove</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(newItem);
+        });
+
+        // Remove column button
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-bulk-edit-column-btn')) {
+                e.target.closest('.bulk-edit-column-item')?.remove();
+            }
+        });
+
+        // Apply bulk edit button
+        document.getElementById('apply-bulk-edit-btn')?.addEventListener('click', () => {
+            applyBulkEdit();
+        });
+
+        // Clear selection button
+        document.getElementById('clear-bulk-edit-selection-btn')?.addEventListener('click', () => {
+            tableState.bulkEditSelectedRows.clear();
+            document.querySelectorAll('.bulk-edit-row-checkbox').forEach(cb => cb.checked = false);
+            document.getElementById('select-all-rows').checked = false;
+            updateBulkEditSelectionCount();
+        });
+    }
+
+    function updateBulkEditSelectionCount() {
+        const count = tableState.bulkEditSelectedRows.size;
+        const countEl = document.getElementById('selected-rows-count');
+        if (countEl) {
+            countEl.textContent = `${count} row${count !== 1 ? 's' : ''} selected`;
+        }
+        const applyBtn = document.getElementById('apply-bulk-edit-btn');
+        if (applyBtn) {
+            applyBtn.disabled = count === 0;
+        }
+    }
+
+    function updateSelectAllCheckbox() {
+        const selectAllCheckbox = document.getElementById('select-all-rows');
+        if (!selectAllCheckbox) return;
+        const checkboxes = document.querySelectorAll('.bulk-edit-row-checkbox');
+        const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+        selectAllCheckbox.checked = checkedCount === checkboxes.length && checkboxes.length > 0;
+        selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+    }
+
+    function applyBulkEdit() {
+        if (tableState.bulkEditSelectedRows.size === 0) {
+            alert('Please select at least one row.');
+            return;
+        }
+
+        const columnItems = document.querySelectorAll('.bulk-edit-column-item');
+        const edits = [];
+        
+        columnItems.forEach(item => {
+            const columnSelect = item.querySelector('.bulk-edit-column-select');
+            const valueInput = item.querySelector('.bulk-edit-value-input');
+            const column = columnSelect?.value;
+            const value = valueInput?.value.trim();
+            
+            if (column && value) {
+                edits.push({ column, value });
+            }
+        });
+
+        if (edits.length === 0) {
+            alert('Please specify at least one column and value to edit.');
+            return;
+        }
+
+        // Get selected rows
+        const selectedRowIds = Array.from(tableState.bulkEditSelectedRows);
+        const selectedRows = tableState.fullData.filter((row, idx) => selectedRowIds.includes(idx));
+
+        // Get columns being edited
+        const columnsBeingEdited = new Set(edits.map(e => e.column));
+        
+        // Get all non-metric columns that can be used as conditions
+        // Priority: Category Mapping first, then other facet columns
+        const allHeaders = tableState.headers || [];
+        const metricColumns = ['Traffic', 'Searches', 'KeywordDetails', 'FacetValueDetails', 'Keyword Count', 'Monthly Google'];
+        const conditionColumns = allHeaders.filter(h => {
+            if (!h) return false;
+            if (columnsBeingEdited.has(h)) return false; // Don't use the column being edited as a condition
+            if (metricColumns.some(metric => h.includes(metric))) return false;
+            if (h === 'KeywordDetails' || h === 'FacetValueDetails') return false;
+            return true;
+        });
+
+        // Sort to prioritize Category Mapping
+        conditionColumns.sort((a, b) => {
+            if (a === 'Category Mapping') return -1;
+            if (b === 'Category Mapping') return 1;
+            return 0;
+        });
+
+        // Create override rules for each selected row and each column edit
+        selectedRows.forEach(row => {
+            // Build conditions object from ALL non-metric columns (excluding the ones being edited)
+            // Include ALL columns, even blank ones, to create a unique fingerprint for this exact row
+            // A blank condition means "this column must be blank" which is part of the row's unique identity
+            const conditions = {};
+            
+            conditionColumns.forEach(col => {
+                const cellValue = row[col];
+                if (cellValue !== null && cellValue !== undefined && String(cellValue).trim() !== '') {
+                    // For pipe-separated values, use the first value for condition matching
+                    const values = String(cellValue).split('|').map(v => v.trim()).filter(Boolean);
+                    if (values.length > 0) {
+                        conditions[col] = values[0];
+                    } else {
+                        // Empty after trimming - treat as blank
+                        conditions[col] = '';
+                    }
+                } else {
+                    // Blank/null/undefined values - include as blank condition
+                    // This ensures rows with blanks only match other rows with blanks in the same columns
+                    conditions[col] = '';
+                }
+            });
+            
+            // Ensure we have at least Category Mapping as a condition if it exists
+            if (Object.keys(conditions).length === 0 && row['Category Mapping'] && !columnsBeingEdited.has('Category Mapping')) {
+                const catMapping = String(row['Category Mapping']).trim();
+                if (catMapping !== '') {
+                    const values = catMapping.split('|').map(v => v.trim()).filter(Boolean);
+                    if (values.length > 0) {
+                        conditions['Category Mapping'] = values[0];
+                    } else {
+                        conditions['Category Mapping'] = '';
+                    }
+                } else {
+                    conditions['Category Mapping'] = '';
+                }
+            }
+
+            edits.forEach(edit => {
+                const currentValue = row[edit.column];
+                if (currentValue !== null && currentValue !== undefined && String(currentValue).trim() !== '') {
+                    // Create a change rule for each value in the cell (if pipe-separated)
+                    const cellValues = String(currentValue).split(' | ').map(v => v.trim());
+                    cellValues.forEach(cellValue => {
+                        overrideRules.push({
+                            id: Date.now() + Math.random(),
+                            sourceColumn: edit.column,
+                            value: cellValue,
+                            action: 'change',
+                            newValue: edit.value,
+                            targetColumn: null,
+                            isNew: false,
+                            moveMode: null,
+                            conditions: { ...conditions } // Include conditions to match this specific row
+                        });
+                    });
+                } else {
+                    // For blank values, create a change rule with blank as the value
+                    overrideRules.push({
+                        id: Date.now() + Math.random(),
+                        sourceColumn: edit.column,
+                        value: '',
+                        action: 'change',
+                        newValue: edit.value,
+                        targetColumn: null,
+                        isNew: false,
+                        moveMode: null,
+                        conditions: { ...conditions } // Include conditions to match this specific row
+                    });
+                }
+            });
+        });
+
+        // Clear selection and refresh view
+        tableState.bulkEditSelectedRows.clear();
+        document.querySelectorAll('.bulk-edit-row-checkbox').forEach(cb => cb.checked = false);
+        document.getElementById('select-all-rows').checked = false;
+        updateBulkEditSelectionCount();
+        
+        // Refresh the view to show changes
+        renderBulkEditMatrixView();
+        showNotification(`Applied ${edits.length} column edit(s) to ${selectedRows.length} row(s).`, 'success');
+    }
+
     function getEditableColumns(headers = []) {
         if (!Array.isArray(headers)) return [];
         const excludedSubstrings = ['Traffic', 'Searches', 'KeywordDetails', 'FacetValueDetails', 'Keyword Count', 'Monthly Google'];
@@ -5317,6 +5752,11 @@
         tableState.rowsPerPage = 25;
         tableState.competitorDomainHeaders = competitorDomains;
         tableState.hideZeroTraffic = false;
+        
+        // Clear bulk edit selection when switching views
+        if (tableState.activeLens !== 'bulk-edit-matrix') {
+            tableState.bulkEditSelectedRows.clear();
+        }
 
         renderTableAndControls();
     }
