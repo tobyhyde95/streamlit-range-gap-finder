@@ -18,7 +18,10 @@
         activeLens: null,
         rowEditState: null,
         interactiveHeaders: [],
-        bulkEditSelectedRows: new Set()
+        bulkEditSelectedRows: new Set(),
+        bulkEditUnlockedRows: new Set(),
+        bulkEditChanges: new Map(), // Map of rowId -> { column -> newValue }
+        bulkEditActiveColumn: null // Track which column is currently being edited (only one at a time)
     };
     let overrideRules = [];
     let smartRecommendations = [];
@@ -319,7 +322,7 @@
         const isNestableReport = data[0] && (data[0].hasOwnProperty('KeywordDetails') || data[0].hasOwnProperty('FacetValueDetails'));
         const isFacetPotentialReport = data[0] && data[0].hasOwnProperty('FacetValueDetails');
         const showRowActions = tableState.activeLens === 'interactive-matrix';
-        const showBulkEditCheckboxes = tableState.activeLens === 'bulk-edit-matrix';
+        const showBulkEditCheckboxes = tableState.activeLens === 'inline-edit-matrix';
         
         const baseFacetHeaders = ['Category Mapping', 'Facet Type', 'Monthly Organic Traffic', 'Total Monthly Google Searches', 'Total On-Site Searches', 'Facet Value Score'];
         
@@ -375,10 +378,26 @@
                 </td>`;
             }
 
+            const rowId = typeof row.__rowId === 'number' ? row.__rowId : '';
+            const isUnlocked = showBulkEditCheckboxes && tableState.bulkEditUnlockedRows.has(rowId);
+            const metricColumns = ['Traffic', 'Searches', 'KeywordDetails', 'FacetValueDetails', 'Keyword Count', 'Monthly Google', 'Annual', 'On-Site'];
+            
             cells += headers.map(h => {
                 let val = row[h];
                 let cellClass = 'p-3 border-t text-sm';
                 const isFacetColumn = isNestableReport && facetHeaders.includes(h);
+                
+                // Check if this cell has been edited
+                const cellChanges = tableState.bulkEditChanges.get(rowId);
+                const editedValue = cellChanges && cellChanges.has(h) ? cellChanges.get(h) : null;
+                const displayValue = editedValue !== null ? editedValue : val;
+                
+                // Determine if column is editable (category/facet columns, not metrics)
+                // Only allow editing one column at a time
+                const canEditColumn = !metricColumns.some(metric => h.includes(metric)) &&
+                                      h !== 'KeywordDetails' && h !== 'FacetValueDetails';
+                const isEditable = showBulkEditCheckboxes && isUnlocked && canEditColumn &&
+                                   (tableState.bulkEditActiveColumn === null || tableState.bulkEditActiveColumn === h);
 
                 const baseHeader = h.replace('Annual', 'Monthly').replace(/ \(.+\)$/, '');
                 const isKnownMetric = monthlyToAnnualCols.includes(baseHeader) || 
@@ -390,22 +409,47 @@
 
                 if (isFacetColumn) {
                     cellClass += ' facet-cell';
-                    if (val === null || val === undefined || String(val).trim() === '') {
+                    if (displayValue === null || displayValue === undefined || String(displayValue).trim() === '') {
                         cellClass += ' empty';
                         val = '—';
+                    } else {
+                        val = displayValue;
                     }
-                } else if (Array.isArray(val)) { 
-                    val = `${val[0].toFixed(1)}% (${(val[1] || 0).toLocaleString()})`;
+                } else if (Array.isArray(displayValue)) { 
+                    val = `${displayValue[0].toFixed(1)}% (${(displayValue[1] || 0).toLocaleString()})`;
                 } else if (isKnownMetric && !h.toLowerCase().includes('rank')) {
                     // FIX: Do not attempt to format a value that is already HTML (like our button)
-                    if (typeof val === 'string' && val.startsWith('<button')) {
+                    if (typeof displayValue === 'string' && displayValue.startsWith('<button')) {
                         // Keep the value as is.
                     } else {
-                        val = Math.round(Number(val) || 0).toLocaleString();
+                        val = Math.round(Number(displayValue) || 0).toLocaleString();
                     }
+                } else {
+                    val = displayValue;
                 }
                 
-                return `<td class="${cellClass}">${val !== null && val !== undefined ? val : ''}</td>`;
+                if (isEditable) {
+                    cellClass += ' bg-yellow-50 border-2 border-yellow-300';
+                    // Use edited value if exists, otherwise use the original row value
+                    const inputValue = editedValue !== null ? editedValue : (row[h] !== null && row[h] !== undefined ? String(row[h]) : '');
+                    const originalValue = row[h] !== null && row[h] !== undefined ? String(row[h]) : '';
+                    // Disable input if a different column is active
+                    const isDisabled = tableState.bulkEditActiveColumn !== null && tableState.bulkEditActiveColumn !== h;
+                    const disabledAttr = isDisabled ? 'disabled' : '';
+                    const disabledStyle = isDisabled ? 'opacity: 0.5; cursor: not-allowed;' : '';
+                    return `<td class="${cellClass}">
+                        <input type="text" 
+                               class="bulk-edit-cell-input w-full p-1 border-0 bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-900 font-medium" 
+                               value="${escapeHtml(inputValue)}" 
+                               data-row-id="${rowId}" 
+                               data-column="${escapeHtml(h)}"
+                               data-original-value="${escapeHtml(originalValue)}"
+                               ${disabledAttr}
+                               style="${disabledStyle}">
+                    </td>`;
+                } else {
+                    return `<td class="${cellClass}">${val !== null && val !== undefined ? val : ''}</td>`;
+                }
             }).join('');
             
             if (isFacetPotentialReport) {
@@ -2468,7 +2512,7 @@
             else if (lensType === 'category-overhaul') renderCategoryOverhaulMatrixView();
             else if (lensType === 'facet-potential') renderFacetPotentialAnalysisView();
             else if (lensType === 'interactive-matrix') renderInteractiveCategoryMatrixView();
-            else if (lensType === 'bulk-edit-matrix') renderBulkEditMatrixView();
+            else if (lensType === 'inline-edit-matrix') renderBulkEditMatrixView();
             else if (lensType === 'pim-sku-mapping') renderPimSkuMappingView();
             return;
         } 
@@ -3028,8 +3072,8 @@
                         <h3 class="font-bold text-xl">Interactive Matrix Editor</h3>
                         <p>Edit individual matrix rows with conditional overrides so you can adjust values only when they appear with specific category/context combinations.</p>
                     </div>
-                    <div data-lens="bulk-edit-matrix" class="lens-card p-6 border rounded-lg">
-                        <h3 class="font-bold text-xl">Bulk Edit Matrix</h3>
+                    <div data-lens="inline-edit-matrix" class="lens-card p-6 border rounded-lg">
+                        <h3 class="font-bold text-xl">In-Line Editor</h3>
                         <p>Select multiple rows and edit multiple columns at once. Perfect for making consistent changes across many rows simultaneously.</p>
                     </div>
                     <div data-lens="pim-sku-mapping" class="lens-card p-6 border rounded-lg">
@@ -4817,11 +4861,11 @@
         const { categoryOverhaulMatrixReport, hasOnsiteData } = analysisResults;
 
         if (!categoryOverhaulMatrixReport || categoryOverhaulMatrixReport.length === 0) {
-            ui.resultsContainer.innerHTML = createReportContainer('Bulk Edit Matrix', 'No data available for this report.');
+            ui.resultsContainer.innerHTML = createReportContainer('In-Line Editor', 'No data available for this report.');
             return;
         }
 
-        tableState.activeLens = 'bulk-edit-matrix';
+        tableState.activeLens = 'inline-edit-matrix';
         tableState.rowEditState = null;
         const baseHeaders = Object.keys(categoryOverhaulMatrixReport[0] || {});
         const excludeFromAggregation = [];
@@ -4855,7 +4899,7 @@
             ...endColumns.filter(h => allKeys.has(h) && !deletedColumns.includes(h))
         ];
 
-        const subtitle = "Select multiple rows and edit multiple columns at once. Perfect for making consistent changes across many rows simultaneously.";
+        const subtitle = "Select multiple rows and edit columns inline. Perfect for making consistent changes across many rows simultaneously.";
         const customContent = `
             <div class="flex flex-wrap gap-4 items-center">
                 <div class="flex items-center">
@@ -4873,10 +4917,10 @@
             </div>`;
         const explainer = `
             <div class="text-sm text-gray-600 bg-blue-50 border border-blue-200 p-3 rounded-md mb-4">
-                <b>Bulk Editing:</b> Select multiple rows using the checkboxes, then use the bulk edit panel below to edit multiple columns at once. Changes will be applied to all selected rows.
+                <b>In-Line Editing:</b> Select multiple rows using the checkboxes, then use the in-line edit panel below to edit columns directly in the table. Changes will be applied to all selected rows.
             </div>`;
 
-        ui.resultsContainer.innerHTML = createReportContainer('Bulk Edit Matrix', subtitle, customContent, explainer);
+        ui.resultsContainer.innerHTML = createReportContainer('In-Line Editor', subtitle, customContent, explainer);
         const zeroTrafficToggle = document.getElementById('hide-zero-traffic-toggle');
         if (zeroTrafficToggle) zeroTrafficToggle.checked = tableState.hideZeroTraffic;
 
@@ -4913,79 +4957,69 @@
         renderOverridesUI(baseHeaders.filter(h => h !== 'KeywordDetails'));
         renderBulkEditPanel(displayHeaders);
         setupBulkEditEventListeners();
-        updateBulkEditSelectionCount();
+        updateBulkEditPanel();
     }
 
     function renderBulkEditPanel(editableHeaders) {
-        const editableColumns = getEditableColumns(editableHeaders);
         const container = document.getElementById('bulk-edit-panel');
+        const selectedCount = tableState.bulkEditSelectedRows.size;
+        const unlockedCount = tableState.bulkEditUnlockedRows.size;
+        const hasChanges = tableState.bulkEditChanges.size > 0;
+        const activeColumn = tableState.bulkEditActiveColumn;
+        
         if (!container) {
             const manualContainer = document.getElementById('manual-overrides-container');
             if (manualContainer) {
                 manualContainer.insertAdjacentHTML('afterend', `
                     <div id="bulk-edit-panel" class="mb-6 border rounded-lg p-4 bg-white shadow-sm">
-                        <h4 class="font-semibold text-lg mb-3">Bulk Edit Panel</h4>
-                        <div class="mb-3">
-                            <span id="selected-rows-count" class="text-sm text-gray-600">0 rows selected</span>
-                        </div>
-                        <div id="bulk-edit-columns-container" class="space-y-3 mb-4">
-                            <div class="bulk-edit-column-item border rounded p-3 bg-gray-50">
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-                                    <div>
-                                        <label class="block text-sm font-medium mb-1">Column</label>
-                                        <select class="bulk-edit-column-select block w-full p-2 border-gray-300 rounded-md">
-                                            <option value="">Select a column...</option>
-                                            ${editableColumns.map(col => `<option value="${col}">${col}</option>`).join('')}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium mb-1">New Value</label>
-                                        <input type="text" class="bulk-edit-value-input block w-full p-2 border-gray-300 rounded-md" placeholder="Enter new value...">
-                                    </div>
-                                    <div>
-                                        <button class="remove-bulk-edit-column-btn text-red-600 hover:text-red-800 text-sm font-semibold">Remove</button>
-                                    </div>
-                                </div>
+                        <h4 class="font-semibold text-lg mb-3">In-Line Edit Panel</h4>
+                        <div class="mb-3 space-y-2">
+                            <div class="flex items-center gap-2">
+                                <span id="selected-rows-count" class="text-sm text-gray-600">${selectedCount} row${selectedCount !== 1 ? 's' : ''} selected</span>
+                                ${unlockedCount > 0 ? `<span class="text-sm text-green-600">• ${unlockedCount} unlocked for editing</span>` : ''}
+                                ${activeColumn ? `<span class="text-sm text-orange-600">• Editing: "${activeColumn}"</span>` : ''}
+                                ${hasChanges ? `<span class="text-sm text-blue-600">• Changes pending</span>` : ''}
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <button id="add-bulk-edit-column-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm font-semibold">+ Add Column</button>
-                            <button id="apply-bulk-edit-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed" disabled>Apply Changes</button>
+                            <button id="unlock-selected-rows-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed" ${selectedCount === 0 ? 'disabled' : ''}>🔓 Unlock Selected Rows</button>
+                            <button id="lock-all-rows-btn" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed" ${unlockedCount === 0 ? 'disabled' : ''}>🔒 Lock All Rows</button>
+                            <button id="apply-bulk-edit-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed" ${!hasChanges ? 'disabled' : ''}>✓ Apply Changes</button>
+                            <button id="discard-bulk-edit-changes-btn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed" ${!hasChanges ? 'disabled' : ''}>✗ Discard Changes</button>
                             <button id="clear-bulk-edit-selection-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm font-semibold">Clear Selection</button>
+                        </div>
+                        <div class="mt-3 text-xs text-gray-500">
+                            <p>1. Select rows using checkboxes</p>
+                            <p>2. Click "Unlock Selected Rows" to make cells editable</p>
+                            <p>3. Click into a cell to start editing (one column at a time)</p>
+                            <p>4. Click "Apply Changes" to save, then repeat for other columns</p>
                         </div>
                     </div>
                 `);
             }
         } else {
             container.innerHTML = `
-                <h4 class="font-semibold text-lg mb-3">Bulk Edit Panel</h4>
-                <div class="mb-3">
-                    <span id="selected-rows-count" class="text-sm text-gray-600">0 rows selected</span>
-                </div>
-                <div id="bulk-edit-columns-container" class="space-y-3 mb-4">
-                    <div class="bulk-edit-column-item border rounded p-3 bg-gray-50">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Column</label>
-                                <select class="bulk-edit-column-select block w-full p-2 border-gray-300 rounded-md">
-                                    <option value="">Select a column...</option>
-                                    ${editableColumns.map(col => `<option value="${col}">${col}</option>`).join('')}
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">New Value</label>
-                                <input type="text" class="bulk-edit-value-input block w-full p-2 border-gray-300 rounded-md" placeholder="Enter new value...">
-                            </div>
-                            <div>
-                                <button class="remove-bulk-edit-column-btn text-red-600 hover:text-red-800 text-sm font-semibold">Remove</button>
-                            </div>
-                        </div>
+                <h4 class="font-semibold text-lg mb-3">In-Line Edit Panel</h4>
+                <div class="mb-3 space-y-2">
+                    <div class="flex items-center gap-2">
+                        <span id="selected-rows-count" class="text-sm text-gray-600">${selectedCount} row${selectedCount !== 1 ? 's' : ''} selected</span>
+                        ${unlockedCount > 0 ? `<span class="text-sm text-green-600">• ${unlockedCount} unlocked for editing</span>` : ''}
+                        ${activeColumn ? `<span class="text-sm text-orange-600">• Editing: "${activeColumn}"</span>` : ''}
+                        ${hasChanges ? `<span class="text-sm text-blue-600">• Changes pending</span>` : ''}
                     </div>
                 </div>
                 <div class="flex gap-2">
-                    <button id="add-bulk-edit-column-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm font-semibold">+ Add Column</button>
-                    <button id="apply-bulk-edit-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed" disabled>Apply Changes</button>
+                    <button id="unlock-selected-rows-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed" ${selectedCount === 0 ? 'disabled' : ''}>🔓 Unlock Selected Rows</button>
+                    <button id="lock-all-rows-btn" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed" ${unlockedCount === 0 ? 'disabled' : ''}>🔒 Lock All Rows</button>
+                    <button id="apply-bulk-edit-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed" ${!hasChanges ? 'disabled' : ''}>✓ Apply Changes</button>
+                    <button id="discard-bulk-edit-changes-btn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed" ${!hasChanges ? 'disabled' : ''}>✗ Discard Changes</button>
                     <button id="clear-bulk-edit-selection-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm font-semibold">Clear Selection</button>
+                </div>
+                <div class="mt-3 text-xs text-gray-500">
+                    <p>1. Select rows using checkboxes</p>
+                    <p>2. Click "Unlock Selected Rows" to make cells editable</p>
+                    <p>3. Click into a cell to start editing (one column at a time)</p>
+                    <p>4. Click "Apply Changes" to save, then repeat for other columns</p>
                 </div>
             `;
         }
@@ -5002,9 +5036,12 @@
                     tableState.bulkEditSelectedRows.add(rowId);
                 } else {
                     tableState.bulkEditSelectedRows.delete(rowId);
+                    // Also unlock if unchecked
+                    tableState.bulkEditUnlockedRows.delete(rowId);
                 }
             });
-            updateBulkEditSelectionCount();
+            updateBulkEditPanel();
+            renderTableAndControls();
         });
 
         // Individual row checkboxes
@@ -5015,58 +5052,205 @@
                     tableState.bulkEditSelectedRows.add(rowId);
                 } else {
                     tableState.bulkEditSelectedRows.delete(rowId);
+                    // Also unlock if unchecked
+                    tableState.bulkEditUnlockedRows.delete(rowId);
                 }
-                updateBulkEditSelectionCount();
+                updateBulkEditPanel();
                 updateSelectAllCheckbox();
+                renderTableAndControls();
             }
         });
 
-        // Add column button
-        document.getElementById('add-bulk-edit-column-btn')?.addEventListener('click', () => {
-            const container = document.getElementById('bulk-edit-columns-container');
-            const editableColumns = getEditableColumns(tableState.headers || []);
-            const newItem = document.createElement('div');
-            newItem.className = 'bulk-edit-column-item border rounded p-3 bg-gray-50';
-            newItem.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Column</label>
-                        <select class="bulk-edit-column-select block w-full p-2 border-gray-300 rounded-md">
-                            <option value="">Select a column...</option>
-                            ${editableColumns.map(col => `<option value="${col}">${col}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">New Value</label>
-                        <input type="text" class="bulk-edit-value-input block w-full p-2 border-gray-300 rounded-md" placeholder="Enter new value...">
-                    </div>
-                    <div>
-                        <button class="remove-bulk-edit-column-btn text-red-600 hover:text-red-800 text-sm font-semibold">Remove</button>
-                    </div>
-                </div>
-            `;
-            container.appendChild(newItem);
+        // Unlock selected rows button
+        document.getElementById('unlock-selected-rows-btn')?.addEventListener('click', () => {
+            // Check if there are pending changes - if so, prevent unlocking a different column
+            if (tableState.bulkEditChanges.size > 0) {
+                showNotification('You have pending changes. Please apply or discard them before editing another column.', 'warning');
+                return;
+            }
+            
+            tableState.bulkEditSelectedRows.forEach(rowId => {
+                tableState.bulkEditUnlockedRows.add(rowId);
+            });
+            // Clear active column when unlocking (user can start fresh)
+            tableState.bulkEditActiveColumn = null;
+            updateBulkEditPanel();
+            renderTableAndControls();
         });
 
-        // Remove column button
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('remove-bulk-edit-column-btn')) {
-                e.target.closest('.bulk-edit-column-item')?.remove();
+        // Lock all rows button
+        document.getElementById('lock-all-rows-btn')?.addEventListener('click', () => {
+            tableState.bulkEditUnlockedRows.clear();
+            // Only clear active column if there are no pending changes
+            // This way we can prevent editing a different column if changes are pending
+            if (tableState.bulkEditChanges.size === 0) {
+                tableState.bulkEditActiveColumn = null;
+            }
+            updateBulkEditPanel();
+            renderTableAndControls();
+        });
+
+        // Track when user starts editing a cell (focus) - lock that column
+        document.addEventListener('focus', (e) => {
+            if (e.target.classList.contains('bulk-edit-cell-input')) {
+                const column = e.target.dataset.column;
+                
+                // Check if there are pending changes for a different column
+                if (tableState.bulkEditChanges.size > 0 && tableState.bulkEditActiveColumn !== null && tableState.bulkEditActiveColumn !== column) {
+                    e.preventDefault();
+                    e.target.blur();
+                    showNotification(`You have pending changes for "${tableState.bulkEditActiveColumn}". Please apply or discard them before editing another column.`, 'warning');
+                    return;
+                }
+                
+                // If no column is active, or user is editing the same column, allow it
+                if (tableState.bulkEditActiveColumn === null || tableState.bulkEditActiveColumn === column) {
+                    const previousColumn = tableState.bulkEditActiveColumn;
+                    tableState.bulkEditActiveColumn = column;
+                    
+                    // Only update if we're switching to a different column
+                    if (previousColumn !== null && previousColumn !== column) {
+                        // Disable old column inputs and enable new column inputs
+                        document.querySelectorAll('.bulk-edit-cell-input').forEach(input => {
+                            if (input.dataset.column === previousColumn) {
+                                input.disabled = true;
+                                input.style.opacity = '0.5';
+                                input.style.cursor = 'not-allowed';
+                            } else if (input.dataset.column === column) {
+                                input.disabled = false;
+                                input.style.opacity = '1';
+                                input.style.cursor = 'text';
+                            }
+                        });
+                    } else if (previousColumn === null) {
+                        // First time selecting a column - disable all other columns
+                        document.querySelectorAll('.bulk-edit-cell-input').forEach(input => {
+                            if (input.dataset.column !== column) {
+                                input.disabled = true;
+                                input.style.opacity = '0.5';
+                                input.style.cursor = 'not-allowed';
+                            }
+                        });
+                    }
+                    
+                    // Update panel to show active column
+                    updateBulkEditPanel();
+                } else {
+                    // User is trying to edit a different column - prevent it and show message
+                    e.preventDefault();
+                    e.target.blur();
+                    showNotification(`You can only edit one column at a time. Please apply or discard changes to "${tableState.bulkEditActiveColumn}" first.`, 'warning');
+                }
+            }
+        }, true);
+
+        // Track cell input changes
+        document.addEventListener('input', (e) => {
+            if (e.target.classList.contains('bulk-edit-cell-input')) {
+                const rowId = parseInt(e.target.dataset.rowId);
+                const column = e.target.dataset.column;
+                const newValue = e.target.value; // Don't trim here - allow spaces
+                const originalValue = e.target.dataset.originalValue;
+                
+                // Only process if this is the active column
+                if (tableState.bulkEditActiveColumn !== column) {
+                    return;
+                }
+                
+                // Store change if different from original
+                if (!tableState.bulkEditChanges.has(rowId)) {
+                    tableState.bulkEditChanges.set(rowId, new Map());
+                }
+                const rowChanges = tableState.bulkEditChanges.get(rowId);
+                
+                if (newValue.trim() === originalValue.trim() || newValue.trim() === '') {
+                    // Reverted to original or cleared - remove change
+                    rowChanges.delete(column);
+                    if (rowChanges.size === 0) {
+                        tableState.bulkEditChanges.delete(rowId);
+                    }
+                } else {
+                    // Store the change (trimmed for storage)
+                    rowChanges.set(column, newValue.trim());
+                }
+                
+                updateBulkEditPanel();
             }
         });
 
         // Apply bulk edit button
         document.getElementById('apply-bulk-edit-btn')?.addEventListener('click', () => {
-            applyBulkEdit();
+            applyBulkEditFromChanges();
+            // Clear active column after applying
+            tableState.bulkEditActiveColumn = null;
+        });
+
+        // Discard changes button
+        document.getElementById('discard-bulk-edit-changes-btn')?.addEventListener('click', () => {
+            tableState.bulkEditChanges.clear();
+            tableState.bulkEditActiveColumn = null; // Clear active column when discarding
+            updateBulkEditPanel();
+            renderTableAndControls();
         });
 
         // Clear selection button
         document.getElementById('clear-bulk-edit-selection-btn')?.addEventListener('click', () => {
             tableState.bulkEditSelectedRows.clear();
+            tableState.bulkEditUnlockedRows.clear();
+            tableState.bulkEditChanges.clear();
+            tableState.bulkEditActiveColumn = null; // Clear active column
             document.querySelectorAll('.bulk-edit-row-checkbox').forEach(cb => cb.checked = false);
             document.getElementById('select-all-rows').checked = false;
-            updateBulkEditSelectionCount();
+            updateBulkEditPanel();
+            renderTableAndControls();
         });
+    }
+    
+    function updateBulkEditPanel() {
+        const selectedCount = tableState.bulkEditSelectedRows.size;
+        const unlockedCount = tableState.bulkEditUnlockedRows.size;
+        const hasChanges = tableState.bulkEditChanges.size > 0;
+        
+        const countEl = document.getElementById('selected-rows-count');
+        if (countEl) {
+            countEl.textContent = `${selectedCount} row${selectedCount !== 1 ? 's' : ''} selected`;
+        }
+        
+        const unlockBtn = document.getElementById('unlock-selected-rows-btn');
+        if (unlockBtn) {
+            unlockBtn.disabled = selectedCount === 0;
+        }
+        
+        const lockBtn = document.getElementById('lock-all-rows-btn');
+        if (lockBtn) {
+            lockBtn.disabled = unlockedCount === 0;
+        }
+        
+        const applyBtn = document.getElementById('apply-bulk-edit-btn');
+        if (applyBtn) {
+            applyBtn.disabled = !hasChanges;
+        }
+        
+        const discardBtn = document.getElementById('discard-bulk-edit-changes-btn');
+        if (discardBtn) {
+            discardBtn.disabled = !hasChanges;
+        }
+        
+        // Update status text
+        const panel = document.getElementById('bulk-edit-panel');
+        if (panel) {
+            const statusText = panel.querySelector('.flex.items-center.gap-2');
+            if (statusText) {
+                let statusHtml = `<span id="selected-rows-count" class="text-sm text-gray-600">${selectedCount} row${selectedCount !== 1 ? 's' : ''} selected</span>`;
+                if (unlockedCount > 0) {
+                    statusHtml += `<span class="text-sm text-green-600">• ${unlockedCount} unlocked for editing</span>`;
+                }
+                if (hasChanges) {
+                    statusHtml += `<span class="text-sm text-blue-600">• Changes pending</span>`;
+                }
+                statusText.innerHTML = statusHtml;
+            }
+        }
     }
 
     function updateBulkEditSelectionCount() {
@@ -5090,79 +5274,39 @@
         selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
     }
 
-    function applyBulkEdit() {
-        if (tableState.bulkEditSelectedRows.size === 0) {
-            alert('Please select at least one row.');
+    function applyBulkEditFromChanges() {
+        if (tableState.bulkEditChanges.size === 0) {
+            alert('No changes to apply.');
             return;
         }
 
-        const columnItems = document.querySelectorAll('.bulk-edit-column-item');
-        const edits = [];
-        
-        columnItems.forEach(item => {
-            const columnSelect = item.querySelector('.bulk-edit-column-select');
-            const valueInput = item.querySelector('.bulk-edit-value-input');
-            const column = columnSelect?.value;
-            const value = valueInput?.value.trim();
-            
-            if (column && value) {
-                edits.push({ column, value });
-            }
-        });
-
-        if (edits.length === 0) {
-            alert('Please specify at least one column and value to edit.');
-            return;
-        }
-
-        // Get selected rows from the processed data
-        const selectedRowIds = Array.from(tableState.bulkEditSelectedRows);
-        const selectedRows = tableState.fullData.filter((row, idx) => selectedRowIds.includes(idx));
-
-        // Get columns being edited
-        const columnsBeingEdited = new Set(edits.map(e => e.column));
-        
-        // CRITICAL: Get the ORIGINAL data (before any overrides) to build conditions
-        // This ensures all rules for the same row use the same original values as conditions,
-        // so they all match even after the first rule is applied
+        // Get the ORIGINAL data (before any overrides) to build conditions
         const { categoryOverhaulMatrixReport, hasOnsiteData } = analysisResults;
         const baseHeaders = Object.keys(categoryOverhaulMatrixReport[0] || {});
-        
-        // Get ALL visible columns from the table
         const visibleHeaders = tableState.headers || [];
-        
-        // Define metric columns to exclude
         const metricColumns = ['Traffic', 'Searches', 'KeywordDetails', 'FacetValueDetails', 'Keyword Count', 'Monthly Google', 'Annual', 'On-Site'];
         
-        // Use ALL category and facet columns as conditions (including ones being edited)
-        // We'll use ORIGINAL values for conditions, so they remain stable
-        const allVisibleColumns = new Set(visibleHeaders);
-        const conditionColumns = Array.from(allVisibleColumns).filter(h => {
+        // Get all category and facet columns for conditions
+        const conditionColumns = Array.from(new Set(visibleHeaders)).filter(h => {
             if (!h) return false;
-            // Exclude metric columns
             if (metricColumns.some(metric => h.includes(metric))) return false;
-            // Exclude KeywordDetails and FacetValueDetails
             if (h === 'KeywordDetails' || h === 'FacetValueDetails') return false;
-            // Include everything else - Category Mapping, facet columns, etc. (even if being edited)
             return true;
         });
-
-        // Sort to prioritize Category Mapping
+        
         conditionColumns.sort((a, b) => {
             if (a === 'Category Mapping') return -1;
             if (b === 'Category Mapping') return 1;
             return 0;
         });
 
-        // Create override rules for each selected row and each column edit
-        selectedRows.forEach(row => {
-            // Find the corresponding original row in the raw data
-            // We need to match by a unique combination that exists in both datasets
-            // Since rows might have been merged/aggregated, we'll try to find a matching original row
-            // by matching all available non-metric columns
-            let originalRow = null;
+        // Process each row that has changes
+        tableState.bulkEditChanges.forEach((rowChanges, rowId) => {
+            const row = tableState.fullData.find(r => r && r.__rowId === rowId);
+            if (!row) return;
             
-            // Try to find the original row by matching key columns
+            // Find the corresponding original row
+            let originalRow = null;
             const keyColumns = conditionColumns.filter(col => 
                 row.hasOwnProperty(col) && 
                 row[col] !== null && 
@@ -5171,12 +5315,10 @@
             );
             
             if (keyColumns.length > 0) {
-                // Find original row that matches on key columns
                 originalRow = categoryOverhaulMatrixReport.find(origRow => {
                     return keyColumns.every(col => {
                         const currentVal = String(row[col] || '').trim();
                         const origVal = String(origRow[col] || '').trim();
-                        // For pipe-separated values, check if they share any values
                         const currentValues = currentVal.split('|').map(v => v.trim()).filter(Boolean);
                         const origValues = origVal.split('|').map(v => v.trim()).filter(Boolean);
                         if (currentValues.length === 0 && origValues.length === 0) return true;
@@ -5185,33 +5327,25 @@
                 });
             }
             
-            // If we couldn't find a matching original row, use the current row values
-            // (This can happen if rows were merged/aggregated)
             const sourceRow = originalRow || row;
             
-            // Build conditions object from ORIGINAL values (before any edits)
-            // This ensures all rules for the same row use the same conditions
-            // Include ALL category and facet columns, even ones being edited
+            // Build conditions from ORIGINAL values (all category/facet columns)
             const conditions = {};
-            
             conditionColumns.forEach(col => {
                 const cellValue = sourceRow[col];
                 if (cellValue !== null && cellValue !== undefined && String(cellValue).trim() !== '') {
-                    // For pipe-separated values, use the first value for condition matching
                     const values = String(cellValue).split('|').map(v => v.trim()).filter(Boolean);
                     if (values.length > 0) {
                         conditions[col] = values[0];
                     } else {
-                        // Empty after trimming - treat as blank
                         conditions[col] = '';
                     }
                 } else {
-                    // Blank/null/undefined values - include as blank condition
                     conditions[col] = '';
                 }
             });
             
-            // ALWAYS ensure Category Mapping is included as a condition
+            // Ensure Category Mapping is included
             if (sourceRow.hasOwnProperty('Category Mapping')) {
                 const catMapping = String(sourceRow['Category Mapping'] || '').trim();
                 if (catMapping !== '') {
@@ -5225,77 +5359,115 @@
                     conditions['Category Mapping'] = '';
                 }
             }
-
-            // For bulk edits on the same row, we need to handle the case where multiple columns are edited
-            // The solution: Modify conditions to accept EITHER original OR new values for columns being edited
-            // This ensures all rules for the same row continue to match even after earlier rules are applied
             
-            // Build a map of columns being edited to their new values
-            const editedColumnNewValues = {};
-            edits.forEach(edit => {
-                editedColumnNewValues[edit.column] = edit.value;
-            });
-            
-            // Create enhanced conditions that include alternative values for columns being edited
-            // This allows rules to match even after other rules have changed those columns
-            const enhancedConditions = { ...conditions };
-            Object.keys(editedColumnNewValues).forEach(col => {
-                if (enhancedConditions.hasOwnProperty(col)) {
-                    // For columns being edited, store both original and new value
-                    // We'll modify the condition matching to accept either
-                    const originalValue = enhancedConditions[col];
-                    const newValue = editedColumnNewValues[col];
-                    // Store as an array to indicate "match either value"
-                    enhancedConditions[col] = [originalValue, newValue];
-                }
-            });
-            
-            edits.forEach(edit => {
-                const currentValue = row[edit.column];
-                if (currentValue !== null && currentValue !== undefined && String(currentValue).trim() !== '') {
+            // Create override rules for each changed column
+            rowChanges.forEach((newValue, column) => {
+                const originalValue = row[column];
+                if (originalValue !== null && originalValue !== undefined && String(originalValue).trim() !== '') {
                     // Create a change rule for each value in the cell (if pipe-separated)
-                    const cellValues = String(currentValue).split(' | ').map(v => v.trim());
+                    const cellValues = String(originalValue).split(' | ').map(v => v.trim());
                     cellValues.forEach(cellValue => {
                         overrideRules.push({
                             id: Date.now() + Math.random(),
-                            sourceColumn: edit.column,
+                            sourceColumn: column,
                             value: cellValue,
                             action: 'change',
-                            newValue: edit.value,
+                            newValue: newValue,
                             targetColumn: null,
                             isNew: false,
                             moveMode: null,
-                            conditions: { ...enhancedConditions }, // Use enhanced conditions with alternatives
-                            bulkEditRow: true // Flag to indicate this is part of a bulk edit
+                            conditions: { ...conditions }
                         });
                     });
                 } else {
                     // For blank values, create a change rule with blank as the value
                     overrideRules.push({
                         id: Date.now() + Math.random(),
-                        sourceColumn: edit.column,
+                        sourceColumn: column,
                         value: '',
                         action: 'change',
-                        newValue: edit.value,
+                        newValue: newValue,
                         targetColumn: null,
                         isNew: false,
                         moveMode: null,
-                        conditions: { ...enhancedConditions }, // Use enhanced conditions with alternatives
-                        bulkEditRow: true // Flag to indicate this is part of a bulk edit
+                        conditions: { ...conditions }
                     });
                 }
             });
         });
 
-        // Clear selection and refresh view
+        // Clear changes and refresh
+        tableState.bulkEditChanges.clear();
+        tableState.bulkEditUnlockedRows.clear();
         tableState.bulkEditSelectedRows.clear();
+        tableState.bulkEditActiveColumn = null; // Clear active column after applying
         document.querySelectorAll('.bulk-edit-row-checkbox').forEach(cb => cb.checked = false);
         document.getElementById('select-all-rows').checked = false;
-        updateBulkEditSelectionCount();
         
-        // Refresh the view to show changes
-        renderBulkEditMatrixView();
-        showNotification(`Applied ${edits.length} column edit(s) to ${selectedRows.length} row(s).`, 'success');
+        updateBulkEditPanel();
+        
+        // Re-render the view to get updated data with new override rules
+        // Pass preserveState flag to keep filters
+        // Reuse categoryOverhaulMatrixReport and hasOnsiteData from above (line 5265)
+        const excludeFromAggregation = [];
+        if (tableState.hideFeatures) {
+            excludeFromAggregation.push('Features', 'Discovered Features');
+        }
+
+        const modifiedData = applyOverridesAndMerge(categoryOverhaulMatrixReport, baseHeaders, hasOnsiteData, excludeFromAggregation);
+        const transformedData = transformDataForTimeframe(modifiedData, tableState.timeframe);
+
+        // Remove deleted columns from data rows
+        const deletedColumns = tableState.deletedColumns || [];
+        const cleanedData = transformedData.map(row => {
+            const newRow = { ...row };
+            deletedColumns.forEach(col => {
+                delete newRow[col];
+            });
+            return newRow;
+        });
+
+        const allKeys = new Set();
+        cleanedData.forEach(row => { Object.keys(row).forEach(key => allKeys.add(key)); });
+
+        const preferredOrder = ['Category Mapping', 'Derived Facets', 'Sub Type'];
+        const endColumnsBases = ['Monthly Organic Traffic', 'Total Monthly Google Searches', 'Total On-Site Searches', 'KeywordDetails'];
+        const endColumns = updateHeadersForTimeframe(endColumnsBases, tableState.timeframe);
+
+        const finalHeaders = [
+            ...preferredOrder.filter(h => allKeys.has(h) && !deletedColumns.includes(h)),
+            ...Array.from(allKeys).filter(h => !preferredOrder.includes(h) && !endColumns.includes(h) && !deletedColumns.includes(h)).sort(),
+            ...endColumns.filter(h => allKeys.has(h) && !deletedColumns.includes(h))
+        ];
+
+        let displayHeaders = [...finalHeaders];
+        if (tableState.hideFeatures) {
+            displayHeaders = displayHeaders.filter(h => h !== 'Features' && h !== 'Discovered Features');
+        }
+        if (tableState.hideZeroValueColumns && cleanedData.length > 0) {
+            displayHeaders = displayHeaders.filter(header => {
+                const keepColumns = ['Category Mapping', 'Derived Facets', 'Sub Type', 'KeywordDetails'];
+                if (keepColumns.includes(header) || header.includes('Traffic') || header.includes('Searches')) {
+                    return true;
+                }
+                const hasNonBlankValue = cleanedData.some(row => {
+                    const value = row[header];
+                    return value !== null && value !== undefined && value !== '' && value !== 0;
+                });
+                return hasNonBlankValue;
+            });
+        }
+
+        // Initialize table with preserveState=true to keep filters
+        initializeTable(cleanedData, displayHeaders, displayHeaders.find(h => h.includes('Organic Traffic')), 'Category Mapping', [], true);
+        
+        // Restore search input value if it exists
+        const searchInput = document.getElementById('table-search-input');
+        if (searchInput && tableState.searchTerm) {
+            searchInput.value = tableState.searchTerm;
+        }
+        
+        showNotification('Changes applied successfully!', 'success');
     }
 
     function getEditableColumns(headers = []) {
@@ -5825,7 +5997,7 @@
         }
     }
 
-    function initializeTable(data, headers, defaultSortKey, defaultSearchKey, competitorDomains = []) {
+    function initializeTable(data, headers, defaultSortKey, defaultSearchKey, competitorDomains = [], preserveState = false) {
         tableState.fullData = data;
         if (Array.isArray(tableState.fullData)) {
             tableState.fullData.forEach((row, idx) => {
@@ -5838,17 +6010,25 @@
             });
         }
         tableState.headers = headers;
-        tableState.sortKey = defaultSortKey;
-        tableState.sortDir = 'desc';
-        tableState.searchTerm = '';
-        tableState.searchKey = defaultSearchKey;
-        tableState.currentPage = 1;
-        tableState.rowsPerPage = 25;
+        
+        // Preserve existing state if requested (for inline editor after applying changes)
+        if (!preserveState) {
+            tableState.sortKey = defaultSortKey;
+            tableState.sortDir = 'desc';
+            tableState.searchTerm = '';
+            tableState.searchKey = defaultSearchKey;
+            tableState.currentPage = 1;
+            tableState.rowsPerPage = 25;
+        }
+        // If preserveState is true, keep existing values (they were set before calling this)
+        
         tableState.competitorDomainHeaders = competitorDomains;
-        tableState.hideZeroTraffic = false;
+        if (!preserveState) {
+            tableState.hideZeroTraffic = false;
+        }
         
         // Clear bulk edit selection when switching views
-        if (tableState.activeLens !== 'bulk-edit-matrix') {
+        if (tableState.activeLens !== 'inline-edit-matrix') {
             tableState.bulkEditSelectedRows.clear();
         }
 
@@ -6338,9 +6518,27 @@
             if (state.tableState.bulkEditSelectedRows && Array.isArray(state.tableState.bulkEditSelectedRows)) {
                 tableState.bulkEditSelectedRows = new Set(state.tableState.bulkEditSelectedRows);
             } else if (!tableState.bulkEditSelectedRows || !(tableState.bulkEditSelectedRows instanceof Set)) {
-                // Ensure it's always a Set, even if not in saved state
                 tableState.bulkEditSelectedRows = new Set();
             }
+            // Convert bulkEditUnlockedRows back to Set
+            if (state.tableState.bulkEditUnlockedRows && Array.isArray(state.tableState.bulkEditUnlockedRows)) {
+                tableState.bulkEditUnlockedRows = new Set(state.tableState.bulkEditUnlockedRows);
+            } else if (!tableState.bulkEditUnlockedRows || !(tableState.bulkEditUnlockedRows instanceof Set)) {
+                tableState.bulkEditUnlockedRows = new Set();
+            }
+            // Convert bulkEditChanges back to Map
+            if (state.tableState.bulkEditChanges && Array.isArray(state.tableState.bulkEditChanges)) {
+                tableState.bulkEditChanges = new Map();
+                state.tableState.bulkEditChanges.forEach(([rowId, changes]) => {
+                    if (Array.isArray(changes)) {
+                        tableState.bulkEditChanges.set(rowId, new Map(changes));
+                    }
+                });
+            } else if (!tableState.bulkEditChanges || !(tableState.bulkEditChanges instanceof Map)) {
+                tableState.bulkEditChanges = new Map();
+            }
+            // Initialize bulkEditActiveColumn (should be null when loading - don't restore active editing state)
+            tableState.bulkEditActiveColumn = null;
         }
         
         // Load override rules if available
@@ -6524,10 +6722,22 @@
         const excludedKeywordsRaw = document.getElementById('branded-exclusions')?.value || '';
         analysisOptions.excludedKeywords = excludedKeywordsRaw.split('\n').map(kw => kw.trim()).filter(kw => kw);
 
-        // Convert Set to Array for JSON serialization
+        // Convert Sets and Maps to Arrays for JSON serialization
         const tableStateForSave = { ...tableState };
         if (tableStateForSave.bulkEditSelectedRows instanceof Set) {
             tableStateForSave.bulkEditSelectedRows = Array.from(tableStateForSave.bulkEditSelectedRows);
+        }
+        if (tableStateForSave.bulkEditUnlockedRows instanceof Set) {
+            tableStateForSave.bulkEditUnlockedRows = Array.from(tableStateForSave.bulkEditUnlockedRows);
+        }
+        if (tableStateForSave.bulkEditChanges instanceof Map) {
+            // Convert Map to array of [key, value] pairs, where value is also converted from Map to array
+            tableStateForSave.bulkEditChanges = Array.from(tableStateForSave.bulkEditChanges.entries()).map(([rowId, changes]) => {
+                if (changes instanceof Map) {
+                    return [rowId, Array.from(changes.entries())];
+                }
+                return [rowId, changes];
+            });
         }
 
         const stateData = {
