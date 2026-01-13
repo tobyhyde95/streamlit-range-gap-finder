@@ -17,8 +17,26 @@ A comprehensive web application for advanced SEO analysis, designed to identify 
    ```
 
 2. **Start the application:**
+
+   **On Mac/Linux:**
    ```bash
-   ./scripts/start.sh
+   # Option 1: Use the Python launcher (recommended - works on both platforms)
+   python3 run.py
+   
+   # Option 2: Use the bash script
+   ./run.sh
+   ```
+
+   **On Windows:**
+   ```bash
+   # Option 1: Use the Python launcher (recommended - works on both platforms)
+   python run.py
+   
+   # Option 2: Use the batch file
+   run.bat
+   
+   # Option 3: Use PowerShell
+   powershell -ExecutionPolicy Bypass -File run.ps1
    ```
 
 3. **Access the frontend:**
@@ -50,6 +68,10 @@ range_gap_finder/
 ├── seo_analyzer/          # Python backend code
 ├── scripts/               # Startup scripts
 ├── range-gap-finder.html  # Main frontend interface
+├── run.py                 # Cross-platform Python launcher (recommended)
+├── run.sh                 # Mac/Linux bash script
+├── run.bat                # Windows batch script
+├── run.ps1                # Windows PowerShell script
 ├── Procfile              # Process configuration
 └── README.md             # This file
 ```
@@ -76,9 +98,22 @@ For development setup and Git workflow instructions, see `scripts/README.md`.
 ## 📞 Support
 
 If you encounter any issues:
-1. Check that Redis is running: `docker ps | grep redis`
+1. Check that Redis is running: 
+   - **Mac/Linux**: `docker ps | grep redis`
+   - **Windows**: `docker ps | findstr redis`
 2. Verify the application is running on port 5000
 3. Check the terminal logs for any error messages
+4. Make sure Docker Desktop is running (Windows/Mac)
+
+## 🌐 Cross-Platform Support
+
+This application works seamlessly on both **Windows** and **Mac/Linux**. The recommended way to start the application is using `run.py`, which automatically detects your platform and runs the appropriate commands.
+
+**Why use `run.py`?**
+- ✅ Works on both Windows and Mac/Linux
+- ✅ Automatic platform detection
+- ✅ Better error handling
+- ✅ Consistent experience across platforms
 
 ---
 
