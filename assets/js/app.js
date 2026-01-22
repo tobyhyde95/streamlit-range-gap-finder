@@ -15,6 +15,7 @@
         hideFeatures: false,
         hideZeroValueColumns: false,
         deletedColumns: [],
+        deletedZeroTrafficRows: [], // Array of row signatures for permanently deleted rows with 0 traffic
         activeLens: null,
         rowEditState: null,
         interactiveHeaders: [],
@@ -149,6 +150,41 @@
         return Array.from(aggregationMap.values());
     }
 
+
+    /**
+     * Generate a unique signature for a row based on its non-metric columns.
+     * This signature is used to identify rows for deletion, even after transformations.
+     */
+    function getRowSignature(row, headers) {
+        // Get all non-metric columns (Category Mapping + facet columns, excluding metrics and KeywordDetails)
+        const nonMetricHeaders = headers.filter(h => 
+            h !== 'KeywordDetails' && 
+            !h.includes('Traffic') && 
+            !h.includes('Searches')
+        );
+        
+        // Create a sorted array of key-value pairs
+        const signatureParts = nonMetricHeaders
+            .map(h => `${h}::${row[h] || ''}`)
+            .sort();
+        
+        return signatureParts.join('||');
+    }
+
+    /**
+     * Filter out deleted zero-traffic rows from data
+     */
+    function filterDeletedZeroTrafficRows(data, headers) {
+        if (!tableState.deletedZeroTrafficRows || tableState.deletedZeroTrafficRows.length === 0) {
+            return data;
+        }
+        
+        const deletedSignatures = new Set(tableState.deletedZeroTrafficRows);
+        return data.filter(row => {
+            const signature = getRowSignature(row, headers);
+            return !deletedSignatures.has(signature);
+        });
+    }
 
     function getFilteredData() {
         let filteredData = [...tableState.fullData];
@@ -1997,65 +2033,29 @@
             const baseHeaders = Object.keys(analysisResults.categoryOverhaulMatrixReport[0] || {});
             const currentDataState = applyOverridesAndMerge(analysisResults.categoryOverhaulMatrixReport, baseHeaders, analysisResults.hasOnsiteData);
             
-            // Get traffic headers for filtering
-            const annualTrafficHeader = updateHeadersForTimeframe(['Monthly Organic Traffic'], 'annual')[0];
-            const monthlyTrafficHeader = updateHeadersForTimeframe(['Monthly Organic Traffic'], 'monthly')[0];
+            // Filter out deleted zero-traffic rows (these are permanently removed)
+            const dataWithoutDeleted = filterDeletedZeroTrafficRows(currentDataState, baseHeaders);
             
-            // If hideZeroTraffic is enabled, filter values that only appear on rows with 0 traffic
-            const shouldFilterByTraffic = tableState.hideZeroTraffic;
+            // Track which values appear in non-deleted rows
+            // Note: We show ALL values from non-deleted rows, regardless of hideZeroTraffic setting
+            // The hideZeroTraffic toggle only affects table display, not the filter options
+            const valueSet = new Set();
+            let hasBlanks = false;
             
-            // Track which values appear on rows with traffic > 0
-            const valueToRowMap = new Map(); // value -> array of rows containing this value
-            
-            currentDataState.forEach(row => {
+            dataWithoutDeleted.forEach(row => {
                 const cellValue = row[selectedColumn];
                 const values = cellValue === null || cellValue === undefined || String(cellValue).trim() === '' 
                     ? [''] 
                     : String(cellValue).split(' | ').map(v => v.trim());
                 
                 values.forEach(v => {
-                    if (!valueToRowMap.has(v)) {
-                        valueToRowMap.set(v, []);
-                    }
-                    valueToRowMap.get(v).push(row);
-                });
-            });
-            
-            const valueSet = new Set();
-            let hasBlanks = false;
-
-            // Filter values based on traffic if hideZeroTraffic is enabled
-            valueToRowMap.forEach((rows, value) => {
-                if (value === '') {
-                    hasBlanks = true;
-                } else {
-                    if (shouldFilterByTraffic) {
-                        // Only include value if it appears on at least one row with traffic > 0
-                        const hasTraffic = rows.some(row => {
-                            const traffic = row[annualTrafficHeader] || row[monthlyTrafficHeader];
-                            return typeof traffic === 'number' && traffic > 0;
-                        });
-                        if (hasTraffic) {
-                            valueSet.add(value);
-                        }
+                    if (v === '') {
+                        hasBlanks = true;
                     } else {
-                        // Include all values if filtering is disabled
-                        valueSet.add(value);
+                        valueSet.add(v);
                     }
-                }
-            });
-            
-            // Handle blanks - only show if blank appears on at least one row with traffic > 0
-            if (hasBlanks && shouldFilterByTraffic) {
-                const blankRows = valueToRowMap.get('') || [];
-                const blankHasTraffic = blankRows.some(row => {
-                    const traffic = row[annualTrafficHeader] || row[monthlyTrafficHeader];
-                    return typeof traffic === 'number' && traffic > 0;
                 });
-                if (!blankHasTraffic) {
-                    hasBlanks = false; // Hide blank option if all blank rows have 0 traffic
-                }
-            }
+            });
 
             const sortedValues = Array.from(valueSet).sort();
             const listbox = document.getElementById('rule-value-listbox');
@@ -2442,12 +2442,16 @@
             if (title.includes('Category Overhaul Matrix')) {
                 // Use the original data from analysisResults instead of the processed data
                 const originalData = analysisResults.categoryOverhaulMatrixReport;
-                const processedData = applyOverridesAndMerge(originalData, Object.keys(originalData[0] || {}), analysisResults.hasOnsiteData);
+                const baseHeaders = Object.keys(originalData[0] || {});
+                const processedData = applyOverridesAndMerge(originalData, baseHeaders, analysisResults.hasOnsiteData);
                 const transformedData = transformDataForTimeframe(processedData, tableState.timeframe);
+                
+                // Filter out deleted zero-traffic rows
+                const dataWithoutDeleted = filterDeletedZeroTrafficRows(transformedData, baseHeaders);
                 
                 // Remove deleted columns from data rows (preserve rows, just remove column properties)
                 const deletedColumns = tableState.deletedColumns || [];
-                let dataToExport = transformedData.map(row => {
+                let dataToExport = dataWithoutDeleted.map(row => {
                     const newRow = { ...row };
                     deletedColumns.forEach(col => {
                         delete newRow[col];
@@ -2480,8 +2484,13 @@
             else if (title.includes('Facet Potential Analysis')) {
                 // Use the original data from analysisResults instead of the processed data
                 const originalData = analysisResults.categoryOverhaulMatrixReport;
-                const processedData = applyOverridesAndMerge(originalData, Object.keys(originalData[0] || {}), analysisResults.hasOnsiteData);
-                const regeneratedData = generateFacetPotentialFromMatrix(processedData, Object.keys(originalData[0] || {}), analysisResults.hasOnsiteData);
+                const baseHeaders = Object.keys(originalData[0] || {});
+                const processedData = applyOverridesAndMerge(originalData, baseHeaders, analysisResults.hasOnsiteData);
+                
+                // Filter out deleted zero-traffic rows before generating facet potential
+                const dataWithoutDeleted = filterDeletedZeroTrafficRows(processedData, baseHeaders);
+                
+                const regeneratedData = generateFacetPotentialFromMatrix(dataWithoutDeleted, baseHeaders, analysisResults.hasOnsiteData);
                 const transformedData = transformDataForTimeframe(regeneratedData, tableState.timeframe);
                 
                 if (exportType === 'excel') {
@@ -4650,9 +4659,12 @@
         const modifiedData = applyOverridesAndMerge(categoryOverhaulMatrixReport, baseHeaders, hasOnsiteData, excludeFromAggregation);
         const transformedData = transformDataForTimeframe(modifiedData, tableState.timeframe);
 
+        // Filter out deleted zero-traffic rows
+        const dataWithoutDeleted = filterDeletedZeroTrafficRows(transformedData, baseHeaders);
+
         // Remove deleted columns from data rows (preserve rows, just remove column properties)
         const deletedColumns = tableState.deletedColumns || [];
-        const cleanedData = transformedData.map(row => {
+        const cleanedData = dataWithoutDeleted.map(row => {
             const newRow = { ...row };
             deletedColumns.forEach(col => {
                 delete newRow[col];
@@ -4689,6 +4701,9 @@
                     <input type="checkbox" id="hide-zero-traffic-toggle" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                     <label for="hide-zero-traffic-toggle" class="ml-2 block text-sm text-gray-900">Hide rows with 0 traffic</label>
                 </div>
+                <button id="delete-zero-traffic-rows-btn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm transition-colors">
+                    Delete All Rows With 0 Traffic
+                </button>
                 <div class="flex items-center">
                     <input type="checkbox" id="hide-features-column" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" ${tableState.hideFeatures ? 'checked' : ''}>
                     <label for="hide-features-column" class="ml-2 block text-sm text-gray-900">Hide Features column</label>
@@ -4743,8 +4758,69 @@
             tableState.hideZeroValueColumns = e.target.checked;
             renderCategoryOverhaulMatrixView();
         });
+        
+        // Add event listener for delete zero traffic rows button
+        document.getElementById('delete-zero-traffic-rows-btn')?.addEventListener('click', deleteAllZeroTrafficRows);
+        
         tableState.hideZeroTraffic = false; 
         renderOverridesUI(baseHeaders.filter(h => h !== 'KeywordDetails'));
+    }
+    
+    function deleteAllZeroTrafficRows() {
+        const { categoryOverhaulMatrixReport, hasOnsiteData } = analysisResults;
+        if (!categoryOverhaulMatrixReport || categoryOverhaulMatrixReport.length === 0) {
+            return;
+        }
+        
+        // Confirm deletion
+        if (!confirm('Are you sure you want to permanently delete all rows with 0 traffic? This action cannot be undone and will affect all views in the Taxonomy & Architecture Analysis lens.')) {
+            return;
+        }
+        
+        const baseHeaders = Object.keys(categoryOverhaulMatrixReport[0] || {});
+        const annualTrafficHeader = updateHeadersForTimeframe(['Monthly Organic Traffic'], 'annual')[0];
+        const monthlyTrafficHeader = updateHeadersForTimeframe(['Monthly Organic Traffic'], 'monthly')[0];
+        
+        // Get all rows with 0 traffic from the original data
+        const zeroTrafficRows = categoryOverhaulMatrixReport.filter(row => {
+            const traffic = row[annualTrafficHeader] || row[monthlyTrafficHeader] || row['Monthly Organic Traffic'] || 0;
+            return typeof traffic === 'number' && traffic === 0;
+        });
+        
+        // Generate signatures for all zero-traffic rows
+        const signaturesToDelete = zeroTrafficRows.map(row => getRowSignature(row, baseHeaders));
+        
+        // Add to deleted rows (avoid duplicates)
+        if (!tableState.deletedZeroTrafficRows) {
+            tableState.deletedZeroTrafficRows = [];
+        }
+        const existingSignatures = new Set(tableState.deletedZeroTrafficRows);
+        signaturesToDelete.forEach(sig => {
+            if (!existingSignatures.has(sig)) {
+                tableState.deletedZeroTrafficRows.push(sig);
+            }
+        });
+        
+        showNotification(`Deleted ${signaturesToDelete.length} row(s) with 0 traffic.`, 'success');
+        
+        // Re-render the current view
+        if (tableState.activeLens === 'category-overhaul') {
+            renderCategoryOverhaulMatrixView();
+        } else if (tableState.activeLens === 'interactive-matrix') {
+            renderInteractiveCategoryMatrixView();
+        } else if (tableState.activeLens === 'inline-edit-matrix') {
+            renderBulkEditMatrixView();
+        }
+        
+        // Refresh the values listbox if it exists and has a column selected
+        // This needs to happen after re-rendering so the UI is available
+        setTimeout(() => {
+            const sourceColumnSelect = document.getElementById('rule-source-column');
+            if (sourceColumnSelect && sourceColumnSelect.value) {
+                // Trigger change event to repopulate the listbox with filtered values
+                sourceColumnSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }, 100);
     }
 
     function renderInteractiveCategoryMatrixView() {
@@ -4766,9 +4842,12 @@
         const modifiedData = applyOverridesAndMerge(categoryOverhaulMatrixReport, baseHeaders, hasOnsiteData, excludeFromAggregation);
         const transformedData = transformDataForTimeframe(modifiedData, tableState.timeframe);
 
+        // Filter out deleted zero-traffic rows
+        const dataWithoutDeleted = filterDeletedZeroTrafficRows(transformedData, baseHeaders);
+
         // Remove deleted columns from data rows (preserve rows, just remove column properties)
         const deletedColumns = tableState.deletedColumns || [];
-        const cleanedData = transformedData.map(row => {
+        const cleanedData = dataWithoutDeleted.map(row => {
             const newRow = { ...row };
             deletedColumns.forEach(col => {
                 delete newRow[col];
@@ -4778,7 +4857,7 @@
 
         const allKeys = new Set();
         cleanedData.forEach(row => { Object.keys(row).forEach(key => allKeys.add(key)); });
-
+        
         const preferredOrder = ['Category Mapping', 'Derived Facets', 'Sub Type'];
         const endColumnsBases = ['Monthly Organic Traffic', 'Total Monthly Google Searches', 'Total On-Site Searches', 'KeywordDetails'];
         const endColumns = updateHeadersForTimeframe(endColumnsBases, tableState.timeframe);
@@ -4876,9 +4955,12 @@
         const modifiedData = applyOverridesAndMerge(categoryOverhaulMatrixReport, baseHeaders, hasOnsiteData, excludeFromAggregation);
         const transformedData = transformDataForTimeframe(modifiedData, tableState.timeframe);
 
+        // Filter out deleted zero-traffic rows
+        const dataWithoutDeleted = filterDeletedZeroTrafficRows(transformedData, baseHeaders);
+
         // Remove deleted columns from data rows (preserve rows, just remove column properties)
         const deletedColumns = tableState.deletedColumns || [];
-        const cleanedData = transformedData.map(row => {
+        const cleanedData = dataWithoutDeleted.map(row => {
             const newRow = { ...row };
             deletedColumns.forEach(col => {
                 delete newRow[col];
@@ -4888,7 +4970,7 @@
 
         const allKeys = new Set();
         cleanedData.forEach(row => { Object.keys(row).forEach(key => allKeys.add(key)); });
-
+        
         const preferredOrder = ['Category Mapping', 'Derived Facets', 'Sub Type'];
         const endColumnsBases = ['Monthly Organic Traffic', 'Total Monthly Google Searches', 'Total On-Site Searches', 'KeywordDetails'];
         const endColumns = updateHeadersForTimeframe(endColumnsBases, tableState.timeframe);
@@ -5738,7 +5820,10 @@
         const matrixBaseHeaders = Object.keys(categoryOverhaulMatrixReport[0] || {});
         const modifiedMatrixData = applyOverridesAndMerge(categoryOverhaulMatrixReport, matrixBaseHeaders, hasOnsiteData);
         
-        const regeneratedData = generateFacetPotentialFromMatrix(modifiedMatrixData, matrixBaseHeaders, hasOnsiteData);
+        // Filter out deleted zero-traffic rows before generating facet potential
+        const dataWithoutDeleted = filterDeletedZeroTrafficRows(modifiedMatrixData, matrixBaseHeaders);
+        
+        const regeneratedData = generateFacetPotentialFromMatrix(dataWithoutDeleted, matrixBaseHeaders, hasOnsiteData);
         const transformedData = transformDataForTimeframe(regeneratedData, tableState.timeframe);
         
         let headers = ['Category Mapping', 'Facet Type', 'Keyword Count', 'Facet Value Score', 'Monthly Organic Traffic', 'Total Monthly Google Searches'];
