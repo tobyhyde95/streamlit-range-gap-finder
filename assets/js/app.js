@@ -806,7 +806,7 @@
                     });
                 });
                 
-                // Add SKU counts to pairs
+                // Add SKU counts to pairs (metrics already in categoryFacetPairs from buildCategoryFacetPairs)
                 const pairsWithCounts = categoryFacetPairs.map(pair => {
                     const key = buildSkuMatchKey(pair['Category Mapping'], pair['Facet Attribute'] || '', pair['Facet Value']);
                     const skuData = skuCountMap.get(key);
@@ -814,6 +814,8 @@
                         'Category Mapping': pair['Category Mapping'],
                         'Facet Attribute': pair['Facet Attribute'] || '',
                         'Facet Value': pair['Facet Value'],
+                        'Monthly Organic Traffic': pair['Monthly Organic Traffic'] ?? 0,
+                        'Monthly Google Searches': pair['Monthly Google Searches'] ?? 0,
                         'SKU Count': skuData ? skuData.count : 0,
                         'SKU IDs': (() => {
                             if (!skuData || !skuData.skuIds) return '(None)';
@@ -834,6 +836,8 @@
                     { header: 'Category Mapping', key: 'Category Mapping', width: 30 },
                     { header: 'Facet Attribute', key: 'Facet Attribute', width: 20 },
                     { header: 'Facet Value', key: 'Facet Value', width: 40 },
+                    { header: 'Monthly Organic Traffic', key: 'Monthly Organic Traffic', width: 18 },
+                    { header: 'Monthly Google Searches', key: 'Monthly Google Searches', width: 20 },
                     { header: 'SKU Count', key: 'SKU Count', width: 12 },
                     { header: 'SKU IDs', key: 'SKU IDs', width: 50 }
                 ];
@@ -842,7 +846,9 @@
                 worksheetPairs.columns = [
                     { header: 'Category Mapping', key: 'Category Mapping', width: 30 },
                     { header: 'Facet Attribute', key: 'Facet Attribute', width: 20 },
-                    { header: 'Facet Value', key: 'Facet Value', width: 40 }
+                    { header: 'Facet Value', key: 'Facet Value', width: 40 },
+                    { header: 'Monthly Organic Traffic', key: 'Monthly Organic Traffic', width: 18 },
+                    { header: 'Monthly Google Searches', key: 'Monthly Google Searches', width: 20 }
                 ];
                 worksheetPairs.addRows(categoryFacetPairs);
             }
@@ -871,8 +877,8 @@
         const facetColumns = getFacetHeaders(headers);
         if (facetColumns.length === 0) return [];
 
-        const pairsSet = new Set();
-        const categoriesSet = new Set(); // Track unique categories for Root Category option
+        const pairsMap = new Map(); // key -> { category, facetAttr, facetValue, traffic, searches }
+        const categoryTotals = new Map(); // category -> { traffic, searches }
         const sanitize = value => {
             if (value === null || value === undefined) return '(Blank)';
             const cleaned = String(value).replace(/<[^>]*>?/gm, '').trim();
@@ -928,6 +934,10 @@
 
         // Use detected category field or fallback to 'Category Mapping'
         const catField = categoryField || 'Category Mapping';
+
+        // Detect traffic and searches column names (may be Monthly or Annual based on timeframe)
+        const trafficKey = data.length > 0 ? Object.keys(data[0]).find(k => k && k.includes('Organic Traffic')) : null;
+        const searchesKey = data.length > 0 ? Object.keys(data[0]).find(k => k && k.includes('Google Searches') && k.includes('Total')) : null;
         
         // DEBUG: Search for "Anti Climb Paint" specifically in Category Mapping
         const antiClimbPaintRows = data.filter(row => {
@@ -1005,12 +1015,17 @@
                 console.log(`[DEBUG FRONTEND] Constructed category: "${categoryValue}" from Category Mapping="${originalCat}" + Navigation_Type="${navType}"`);
             }
             
-            // Track this category for Root Category option
+            // Track category totals for Root Category option and for metrics
+            const rowTraffic = (trafficKey && row[trafficKey]) ? (parseFloat(row[trafficKey]) || 0) : 0;
+            const rowSearches = (searchesKey && row[searchesKey]) ? (parseFloat(row[searchesKey]) || 0) : 0;
             if (categoryValue && categoryValue !== '(Blank)') {
-                categoriesSet.add(categoryValue);
+                const tot = categoryTotals.get(categoryValue) || { traffic: 0, searches: 0 };
+                tot.traffic += rowTraffic;
+                tot.searches += rowSearches;
+                categoryTotals.set(categoryValue, tot);
             }
             
-            // Create category-facet pairs with Facet Attribute
+            // Create category-facet pairs with Facet Attribute, accumulating traffic and searches
             facetColumns.forEach(column => {
                 const cellValue = row[column];
                 if (cellValue === null || cellValue === undefined) return;
@@ -1020,24 +1035,34 @@
                     const cleanValue = sanitize(value);
                     // Include Facet Attribute (column name) in the key
                     const key = JSON.stringify([categoryValue, column, cleanValue]);
-                    if (!pairsSet.has(key)) {
-                        pairsSet.add(key);
+                    const existing = pairsMap.get(key);
+                    if (existing) {
+                        existing.traffic += rowTraffic;
+                        existing.searches += rowSearches;
+                    } else {
+                        pairsMap.set(key, {
+                            category: categoryValue,
+                            facetAttribute: column,
+                            facetValue: cleanValue,
+                            traffic: rowTraffic,
+                            searches: rowSearches
+                        });
                     }
                 });
             });
         });
 
-        const pairs = Array.from(pairsSet).map(key => {
-            const [category, facetAttribute, facetValue] = JSON.parse(key);
-            return {
-                'Category Mapping': category,
-                'Facet Attribute': facetAttribute, // Column name like "Colour"
-                'Facet Value': facetValue
-            };
-        });
+        const pairs = Array.from(pairsMap.values()).map(entry => ({
+            'Category Mapping': entry.category,
+            'Facet Attribute': entry.facetAttribute,
+            'Facet Value': entry.facetValue,
+            'Monthly Organic Traffic': entry.traffic,
+            'Monthly Google Searches': entry.searches
+        }));
         
         // Add "Root Category" option for each unique category
         // This allows SKUs to be counted against just the category, even without matching facets
+        const categoriesSet = new Set(categoryTotals.keys());
         const climbCategories = Array.from(categoriesSet).filter(cat => cat && cat.toLowerCase().includes('climb'));
         if (climbCategories.length > 0) {
             console.log('[DEBUG FRONTEND] Categories with "climb" in categoriesSet:', climbCategories);
@@ -1047,12 +1072,14 @@
             console.log('[DEBUG FRONTEND] Sample categories:', Array.from(categoriesSet).slice(0, 10));
         }
         
-        categoriesSet.forEach(category => {
+        categoryTotals.forEach((totals, category) => {
             if (category && category !== '(Blank)') {
                 pairs.push({
                     'Category Mapping': category,
                     'Facet Attribute': 'Root Category',
-                    'Facet Value': 'Root Category'
+                    'Facet Value': 'Root Category',
+                    'Monthly Organic Traffic': totals.traffic,
+                    'Monthly Google Searches': totals.searches
                 });
                 if (category.toLowerCase().includes('climb')) {
                     console.log(`[DEBUG FRONTEND] Added Root Category pair for: "${category}"`);
