@@ -1,0 +1,22 @@
+flask
+flask_cors
+pandas
+numpy
+sentence-transformers
+scikit-learn
+transformers
+torch
+umap-learn
+celery
+redis
+joblib
+honcho
+gunicorn
+nltk
+spacy
+swifter
+gevent
+sqlalchemy
+# hdbscan - Requires Microsoft C++ Build Tools on Windows
+# Install separately if needed: pip install hdbscan
+# Or use pre-built wheel: pip install hdbscan --only-binary :all:
