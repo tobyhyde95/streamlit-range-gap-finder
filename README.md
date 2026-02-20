@@ -5,8 +5,15 @@ A comprehensive web application for advanced SEO analysis, designed to identify 
 ## 🚀 Quick Start
 
 ### Prerequisites
+
+**For Local Mode (Default):**
 - Python 3.8+ (with pip)
 - Redis (will be installed automatically if not present)
+- Git
+
+**For Docker Mode:**
+- Python 3.8+ (with pip)
+- Docker Desktop (https://www.docker.com/products/docker-desktop)
 - Git
 
 ### Running the Application
@@ -18,24 +25,49 @@ A comprehensive web application for advanced SEO analysis, designed to identify 
 
 2. **Start the application:**
 
-   **On Mac/Linux:**
+   **Choose your mode:**
+   
+   **Auto Mode (Default - Tries Docker First, Falls Back to Local):**
    ```bash
-   # Option 1: Use the Python launcher (recommended - works on both platforms)
+   # Mac/Linux
    python3 run.py
    
-   # Option 2: Use the bash script
+   # Windows
+   python run.py
+   ```
+   The script will automatically:
+   1. Try Docker mode first (if Docker Desktop is available)
+   2. Fall back to local mode if Docker is not available
+   
+   **Force Docker Mode:**
+   ```bash
+   # Mac/Linux/Windows
+   python run.py --docker
+   ```
+   
+   **Force Local Mode:**
+   ```bash
+   # Mac/Linux
+   python3 run.py --local
+   
+   # Windows
+   python run.py --local
+   ```
+   
+   **Alternative startup methods:**
+   
+   **On Mac/Linux:**
+   ```bash
+   # Use the bash script (local mode only)
    ./run.sh
    ```
 
    **On Windows:**
    ```powershell
-   # Option 1: Use the Python launcher (recommended - works on both platforms)
-   python run.py
-   
-   # Option 2: Use the batch file (double-click or run in CMD)
+   # Use the batch file (local mode only)
    run.bat
    
-   # Option 3: Use PowerShell script
+   # Use PowerShell script (local mode only)
    powershell -ExecutionPolicy Bypass -File run.ps1
    ```
    
@@ -66,8 +98,42 @@ This tool analyzes your SEO data exports to provide:
 
 - **Frontend**: Modern web interface with interactive tables and filtering
 - **Backend**: Flask API with Celery for background processing
-- **Database**: Redis for task queue management (runs locally, no Docker required)
+- **Database**: Redis for task queue management
+  - **Local Mode**: Redis installed and runs locally
+  - **Docker Mode**: Redis runs in Docker container
 - **Processing**: Asynchronous analysis with real-time progress updates
+
+## 🐳 Docker vs Local Mode
+
+The application supports automatic mode selection with manual override options:
+
+### Auto Mode (Default)
+- 🔍 **Automatically tries Docker first** (if Docker Desktop is available)
+- 🔄 **Falls back to local mode** if Docker is not available
+- ✅ Best of both worlds - uses Docker when possible, local when needed
+- ✅ No configuration needed - just run `python run.py`
+
+### Docker Mode (Force)
+- ✅ Isolated Redis container
+- ✅ Easy cleanup (just stop container)
+- ✅ Consistent across platforms
+- ⚠️ Requires Docker Desktop installed and running
+- Use: `python run.py --docker`
+
+### Local Mode (Force)
+- ✅ No Docker required
+- ✅ Redis installed automatically on your system
+- ✅ Works on Windows, macOS, and Linux
+- ⚠️ Requires Redis installation (handled automatically)
+- Use: `python run.py --local`
+
+**Default Behavior:**
+- The script automatically detects Docker availability
+- If Docker is available → uses Docker mode
+- If Docker is not available → uses local mode
+- You can override with `--docker` or `--local` flags
+
+📖 **See [DOCKER_VS_LOCAL.md](DOCKER_VS_LOCAL.md) for detailed comparison and switching guide**
 
 ## 📁 Project Structure
 
@@ -131,8 +197,9 @@ For development setup and Git workflow instructions, see `scripts/README.md`.
 **"Redis is not installed"**
 - The script will attempt to install Redis automatically
 - **Windows**: Requires Chocolatey (`choco`) or winget
-  - Install Chocolatey: https://chocolatey.org/install
-  - Or use winget (built into Windows 10/11)
+  - Install Chocolatey: https://chocolatey.org/install (usually faster)
+  - Or use winget (built into Windows 10/11) - can take 5-15 minutes
+  - ⚠️ **If winget seems stuck**: It's still working! Check Task Manager for "winget.exe" process
   - Manual option: Download Redis from https://github.com/microsoftarchive/redis/releases
 - **Mac/Linux**: Uses Homebrew, apt-get, yum, or dnf automatically
 
@@ -186,15 +253,30 @@ For development setup and Git workflow instructions, see `scripts/README.md`.
 
 ## 🌐 Cross-Platform Support
 
-This application works seamlessly on **Windows**, **macOS**, and **Linux** without requiring Docker. The recommended way to start the application is using `run.py`, which automatically detects your platform and runs the appropriate commands.
+This application works seamlessly on **Windows**, **macOS**, and **Linux** with support for both Docker and local execution modes. The recommended way to start the application is using `run.py`, which automatically detects your platform and runs the appropriate commands.
 
 **Why use `run.py`?**
 - ✅ Works on Windows, macOS, and Linux
 - ✅ Automatic platform detection
-- ✅ Automatic Redis installation and setup
+- ✅ Choose Docker or local mode
+- ✅ Automatic Redis installation and setup (local mode)
 - ✅ Better error handling
 - ✅ Consistent experience across platforms
-- ✅ No Docker required - everything runs locally
+- ✅ Flexible: Docker or local execution
+
+### Using Docker Compose (Alternative)
+
+If you prefer using Docker Compose directly:
+
+```bash
+# Start Redis container
+docker-compose up -d redis
+
+# Then run the application in local mode (it will use the Docker Redis)
+python run.py --local
+```
+
+Or use docker-compose for everything (requires additional setup).
 
 ---
 

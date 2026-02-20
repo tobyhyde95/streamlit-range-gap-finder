@@ -2,6 +2,7 @@
 """
 Range Gap Finder - Cross-Platform Startup Script
 Works on both Windows and Mac/Linux
+Supports both Docker and local execution modes
 """
 
 import sys
@@ -9,15 +10,18 @@ import subprocess
 import os
 import platform
 import glob
+import argparse
 from pathlib import Path
 
-def run_command(cmd, shell=False, check=True):
+def run_command(cmd, shell=False, check=True, timeout=None):
     """Run a command and return success status"""
     try:
         if isinstance(cmd, str):
             cmd = cmd.split()
-        result = subprocess.run(cmd, shell=shell, check=check, capture_output=True, text=True)
+        result = subprocess.run(cmd, shell=shell, check=check, capture_output=True, text=True, timeout=timeout)
         return result.returncode == 0, result.stdout, result.stderr
+    except subprocess.TimeoutExpired:
+        return False, "", f"Command timed out after {timeout} seconds"
     except subprocess.CalledProcessError as e:
         return False, e.stdout, e.stderr
     except FileNotFoundError:
@@ -164,34 +168,75 @@ def install_redis_windows():
     """Attempt to install Redis on Windows"""
     print("🔧 Redis is not installed. Attempting to install Redis...")
     print("")
+    print("⏳ This may take a few minutes. Please wait...")
+    print("")
     
-    # Try Chocolatey first
+    # Try Chocolatey first (usually faster)
     if check_command_exists("choco"):
         print("📦 Installing Redis via Chocolatey...")
-        success, _, error = run_command("choco install redis-64 -y", shell=True, check=False)
+        print("   (This may take 2-5 minutes)")
+        success, output, error = run_command("choco install redis-64 -y", shell=True, check=False, timeout=600)
         if success:
             print("✅ Redis installed successfully via Chocolatey")
             return True
         else:
-            print(f"⚠️  Chocolatey installation failed: {error}")
+            if "timed out" in error.lower():
+                print("⚠️  Chocolatey installation timed out (took longer than 10 minutes)")
+                print("   Redis may still be installing in the background.")
+                print("   Please wait a few more minutes, then check with: redis-cli ping")
+            else:
+                print(f"⚠️  Chocolatey installation failed: {error[:200]}")
     
-    # Try winget (Windows Package Manager)
+    # Try winget (Windows Package Manager) - can be slow
     if check_command_exists("winget"):
+        print("")
         print("📦 Installing Redis via winget...")
-        success, _, error = run_command("winget install Redis.Redis", shell=True, check=False)
+        print("   ⚠️  NOTE: winget installation can take 5-10 minutes")
+        print("   Please be patient - this is normal for winget.")
+        print("   You may see download progress in the background...")
+        print("")
+        
+        # Use winget with accept flags to avoid prompts
+        winget_cmd = 'winget install --id Redis.Redis --accept-package-agreements --accept-source-agreements --silent'
+        success, output, error = run_command(winget_cmd, shell=True, check=False, timeout=900)
+        
         if success:
             print("✅ Redis installed successfully via winget")
             return True
         else:
-            print(f"⚠️  winget installation failed: {error}")
+            if "timed out" in error.lower():
+                print("")
+                print("⚠️  winget installation timed out (took longer than 15 minutes)")
+                print("   Redis may still be installing in the background.")
+                print("   Please:")
+                print("   1. Wait a few more minutes")
+                print("   2. Check if Redis is installed: redis-cli ping")
+                print("   3. If not installed, try manual installation (see below)")
+                print("")
+            else:
+                print(f"⚠️  winget installation failed: {error[:200]}")
+                print("   This is common - winget can be slow or require admin rights")
     
+    print("")
     print("❌ Could not automatically install Redis on Windows.")
     print("")
     print("Please install Redis manually using one of these methods:")
-    print("  1. Chocolatey: choco install redis-64")
-    print("  2. winget: winget install Redis.Redis")
-    print("  3. Download from: https://github.com/microsoftarchive/redis/releases")
-    print("  4. Use WSL: Install Redis in Windows Subsystem for Linux")
+    print("")
+    print("Option 1: Chocolatey (fastest)")
+    print("   Run as Administrator: choco install redis-64 -y")
+    print("")
+    print("Option 2: winget (built into Windows)")
+    print("   Run in PowerShell: winget install Redis.Redis")
+    print("   (May require admin rights and can take 5-10 minutes)")
+    print("")
+    print("Option 3: Download manually")
+    print("   Download from: https://github.com/microsoftarchive/redis/releases")
+    print("   Extract and run redis-server.exe")
+    print("")
+    print("Option 4: Use WSL")
+    print("   Install Redis in Windows Subsystem for Linux")
+    print("")
+    print("After installing Redis manually, run this script again.")
     print("")
     return False
 
@@ -272,12 +317,128 @@ def start_redis():
     print("   Please start Redis manually and run this script again.")
     return False
 
+def check_docker():
+    """Check if Docker is installed and running"""
+    if not check_command_exists("docker"):
+        return False
+    
+    # Check if Docker daemon is running
+    success, _, _ = run_command("docker info", check=False, timeout=5)
+    return success
+
+def setup_redis_docker():
+    """Setup Redis using Docker"""
+    print("🐳 Using Docker mode for Redis")
+    print("")
+    
+    # Check if Docker is available
+    if not check_docker():
+        print("❌ Docker is not installed or Docker daemon is not running.")
+        print("")
+        print("Please:")
+        print("  1. Install Docker Desktop: https://www.docker.com/products/docker-desktop")
+        print("  2. Start Docker Desktop")
+        print("  3. Run this script again")
+        print("")
+        print("Or use local mode: python run.py --local")
+        raise SystemExit(1)  # Use raise instead of sys.exit to allow catching
+    
+    print("✅ Docker is running")
+    
+    # Check if docker-compose.yml exists and use it if available
+    docker_compose_file = Path("docker-compose.yml")
+    if docker_compose_file.exists() and check_command_exists("docker-compose"):
+        print("📦 Using docker-compose.yml for Redis...")
+        # Check if Redis service is already running
+        success, output, _ = run_command("docker-compose ps redis", check=False)
+        if success and "Up" in output:
+            print("✅ Redis container is already running (via docker-compose)")
+            return
+        
+        # Start Redis using docker-compose
+        print("🔧 Starting Redis container via docker-compose...")
+        success, _, error = run_command(["docker-compose", "up", "-d", "redis"], check=False)
+        if success:
+            print("✅ Redis container started via docker-compose")
+        else:
+            print(f"⚠️  docker-compose failed: {error}")
+            print("   Falling back to direct docker command...")
+            # Fall through to direct docker command
+    else:
+        # Use direct docker command
+        # Check if Redis container is already running
+        success, output, _ = run_command("docker ps", check=False)
+        if success and "redis" in output.lower():
+            # Check specifically for redis-cache container
+            success, output, _ = run_command("docker ps --filter name=redis-cache", check=False)
+            if success and "redis-cache" in output:
+                print("✅ Redis container is already running")
+                return
+        
+        # Start Redis container
+        print("🔧 Starting Redis container...")
+        success, _, error = run_command(
+            ["docker", "run", "-d", "--name", "redis-cache", "-p", "6379:6379", "redis:alpine"],
+            check=False
+        )
+        
+        if success:
+            print("✅ Redis container started")
+        else:
+            # Container might already exist but stopped
+            if "already in use" in error.lower() or "already exists" in error.lower():
+                print("🔄 Redis container exists but is stopped. Starting it...")
+                run_command(["docker", "start", "redis-cache"], check=False)
+                print("✅ Redis container started")
+            else:
+                print(f"❌ Could not start Redis container: {error}")
+                print("   You may need to manually start it with: docker start redis-cache")
+                print("   Or use docker-compose: docker-compose up -d redis")
+                sys.exit(1)
+    
+    # Wait a moment and verify Redis is accessible
+    import time
+    time.sleep(2)
+    
+    # Verify Redis is running
+    if check_redis_running():
+        print("✅ Redis is accessible")
+    else:
+        print("⚠️  Redis container started but not yet accessible. Waiting...")
+        for i in range(10):
+            time.sleep(1)
+            if check_redis_running():
+                print("✅ Redis is now accessible")
+                return
+        print("❌ Redis container started but cannot connect. Please check Docker logs.")
+        print("   Try: docker logs redis-cache")
+        print("   Or: docker-compose logs redis")
+
 def setup_redis():
     """Setup Redis - check installation and start if needed"""
+    # First, check if Redis is already running (might be installed but not detected)
+    if check_redis_running():
+        print("✅ Redis is already running")
+        return
+    
     # Check if Redis is installed
     if not check_redis_installed():
         if platform.system() == "Windows":
+            print("")
+            print("⚠️  IMPORTANT: Redis installation via winget can take 5-15 minutes.")
+            print("   If it seems stuck, it's likely still downloading/installing.")
+            print("   Check Task Manager for 'winget' or 'App Installer' processes.")
+            print("   You can press Ctrl+C to cancel and install manually.")
+            print("")
+            
             if not install_redis_windows():
+                print("")
+                print("💡 TIP: If winget seems stuck, try installing Redis manually:")
+                print("   1. Open a NEW PowerShell window as Administrator")
+                print("   2. Run: winget install Redis.Redis")
+                print("   3. Wait for it to complete (can take 10+ minutes)")
+                print("   4. Then run this script again")
+                print("")
                 sys.exit(1)
         else:
             print("❌ Redis is not installed locally.")
@@ -302,6 +463,14 @@ def setup_redis():
     # Final verification
     if not check_redis_running():
         print("❌ Cannot connect to Redis. Please ensure Redis is running on localhost:6379")
+        print("")
+        print("Try starting Redis manually:")
+        if platform.system() == "Windows":
+            print("   - If installed as service: net start Redis")
+            print("   - Or run: redis-server.exe")
+        else:
+            print("   - macOS: brew services start redis")
+            print("   - Linux: sudo systemctl start redis")
         sys.exit(1)
 
 def install_dependencies(python_cmd):
@@ -379,7 +548,7 @@ def create_cachedir():
     cachedir.mkdir(exist_ok=True)
     print("✅ Cache directory ready")
 
-def start_application():
+def start_application(use_docker=False):
     """Start the application using honcho"""
     python_cmd = get_python_command()
     
@@ -406,7 +575,9 @@ def start_application():
     print("🌍 Open your browser and go to: http://localhost:5000")
     print("")
     print("To stop the application, press Ctrl+C")
-    if platform.system() == "Windows":
+    if use_docker:
+        print("To stop Redis: docker stop redis-cache")
+    elif platform.system() == "Windows":
         print("To stop Redis: net stop Redis (if installed as service)")
     else:
         print("To stop Redis: brew services stop redis (macOS) or sudo systemctl stop redis (Linux)")
@@ -417,12 +588,51 @@ def start_application():
         subprocess.run(["honcho", "start"], check=True)
     except KeyboardInterrupt:
         print("\n👋 Shutting down...")
+        if use_docker:
+            print("💡 To stop Redis container: docker stop redis-cache")
     except subprocess.CalledProcessError as e:
         print(f"❌ Error starting application: {e}")
         sys.exit(1)
 
 def main():
     """Main entry point"""
+    parser = argparse.ArgumentParser(
+        description="Range Gap Finder - SEO Competitor & Gap Analyzer",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python run.py              # Try Docker first, fallback to local (default)
+  python run.py --docker     # Force Docker mode (requires Docker Desktop)
+  python run.py --local      # Force local Redis installation
+
+Modes:
+  Default:  Try Docker first, automatically fallback to local if Docker unavailable
+  --docker: Force Docker mode (requires Docker Desktop)
+  --local:  Force local Redis installation (no Docker)
+        """
+    )
+    parser.add_argument(
+        '--docker',
+        action='store_true',
+        help='Force Docker mode for Redis (requires Docker Desktop)'
+    )
+    parser.add_argument(
+        '--local',
+        action='store_true',
+        help='Force local Redis installation (skip Docker check)'
+    )
+    
+    args = parser.parse_args()
+    
+    # Determine mode
+    force_docker = args.docker
+    force_local = args.local
+    
+    if force_local and force_docker:
+        print("⚠️  Warning: Both --local and --docker specified. Using --docker.")
+        force_docker = True
+        force_local = False
+    
     print("🚀 Starting Range Gap Finder...")
     print(f"📍 Platform: {platform.system()} {platform.release()}")
     
@@ -437,8 +647,86 @@ def main():
     # Check Python
     python_cmd = check_python_version()
     
-    # Setup Redis (install if needed, start if not running)
-    setup_redis()
+    # Determine Redis setup mode
+    use_docker = False
+    
+    if force_local:
+        # User explicitly wants local mode
+        print("💻 Mode: Local (forced via --local flag)")
+        use_docker = False
+    elif force_docker:
+        # User explicitly wants Docker mode
+        print("🐳 Mode: Docker (forced via --docker flag)")
+        use_docker = True
+    else:
+        # Default: Try Docker first, fallback to local
+        print("🔍 Auto-detecting best mode...")
+        if check_docker():
+            print("✅ Docker is available - using Docker mode")
+            print("🐳 Mode: Docker (auto-selected)")
+            use_docker = True
+        else:
+            print("⚠️  Docker not available - using local mode")
+            print("💻 Mode: Local (auto-selected, Docker unavailable)")
+            use_docker = False
+    
+    print("")
+    
+    # Setup Redis based on mode
+    redis_setup_success = False
+    
+    if use_docker:
+        try:
+            setup_redis_docker()
+            redis_setup_success = True
+        except SystemExit as e:
+            # If Docker setup fails and user didn't force it, try local
+            if not force_docker:
+                print("")
+                print("🔄 Docker setup failed. Automatically falling back to local mode...")
+                print("")
+                use_docker = False
+                try:
+                    setup_redis()
+                    redis_setup_success = True
+                except SystemExit:
+                    print("❌ Both Docker and local Redis setup failed.")
+                    sys.exit(1)
+            else:
+                # User forced Docker mode, so exit with error
+                print("")
+                print("❌ Docker mode failed and --docker flag was specified.")
+                print("   Please fix Docker issues or use --local flag.")
+                raise  # Re-raise the SystemExit
+    else:
+        # Local mode
+        try:
+            setup_redis()
+            redis_setup_success = True
+        except SystemExit:
+            # If local setup fails and user didn't force local, try Docker as fallback
+            if not force_local and check_docker():
+                print("")
+                print("🔄 Local Redis setup failed. Trying Docker as fallback...")
+                print("")
+                use_docker = True
+                try:
+                    setup_redis_docker()
+                    redis_setup_success = True
+                except SystemExit:
+                    print("❌ Both local and Docker Redis setup failed.")
+                    sys.exit(1)
+            else:
+                # User forced local mode or Docker not available, so exit
+                if force_local:
+                    print("")
+                    print("❌ Local Redis setup failed and --local flag was specified.")
+                    print("   Please fix Redis installation issues.")
+                raise  # Re-raise the SystemExit
+    
+    if not redis_setup_success:
+        print("❌ Failed to setup Redis in any mode.")
+        sys.exit(1)
     
     # Install dependencies
     install_dependencies(python_cmd)
@@ -453,7 +741,7 @@ def main():
     create_cachedir()
     
     # Start application
-    start_application()
+    start_application(use_docker=use_docker)
 
 if __name__ == "__main__":
     main()

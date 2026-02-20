@@ -74,6 +74,22 @@ Python was not found; run without arguments to install from the Microsoft Store
   ```
   Then restart your terminal and run the script again
 
+**Script stuck on "Installing Redis via winget"**
+- **Cause**: winget installation is slow (can take 5-15 minutes)
+- **What's happening**: Redis is downloading/installing in the background
+- **Solutions**:
+  1. **Wait patiently** - Check Task Manager for "winget.exe" process
+  2. **Cancel and install manually**:
+     - Press Ctrl+C
+     - Run as Admin: `winget install Redis.Redis`
+     - Wait 10+ minutes for completion
+  3. **Use Chocolatey** (faster):
+     - Install: https://chocolatey.org/install
+     - Run as Admin: `choco install redis-64 -y`
+  4. **Download manually** (fastest):
+     - https://github.com/microsoftarchive/redis/releases
+     - Extract and run `redis-server.exe`
+
 ### Command Reference
 
 | Command | Windows | Mac/Linux |

@@ -55,6 +55,42 @@ pip install honcho
 
 Then restart your terminal and try again.
 
+## Issue: Script stuck on "Installing Redis via winget"
+
+**Problem**: The script appears to hang at "Installing Redis via winget..."
+
+**Cause**: winget installation can take 5-15 minutes. It's downloading and installing Redis in the background.
+
+**What to do**:
+
+1. **Be Patient** (Recommended):
+   - This is normal - winget is slow but working
+   - Check Task Manager for "winget.exe" or "App Installer" processes
+   - If you see these processes, installation is still running
+   - Wait up to 15 minutes
+
+2. **Check if Redis is Already Installing**:
+   - Open Task Manager (Ctrl+Shift+Esc)
+   - Look for "winget.exe" or "App Installer" processes
+   - If running, wait for them to complete
+
+3. **Cancel and Install Manually** (If too slow):
+   - Press Ctrl+C to cancel
+   - Open a NEW PowerShell window as Administrator
+   - Run: `winget install Redis.Redis`
+   - Wait for it to complete (can take 10+ minutes)
+   - Then run `py run.py` again
+
+4. **Use Chocolatey Instead** (Faster):
+   - Install Chocolatey: https://chocolatey.org/install
+   - Run as Administrator: `choco install redis-64 -y`
+   - This is usually faster than winget
+
+5. **Download Manually** (Fastest):
+   - Download from: https://github.com/microsoftarchive/redis/releases
+   - Extract and run `redis-server.exe`
+   - Then run `py run.py` again
+
 ## Issue: Python 3.14 detected but packages fail
 
 **Problem**: Python 3.14 is very new and some packages may not have wheels available yet.
