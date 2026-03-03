@@ -13,8 +13,9 @@ A Streamlit app for SEO analysis: content gaps, competitive opportunities, and m
 
 2. **Install dependencies:**
    ```bash
-   pip install -r scripts/requirements.txt
+   pip install -r requirements.txt
    ```
+   (Or use `scripts/requirements.txt` if you prefer.)
 
 3. **Run the app:**
    ```bash
@@ -44,6 +45,7 @@ No Redis, Docker, or Celery required.
 ```
 streamlit_range_gap_finder/
 ├── streamlit_app.py      # Streamlit UI and entry point
+├── requirements.txt      # Dependencies (root = for Streamlit Cloud)
 ├── seo_analyzer/         # Analysis logic (data load, clustering, reports)
 ├── scripts/
 │   └── requirements.txt
@@ -77,6 +79,15 @@ Repo: **https://github.com/tobyhyde95/streamlit-range-gap-finder**
    git remote set-url origin git@github.com:tobyhyde95/streamlit-range-gap-finder.git
    git push -u origin main
    ```
+
+## Deploying to Streamlit Community Cloud
+
+- **Requirements:** Put `requirements.txt` in the **root** of the repo (same folder as `streamlit_app.py`). This repo already has it.
+- **App settings:** Main file path: `streamlit_app.py`. Branch: `main`.
+- **If you see `ModuleNotFoundError: No module named 'sentence_transformers'`:**
+  1. Confirm `requirements.txt` is in the repo root on GitHub and you’ve pushed the latest commit.
+  2. In the [Cloud dashboard](https://share.streamlit.io/), open your app → **⋮** → **Reboot app** (or **Clear cache and reboot**).
+  3. If it still fails, try **Settings** → **Advanced settings** → set **Python version** to **3.11**, then save and redeploy (you may need to delete and recreate the app to change Python). Python 3.13 can miss wheels for some ML packages.
 
 ## Troubleshooting
 
