@@ -20,7 +20,8 @@ PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from seo_analyzer import services
+# Only import data_loader at startup (lightweight). services (and sentence_transformers)
+# are imported inside run_analysis() so the app starts fast and passes Streamlit Cloud health checks.
 from seo_analyzer.data_loader import read_csv_with_encoding_fallback
 
 
@@ -89,7 +90,9 @@ def _get_csv_columns(uploaded_file) -> list:
 
 
 def run_analysis(our_path, competitor_paths, onsite_path, options_str, status_widget):
-    """Run full analysis with progress updates."""
+    """Run full analysis with progress updates. Imports services here so the app starts fast on Streamlit Cloud."""
+    from seo_analyzer import services
+
     def report(message, current, total):
         if status_widget is not None:
             try:
