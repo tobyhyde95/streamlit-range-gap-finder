@@ -1,30 +1,15 @@
 # Range Gap Finder - SEO Competitor & Gap Analyser
 
-A Streamlit app for SEO analysis: content gaps, competitive opportunities, and market share from your SEO data exports.
+A Streamlit app for SEO analysis: content gaps, competitive opportunities, and market share from your SEO data exports. **Run it on Streamlit (hosted)** — no local server.
 
-## Quick Start
+## Quick Start — Run on Streamlit
 
-**Prerequisites:** Python 3.8+ with pip
+1. **Deploy the app** on [Streamlit Community Cloud](https://share.streamlit.io/):
+   - Sign in with GitHub.
+   - **New app** → choose repo **tobyhyde95/streamlit-range-gap-finder**, branch **main**, main file **streamlit_app.py**.
+   - Click **Deploy**. Streamlit will install dependencies from the repo’s `requirements.txt` and host the app.
 
-1. **Clone and go to the project:**
-   ```bash
-   cd streamlit_range_gap_finder
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-   (Or use `scripts/requirements.txt` if you prefer.)
-
-3. **Run the app:**
-   ```bash
-   streamlit run streamlit_app.py
-   ```
-
-4. Open **http://localhost:8501** in your browser.
-
-No Redis, Docker, or Celery required.
+2. **Use the app** at the URL Streamlit gives you (e.g. `https://yourapp-name.streamlit.app`). Upload your CSVs, map columns, choose lenses, and run analysis there. No localhost or local run needed.
 
 ## What it does
 
@@ -80,27 +65,24 @@ Repo: **https://github.com/tobyhyde95/streamlit-range-gap-finder**
    git push -u origin main
    ```
 
-## Deploying to Streamlit Community Cloud
+## Streamlit Cloud — tips
 
-- **Requirements:** Put `requirements.txt` in the **root** of the repo (same folder as `streamlit_app.py`). This repo already has it.
-- **App settings:** Main file path: `streamlit_app.py`. Branch: `main`.
+- **Requirements:** `requirements.txt` is in the repo root; Cloud uses it automatically. Main file: `streamlit_app.py`, branch: `main`.
 - **If you see `ModuleNotFoundError: No module named 'sentence_transformers'`:**
   1. Confirm `requirements.txt` is in the repo root on GitHub and you’ve pushed the latest commit.
   2. In the [Cloud dashboard](https://share.streamlit.io/), open your app → **⋮** → **Reboot app** (or **Clear cache and reboot**).
   3. If it still fails, try **Settings** → **Advanced settings** → set **Python version** to **3.11**, then save and redeploy (you may need to delete and recreate the app to change Python). Python 3.13 can miss wheels for some ML packages.
 
-## Troubleshooting
+## Running locally (optional)
 
-- **Python not found (Windows)**  
-  Use `python` not `python3`. Install from [python.org](https://www.python.org/downloads/) and check “Add Python to PATH”.
+Only if you want to run the app on your machine (e.g. for development):
 
-- **Port 8501 in use**  
-  Stop the other app or run: `streamlit run streamlit_app.py --server.port 8502`
+```bash
+pip install -r requirements.txt
+streamlit run streamlit_app.py
+```
 
-- **hdbscan build error (Windows)**  
-  Install [Visual C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) or try:  
-  `pip install hdbscan --only-binary :all:`  
-  Clustering may still work with a fallback.
+Then open the URL shown in the terminal (usually http://localhost:8501). For normal use, run the app on Streamlit Cloud instead.
 
 ---
 

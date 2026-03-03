@@ -1,4 +1,6 @@
 # seo_analyzer/analysis.py
+import os
+import tempfile
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 import hdbscan
@@ -7,8 +9,10 @@ from joblib import Memory
 from urllib.parse import urlparse
 
 # --- 1. Setup Caching ---
-location = './cachedir'
-memory = Memory(location, verbose=0)
+# Use a writable temp dir so this works on Streamlit Cloud (app filesystem is read-only)
+_cache_dir = os.path.join(tempfile.gettempdir(), "streamlit_range_gap_joblib_cache")
+os.makedirs(_cache_dir, exist_ok=True)
+memory = Memory(_cache_dir, verbose=0)
 
 # --- 2. Load AI Models ---
 print("Loading AI models...")
