@@ -2,11 +2,9 @@
 import pandas as pd
 import json
 import numpy as np
-from datetime import datetime
 from . import analysis
 from . import data_loader
 from . import market_share_analysis as market
-from . import taxonomy_analysis as taxonomy
 from . import report_generator as reports
 from sklearn.preprocessing import MinMaxScaler
 import re
@@ -29,24 +27,6 @@ def _classify_intent(keyword):
 
 
 # Moved to market_share_analysis
-
-def _generate_category_overhaul_matrix(df, internal_keyword_col, internal_position_col, internal_traffic_col, internal_url_col_name, onsite_df, internal_volume_col, topic_col='TopicID'):
-    """
-    Generates a matrix of categories and facets using a "learn and classify" model.
-    NOW MODIFIED to return both the detailed matrix and a high-level facet potential report.
-    """
-    # Delegated to taxonomy_analysis module to keep this file lean
-    return taxonomy._generate_category_overhaul_matrix(
-        df,
-        internal_keyword_col=internal_keyword_col,
-        internal_position_col=internal_position_col,
-        internal_traffic_col=internal_traffic_col,
-        internal_url_col_name=internal_url_col_name,
-        onsite_df=onsite_df,
-        internal_volume_col=internal_volume_col,
-        topic_col=topic_col,
-    )
-
 
 def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, options_str, progress_reporter=None):
     
@@ -132,10 +112,9 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
     onsite_df, has_onsite_data = data_loader.load_onsite_data(onsite_file_path)
 
     needs_clustering = any([
-        lenses_to_run.get('content_gaps'), 
-        lenses_to_run.get('competitive_opportunities'), 
+        lenses_to_run.get('content_gaps'),
+        lenses_to_run.get('competitive_opportunities'),
         lenses_to_run.get('market_share'),
-        lenses_to_run.get('taxonomy_analysis') # Taxonomy lens now benefits from clusters
     ])
     
     topic_names = {}
@@ -349,38 +328,7 @@ def run_full_analysis(our_file_path, competitor_file_paths, onsite_file_path, op
             core_group_market_share_df.replace({np.nan: None}, inplace=True)
             core_group_market_share_report_raw = core_group_market_share_df.to_dict(orient='records')
 
-    report("Generating Category Overhaul Matrix...", 4, total_steps)
-    if lenses_to_run.get('taxonomy_analysis'):
-        overhaul_results = taxonomy._generate_category_overhaul_matrix(
-            master_df.copy(),
-            internal_keyword_col=internal_keyword_col,
-            internal_position_col=internal_position_col,
-            internal_traffic_col=internal_traffic_col,
-            internal_url_col_name=internal_url_col_name,
-            onsite_df=onsite_df,
-            internal_volume_col=internal_volume_col,
-            topic_col='TopicID'
-        )
-        category_overhaul_matrix_report_raw = overhaul_results["matrix_report"]
-        facet_potential_report_raw = overhaul_results["facet_potential_report"]
-        
-        # Automatically validate category mapping logic
-        if category_overhaul_matrix_report_raw:
-            try:
-                import sys
-                import os
-                sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'validation_tests'))
-                from category_mapping_validator import validate_category_overhaul_matrix_automation
-                analysis_timestamp = datetime.now().isoformat()
-                validation_results = validate_category_overhaul_matrix_automation(
-                    category_overhaul_matrix_report_raw, 
-                    analysis_timestamp
-                )
-                print(f"📊 Category Mapping Validation: {validation_results['summary']['accuracy_percentage']}% accuracy")
-            except Exception as e:
-                print(f"⚠️  Category mapping validation failed: {str(e)}")
-    else:
-        print("Skipping Taxonomy & Architecture analysis as per user request.")
+    report("Analysis complete.", 4, total_steps)
 
     return {
         "keywordGapReport": keyword_gap_report_raw,
