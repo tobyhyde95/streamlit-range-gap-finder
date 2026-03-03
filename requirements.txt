@@ -1,0 +1,15 @@
+# Root requirements for Streamlit (e.g. Streamlit Community Cloud).
+# Install: pip install -r requirements.txt
+streamlit
+pandas
+numpy
+sentence-transformers
+scikit-learn
+transformers
+torch
+umap-learn
+joblib
+hdbscan
+nltk
+spacy
+swifter
