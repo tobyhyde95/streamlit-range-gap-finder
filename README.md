@@ -51,7 +51,9 @@ streamlit_range_gap_finder/
 └── README.md
 ```
 
-## Pushing to a new GitHub repo
+## Pushing to this GitHub repo
+
+Repo: **https://github.com/tobyhyde95/streamlit-range-gap-finder**
 
 1. **Commit your current work** (in the project folder):
    ```bash
@@ -60,30 +62,20 @@ streamlit_range_gap_finder/
    git commit -m "Streamlit app; remove Overhaul lens and obsolete files"
    ```
 
-2. **Create a new repository on GitHub**
-   - Go to [github.com/new](https://github.com/new).
-   - Choose a name (e.g. `streamlit-range-gap-finder`), visibility (Public/Private), and **do not** add a README, .gitignore, or license (you already have these locally).
-
-3. **Point this project at the new repo and push**
-   - Replace `YOUR_USERNAME` and `YOUR_REPO` with your GitHub username and the new repo name:
+2. **Point this project at the repo and push** (HTTPS):
    ```bash
-   git remote set-url origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
+   git remote set-url origin https://github.com/tobyhyde95/streamlit-range-gap-finder.git
    git push -u origin main
    ```
-   - If your default branch is `master` instead of `main`:
+   If your branch is `master` instead of `main`:
    ```bash
    git push -u origin master
    ```
-   - If GitHub shows a different URL (e.g. SSH), use that instead:
-   ```bash
-   git remote set-url origin git@github.com:YOUR_USERNAME/YOUR_REPO.git
-   git push -u origin main
-   ```
 
-4. **If you prefer to keep the old remote** and add the new one as a second remote:
+3. **Alternatively, use SSH** (if you use SSH keys):
    ```bash
-   git remote add neworigin https://github.com/YOUR_USERNAME/YOUR_REPO.git
-   git push -u neworigin main
+   git remote set-url origin git@github.com:tobyhyde95/streamlit-range-gap-finder.git
+   git push -u origin main
    ```
 
 ## Troubleshooting
