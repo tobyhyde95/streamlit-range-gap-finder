@@ -11,3 +11,6 @@ hdbscan
 nltk
 spacy
 swifter
+openpyxl
+scipy
+rapidfuzz

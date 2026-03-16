@@ -1,0 +1,26 @@
+{
+  "opportunity_score_weights": {
+    "external_volume_weight": 0.6,
+    "internal_volume_weight": 0.4
+  },
+  "clustering": {
+    "umap_n_neighbors": 15,
+    "umap_n_components": 25,
+    "umap_min_dist": 0.0,
+    "umap_metric": "cosine",
+    "hdbscan_min_cluster_size": 5,
+    "hdbscan_min_samples": 3,
+    "hdbscan_cluster_selection_method": "eom"
+  },
+  "stock_matching": {
+    "fuzzy_threshold": 80,
+    "exact_match_boost": true
+  },
+  "output": {
+    "top_n_competitor_context": 20,
+    "score_color_thresholds": {
+      "green_min": 80,
+      "amber_min": 50
+    }
+  }
+}
